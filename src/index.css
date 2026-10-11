@@ -2,15 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Faruma Dhivehi Web Font (Self-Hosted via Public Folder) */
+/* Faruma Dhivehi Web Font */
 @font-face {
   font-family: 'Faruma';
-  src: url('/Faruma.ttf') format('truetype');
+  src: url('/faruma.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
-/* Faruma Font Utility */
 .font-faruma {
   font-family: 'Faruma', 'MV Faruma', 'Ameeru', sans-serif;
+}
