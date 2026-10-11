@@ -3,11 +3,7 @@
 /* Faruma Dhivehi Web Font (Self-Hosted via Public Folder) */
 @font-face {
   font-family: 'Faruma';
-<<<<<<< HEAD
   src: url('/Faruma.ttf') format('truetype');
-=======
-  src: url('/Faruma.ttf') format('truetype');
->>>>>>> 7ff58839459b7c096724cb57691ea85397e0b28f
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -16,8 +12,4 @@
 /* Faruma Font Utility */
 .font-faruma {
   font-family: 'Faruma', 'MV Faruma', 'Ameeru', sans-serif;
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 7ff58839459b7c096724cb57691ea85397e0b28f
