@@ -1538,18 +1538,18 @@ export default function App() {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
 
         {/* Landing Navigation Header */}
-        <header className="max-w-7xl w-full mx-auto px-6 py-6 flex items-center justify-between z-10">
-          <div onClick={() => setAuthView('landing')} className="flex items-center space-x-3 cursor-pointer">
-            <img src="/lhohi-school-logo.svg" alt="Lhohee School logo" className="w-12 h-12 object-contain" />
+        <header className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-wrap items-center justify-between gap-y-3 z-10">
+          <div onClick={() => setAuthView('landing')} className="flex w-full sm:w-auto items-center space-x-2 sm:space-x-3 cursor-pointer">
+            <img src="/lhohi-school-logo.svg" alt="Lhohee School logo" className="w-14 h-14 object-contain shrink-0" />
             <div>
-              <h1 className="text-xl font-black tracking-tight text-white">
+              <h1 className="text-base sm:text-xl font-black tracking-tight text-white whitespace-nowrap">
                 EduSpark <span className="text-indigo-400">LS</span>
               </h1>
-              <p className="text-[10px] text-slate-400 font-medium">Educational Portal & E-Library</p>
+              <p className="text-sm text-slate-400 font-medium">Next-Generation School Portal for Students &amp; Teachers</p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex w-full sm:w-auto justify-end items-center space-x-3">
             <button
               onClick={() => setAuthView('login')}
               className={`px-5 py-2 rounded-xl text-xs font-bold transition ${authView === 'login' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-300 hover:text-white'}`}
@@ -1917,14 +1917,14 @@ export default function App() {
           <div className="flex items-center justify-between w-full sm:w-auto">
             <div 
               onClick={() => navigateToTab('dashboard')} 
-              className="flex items-center space-x-3 cursor-pointer hover:opacity-85 transition"
+              className="flex min-w-0 items-center space-x-2 sm:space-x-3 cursor-pointer hover:opacity-85 transition"
             >
-              <img src="/lhohi-school-logo.svg" alt="Lhohee School logo" className="w-10 h-10 object-contain" />
-              <div>
-                <h1 className="text-lg font-black tracking-tight text-slate-900">
+              <img src="/lhohi-school-logo.svg" alt="Lhohee School logo" className="w-12 h-12 object-contain shrink-0" />
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 whitespace-nowrap">
                   EduSpark <span className="text-indigo-600">LS</span>
                 </h1>
-                <p className="text-[11px] text-slate-500 font-medium">School Student Portal & E-Library</p>
+                <p className="text-sm text-slate-500 font-medium">Next-Generation School Portal for Students &amp; Teachers</p>
               </div>
             </div>
 
