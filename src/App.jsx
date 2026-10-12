@@ -639,13 +639,10 @@ export default function App() {
   const [badges, setBadges] = useState(INITIAL_BADGES);
   const [leaderboardUsers, setLeaderboardUsers] = useState([]);
 
-  // --- E-Library State & Mobile Easy Reader Controls ---
+  // --- E-Library State ---
   const [bookBatchIndex, setBookBatchIndex] = useState(0);
   const [selectedBook, setSelectedBook] = useState(null);
   const [bookPageIndex, setBookPageIndex] = useState(0);
-  const [readerFontSize, setReaderFontSize] = useState('base'); // 'sm', 'base', 'lg', 'xl', '2xl'
-  const [readerTheme, setReaderTheme] = useState('light');       // 'light', 'sepia', 'dark'
-  const [isFullScreenReader, setIsFullScreenReader] = useState(false);
 
   // --- Global Filter State ---
   const [selectedSubject, setSelectedSubject] = useState('All');
@@ -701,7 +698,6 @@ export default function App() {
   const navigateToTab = (tabName) => {
     setActiveQuiz(null);
     setSelectedBook(null);
-    setIsFullScreenReader(false);
     setActiveTab(tabName);
     setSelectedSubject('All');
     window.history.pushState({ tab: tabName }, '', `#${tabName}`);
@@ -713,7 +709,6 @@ export default function App() {
     const handlePopState = (e) => {
       if (selectedBook) {
         setSelectedBook(null);
-        setIsFullScreenReader(false);
         return;
       }
       if (activeQuiz) {
@@ -954,7 +949,6 @@ export default function App() {
   const openBookModal = (book) => {
     setSelectedBook(book);
     setBookPageIndex(0);
-    setIsFullScreenReader(false);
     window.history.pushState({ bookId: book.id }, '', `#book-${book.id}`);
   };
 
@@ -2319,162 +2313,31 @@ export default function App() {
           </div>
         )}
 
-        {/* MOBILE-OPTIMIZED EASY READING E-BOOK READER MODAL */}
+        {/* Interactive E-Book Reader Modal */}
         {selectedBook && (() => {
           const isRTL = isRTLSubject(selectedBook.subject);
-
-          // Theme Styling Map
-          const themeStyles = {
-            light: {
-              bg: 'bg-white',
-              cardBg: 'bg-slate-50 border-slate-200',
-              text: 'text-slate-900',
-              subText: 'text-slate-500',
-              border: 'border-slate-200'
-            },
-            sepia: {
-              bg: 'bg-[#f8f1e5]',
-              cardBg: 'bg-[#f0e6d2] border-[#e2d5bd]',
-              text: 'text-[#433422]',
-              subText: 'text-[#7c664d]',
-              border: 'border-[#e2d5bd]'
-            },
-            dark: {
-              bg: 'bg-slate-900',
-              cardBg: 'bg-slate-800 border-slate-700',
-              text: 'text-slate-100',
-              subText: 'text-slate-400',
-              border: 'border-slate-800'
-            }
-          };
-
-          const currentTheme = themeStyles[readerTheme] || themeStyles.light;
-
-          // Font Size Classes
-          const fontSizeClasses = {
-            sm: isRTL ? 'text-sm leading-relaxed' : 'text-xs sm:text-sm leading-relaxed',
-            base: isRTL ? 'text-base sm:text-lg leading-loose' : 'text-sm sm:text-base leading-relaxed',
-            lg: isRTL ? 'text-lg sm:text-xl leading-loose' : 'text-base sm:text-lg leading-relaxed',
-            xl: isRTL ? 'text-xl sm:text-2xl leading-loose' : 'text-lg sm:text-xl leading-relaxed',
-            '2xl': isRTL ? 'text-2xl sm:text-3xl leading-loose' : 'text-xl sm:text-2xl leading-relaxed'
-          };
-
           return (
-            <div
-              className={`fixed inset-0 z-50 flex items-center justify-center ${
-                isFullScreenReader ? 'p-0' : 'p-2 sm:p-4 bg-slate-900/70 backdrop-blur-xs'
-              }`}
-            >
-              <div
-                className={`${currentTheme.bg} ${currentTheme.text} transition-colors duration-200 ${
-                  isFullScreenReader
-                    ? 'w-full h-full rounded-none p-4 sm:p-8 flex flex-col justify-between overflow-y-auto'
-                    : 'rounded-3xl max-w-3xl w-full p-5 sm:p-8 space-y-5 max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col justify-between border ' + currentTheme.border
-                }`}
-              >
-                {/* HEADER CONTROLS BAR */}
-                <div className={`border-b ${currentTheme.border} pb-3 space-y-3`}>
-                  <div className="flex items-center justify-between">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+              <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col justify-between">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div className={isRTL ? 'text-right font-faruma' : 'text-left'} dir={isRTL ? 'rtl' : 'ltr'}>
-                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md ${isRTL ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md ${isRTL ? 'bg-amber-100 text-amber-800' : 'bg-emerald-50 text-emerald-700'}`}>
                         {selectedBook.subject}
                       </span>
-                      <h3 className="text-base sm:text-xl font-black mt-1 leading-snug">{selectedBook.title}</h3>
-                      <p className={`text-xs ${currentTheme.subText}`}>By {selectedBook.author}</p>
+                      <h3 className="text-lg font-black text-slate-900 mt-1">{selectedBook.title}</h3>
+                      <p className="text-xs text-slate-400">By {selectedBook.author}</p>
                     </div>
-
-                    <div className="flex items-center space-x-2">
-                      {/* Fullscreen Toggle Button */}
-                      <button
-                        onClick={() => setIsFullScreenReader(!isFullScreenReader)}
-                        className={`p-2 rounded-xl text-xs font-bold border transition ${
-                          isFullScreenReader ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
-                        }`}
-                        title={isFullScreenReader ? "Exit Full Screen" : "Read in Full Screen"}
-                      >
-                        {isFullScreenReader ? '📉 Exit Fullscreen' : '📺 Fullscreen'}
-                      </button>
-
-                      {/* Close Button */}
-                      <button
-                        onClick={() => {
-                          setSelectedBook(null);
-                          setIsFullScreenReader(false);
-                        }}
-                        className={`p-2 text-lg font-bold ${currentTheme.subText} hover:opacity-75`}
-                      >
-                        ✕
-                      </button>
-                    </div>
+                    <button onClick={() => setSelectedBook(null)} className="text-slate-400 text-xl font-bold p-1">✕</button>
                   </div>
 
-                  {/* EASY READING TOOLBAR (Font Size & Themes) */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                    {/* Font Resizer */}
-                    <div className="flex items-center space-x-1 bg-slate-100/80 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold border border-slate-200/60 dark:border-slate-700">
-                      <span className="text-[10px] text-slate-500 px-1 font-sans">Font Size:</span>
-                      <button
-                        disabled={readerFontSize === 'sm'}
-                        onClick={() => {
-                          const sizes = ['sm', 'base', 'lg', 'xl', '2xl'];
-                          const idx = sizes.indexOf(readerFontSize);
-                          if (idx > 0) setReaderFontSize(sizes[idx - 1]);
-                        }}
-                        className="px-2 py-1 rounded-lg bg-white dark:bg-slate-700 shadow-2xs font-mono font-black text-slate-800 dark:text-slate-100 disabled:opacity-40"
-                      >
-                        A-
-                      </button>
-                      <span className="text-xs font-mono px-1 font-bold uppercase">{readerFontSize}</span>
-                      <button
-                        disabled={readerFontSize === '2xl'}
-                        onClick={() => {
-                          const sizes = ['sm', 'base', 'lg', 'xl', '2xl'];
-                          const idx = sizes.indexOf(readerFontSize);
-                          if (idx < sizes.length - 1) setReaderFontSize(sizes[idx + 1]);
-                        }}
-                        className="px-2 py-1 rounded-lg bg-white dark:bg-slate-700 shadow-2xs font-mono font-black text-slate-800 dark:text-slate-100 disabled:opacity-40"
-                      >
-                        A+
-                      </button>
-                    </div>
-
-                    {/* Reading Themes */}
-                    <div className="flex items-center space-x-1.5 bg-slate-100/80 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold border border-slate-200/60 dark:border-slate-700">
-                      <button
-                        onClick={() => setReaderTheme('light')}
-                        className={`px-2.5 py-1 rounded-lg text-xs transition ${
-                          readerTheme === 'light' ? 'bg-white text-slate-900 shadow-2xs font-black' : 'text-slate-500'
-                        }`}
-                      >
-                        ☀️ Light
-                      </button>
-                      <button
-                        onClick={() => setReaderTheme('sepia')}
-                        className={`px-2.5 py-1 rounded-lg text-xs transition ${
-                          readerTheme === 'sepia' ? 'bg-[#f0e6d2] text-[#433422] shadow-2xs font-black' : 'text-slate-500'
-                        }`}
-                      >
-                        📜 Sepia
-                      </button>
-                      <button
-                        onClick={() => setReaderTheme('dark')}
-                        className={`px-2.5 py-1 rounded-lg text-xs transition ${
-                          readerTheme === 'dark' ? 'bg-slate-900 text-white shadow-2xs font-black' : 'text-slate-500'
-                        }`}
-                      >
-                        🌙 Dark
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* READING DISPLAY BODY */}
-                <div className="flex-1 my-4">
                   <div
                     dir={isRTL ? 'rtl' : 'ltr'}
-                    className={`${currentTheme.cardBg} p-5 sm:p-8 rounded-2xl border ${currentTheme.border} ${currentTheme.text} whitespace-pre-line min-h-[280px] ${
-                      fontSizeClasses[readerFontSize]
-                    } ${isRTL ? 'text-right font-faruma tracking-wide' : 'text-left font-serif'}`}
+                    className={`bg-slate-50 p-6 rounded-2xl border border-slate-200 text-slate-800 whitespace-pre-line min-h-[220px] ${
+                      isRTL
+                        ? 'text-right font-faruma text-base sm:text-lg leading-loose tracking-wide'
+                        : 'text-left font-serif text-xs sm:text-sm leading-relaxed'
+                    }`}
                   >
                     {Array.isArray(selectedBook.pages)
                       ? selectedBook.pages[bookPageIndex] || selectedBook.pages[0]
@@ -2482,29 +2345,26 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* FOOTER PAGINATION BAR */}
-                <div className={`pt-3 border-t ${currentTheme.border} flex items-center justify-between`}>
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <button
                       disabled={bookPageIndex === 0}
                       onClick={() => setBookPageIndex(p => Math.max(0, p - 1))}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1 ${
-                        bookPageIndex === 0 ? 'opacity-40 cursor-not-allowed bg-slate-200/50 text-slate-400' : 'bg-emerald-600 text-white shadow-xs hover:bg-emerald-700'
-                      }`}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 ${bookPageIndex === 0 ? 'bg-slate-100 text-slate-300' : 'bg-slate-100 text-slate-700'}`}
                     >
-                      <ChevronLeft className="w-4 h-4" /> <span>Prev Page</span>
+                      <ChevronLeft className="w-4 h-4" /> <span>Previous</span>
                     </button>
 
-                    <span className="text-xs font-bold px-2">
+                    <span className="text-xs font-bold text-slate-500">
                       Page {bookPageIndex + 1} of {Array.isArray(selectedBook.pages) ? selectedBook.pages.length : 1}
                     </span>
 
                     {Array.isArray(selectedBook.pages) && bookPageIndex < selectedBook.pages.length - 1 && (
                       <button
                         onClick={() => setBookPageIndex(p => p + 1)}
-                        className="px-3.5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center space-x-1 hover:bg-emerald-700"
+                        className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center space-x-1"
                       >
-                        <span>Next Page</span> <ChevronRight className="w-4 h-4" />
+                        <span>Next</span> <ChevronRight className="w-4 h-4" />
                       </button>
                     )}
                   </div>
@@ -2513,7 +2373,6 @@ export default function App() {
                     <button
                       onClick={() => {
                         setSelectedBook(null);
-                        setIsFullScreenReader(false);
                         setCoins(c => c + 15);
                         setXp(x => x + 30);
                         setBooksRead(b => b + 1);
@@ -2522,7 +2381,7 @@ export default function App() {
                         confetti({ particleCount: 90, spread: 70 });
                         alert("📖 Book Completed! Earned +15 EduCoins and +30 XP!");
                       }}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-5 py-2 rounded-xl text-xs shadow-md transition"
+                      className="bg-emerald-600 text-white font-black px-5 py-2 rounded-xl text-xs"
                     >
                       Finish & Claim
                     </button>
