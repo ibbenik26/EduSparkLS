@@ -1901,7 +1901,7 @@ export default function App() {
         )}
 
         <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-800">
-          EduSpark IQ © 2026 • School Student Portal & E-Library
+          EduSpark LS © 2026 • Lhohee School Student Portal & E-Library
         </footer>
       </div>
     );
