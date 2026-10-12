@@ -13,7 +13,7 @@ import {
   AlertTriangle, Printer
 } from 'lucide-react';
 
-// --- 13 Standardized Core Subjects ---
+// --- Standardized Core Subjects ---
 const ALL_SUBJECTS = [
   'Dhivehi',
   'Islam',
@@ -175,7 +175,7 @@ const generateSubjectAnalytics = (subject, attempts = []) => {
   };
 };
 
-// --- Printable Stage Certificate Modal Component ---
+// --- Printable Certificate Modal ---
 function PrintableCertificateModal({ student, subject, onClose }) {
   const handlePrint = () => {
     window.print();
@@ -517,10 +517,12 @@ const INITIAL_BOOKS = [
     title: 'ދިވެހިބަހުގެ ގަވާއިދު',
     subject: 'Dhivehi',
     author: 'އަލްއުސްތާޛު މުޙައްމަދު ޖަމީލު',
+    cover_url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80',
     summary: 'ދިވެހިބަހުގެ އަސާސީ ގަވާއިދުތަކާއި ތާނައަކުރުތަކުގެ ބޭނުންކުރާނެ ގޮތުގެ ތަފްޞީލު.',
+    extract: 'ފުރަތަމަ ބާބު: ތާނަ އަކުރު... ދިވެހިބަހުން ލިޔުމަށް ބޭނުންކުރަނީ ތާނައަކުރެވެ. ތާނައަކުރުގައި ހިމެނެނީ 24 އަކުރާއި 11 ޒަވިޔަން އަކުރެވެ.',
     pages: [
       "ފުރަތަމަ ބާބު: ތާނަ އަކުރު\n\nދިވެހިބަހުން ލިޔުމަށް ބޭނުންކުރަނީ ތާނައަކުރެވެ. ތާނައަކުރުގައި ހިމެނެނީ 24 އަކުރާއި 11 ޒަވިޔަން އަކުރެވެ.\n\nއަސާސީ އަކުރުތަކަކީ: ހަ، ށަ، ނު، ރަ، ބަ، ޅަ، ކަ، އަ، ވު، މު، ފަ، ދު، ތަ، ލަ، ގަ، ޏަ، ސަ، ޑަ، ޒަ، ޓަ، ޔަ، ޕަ، ޖަ، ޗަ އެވެ.",
-      "ދެވަނަ ބާބު: ފިލި\n\nތާނައިގައި 10 ފިލި ބޭނުންކުރެވެއެވެ. އެއީ:\n\n1. އަބަފިލި (ަ)\n2. އާބަފިލި (ާ)\n3. އިބަފިލި (ި)\n4. އީބަފިލި (ީ)\n5. އުބަފިލި (ު)\n6. އޫބަފިލި (ޫ)\n7. އެބަފިލި (ެ)\n8. އޭބަފިލި (ޭ)\n9. އޮބަފިލި (ޮ)\n10. އޯބަފިލި (ޯ)"
+      "ދެވަނަ ބާބު: ފިލި\n\nތާނައިގައި 10 ފިލި ބޭނުންކުރެވެއެވެ. އެއީ:\n1. އަބަފިލި (ަ)\n2. އާބަފިލި (ާ)\n3. އިބަފިލި (ި)\n4. އީބަފިލި (ީ)\n5. އުބަފިލި (ު)\n6. އޫބަފިލި (ޫ)\n7. އެބަފިލި (ެ)\n8. އޭބަފިލި (ޭ)\n9. އޮބަފިލި (ޮ)\n10. އޯބަފިލި (ޯ)"
     ]
   },
   {
@@ -528,7 +530,9 @@ const INITIAL_BOOKS = [
     title: 'އިސްލާމީ ތަރުބިޔަތު',
     subject: 'Islam',
     author: 'މިނިސްޓްރީ އޮފް އެޑިޔުކޭޝަން',
+    cover_url: 'https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=600&q=80',
     summary: 'އީމާންކަމުގެ އަސާސްތަކާއި އަޚްލާޤީ މިންގަނޑުތައް.',
+    extract: 'ފުރަތަމަ ފިލާވަޅު: އީމާންކަމުގެ އަރުކާންތައް... އީމާންކަމުގެ އަރުކާނަކީ 6 ކަމެކެވެ. 1. ﷲ އަށް އީމާންވުން...',
     pages: [
       "ފުރަތަމަ ފިލާވަޅު: އީމާންކަމުގެ އަރުކާންތައް\n\nއީމާންކަމުގެ އަރުކާނަކީ 6 ކަމެކެވެ.\n\n1. ﷲ އަށް އީމާންވުން\n2. މަލާއިކަތުންނަށް އީމާންވުން\n3. ފޮތްތަކަށް އީމާންވުން\n4. ރަސޫލުންނަށް އީމާންވުން\n5. އާޚިރަތް ދުވަހަށް އީމާންވުން\n6. ޤަދަރު މިންވަރަށް އީމާންވުން"
     ]
@@ -538,7 +542,9 @@ const INITIAL_BOOKS = [
     title: 'Physics in Everyday Life',
     subject: 'Physics',
     author: 'Dr. Marcus Vance',
+    cover_url: 'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?auto=format&fit=crop&w=600&q=80',
     summary: 'Explore forces, energy, gravity, thermodynamics, and electromagnetism.',
+    extract: 'CHAPTER 1: THE LAWS OF MOTION — Physics is the fundamental science that seeks to understand how the universe behaves...',
     pages: [
       "CHAPTER 1: THE LAWS OF MOTION\n\nPhysics is the fundamental science that seeks to understand how the universe behaves. Isaac Newton formulated three foundational principles known as Newton's Laws of Motion."
     ]
@@ -631,6 +637,7 @@ export default function App() {
   // --- Subject Analytics & Challenge Tracking ---
   const [completedChallenges, setCompletedChallenges] = useState([]);
   const [challengeAttempts, setChallengeAttempts] = useState([]);
+  const [completedBookIds, setCompletedBookIds] = useState([]);
 
   // --- Dynamic Collections ---
   const [quizzes, setQuizzes] = useState(INITIAL_QUIZZES);
@@ -639,10 +646,13 @@ export default function App() {
   const [badges, setBadges] = useState(INITIAL_BADGES);
   const [leaderboardUsers, setLeaderboardUsers] = useState([]);
 
-  // --- E-Library State ---
+  // --- E-Library State & Mobile Easy Reader Controls ---
   const [bookBatchIndex, setBookBatchIndex] = useState(0);
   const [selectedBook, setSelectedBook] = useState(null);
   const [bookPageIndex, setBookPageIndex] = useState(0);
+  const [readerFontSize, setReaderFontSize] = useState('base'); // 'sm', 'base', 'lg', 'xl', '2xl'
+  const [readerTheme, setReaderTheme] = useState('light');       // 'light', 'sepia', 'dark'
+  const [isFullScreenReader, setIsFullScreenReader] = useState(false);
 
   // --- Global Filter State ---
   const [selectedSubject, setSelectedSubject] = useState('All');
@@ -683,7 +693,7 @@ export default function App() {
   // --- Admin CRUD Center State ---
   const [adminTab, setAdminTab] = useState('books');
   const [editingBook, setEditingBook] = useState(null);
-  const [bookForm, setBookForm] = useState({ title: '', author: '', subject: 'Dhivehi', summary: '', pageText: '' });
+  const [bookForm, setBookForm] = useState({ title: '', author: '', subject: 'Dhivehi', cover_url: '', summary: '', extract: '', pageText: '' });
 
   const [editingPrize, setEditingPrize] = useState(null);
   const [prizeForm, setPrizeForm] = useState({ name: '', category: 'Privilege', cost: 200, icon: '🎁', desc: '' });
@@ -694,10 +704,11 @@ export default function App() {
   const [editingQuiz, setEditingQuiz] = useState(null);
   const [quizForm, setQuizForm] = useState({ title: '', subject: 'Maths', grade: 7, subject_code: '', exam_year: 2024, variant: 'Paper 12', is_past_paper: false });
 
-  // --- BROWSER HISTORY & BACK BUTTON NAVIGATION ---
+  // --- Browser History & Back Button Navigation ---
   const navigateToTab = (tabName) => {
     setActiveQuiz(null);
     setSelectedBook(null);
+    setIsFullScreenReader(false);
     setActiveTab(tabName);
     setSelectedSubject('All');
     window.history.pushState({ tab: tabName }, '', `#${tabName}`);
@@ -709,6 +720,7 @@ export default function App() {
     const handlePopState = (e) => {
       if (selectedBook) {
         setSelectedBook(null);
+        setIsFullScreenReader(false);
         return;
       }
       if (activeQuiz) {
@@ -821,6 +833,7 @@ export default function App() {
         setActivityLog(data.activity_log || []);
         setCompletedChallenges(data.completed_challenges || []);
         setChallengeAttempts(data.challenge_attempts || []);
+        setCompletedBookIds(data.completed_book_ids || []);
       }
     } catch (e) { console.warn("Profile fetch error:", e); }
     fetchLeaderboard();
@@ -845,6 +858,7 @@ export default function App() {
         activity_log: updates.activity_log ?? activityLog,
         completed_challenges: updates.completed_challenges ?? completedChallenges,
         challenge_attempts: updates.challenge_attempts ?? challengeAttempts,
+        completed_book_ids: updates.completed_book_ids ?? completedBookIds,
         updated_at: new Date().toISOString()
       });
       fetchLeaderboard();
@@ -892,7 +906,7 @@ export default function App() {
             id: data.user.id, full_name: authName, index_number: role === 'student' ? indexNumber : `STAFF-${Math.floor(100 + Math.random() * 900)}`,
             role: finalAssignedRole, grade: studentGrade, coins: 150, xp: 240, streak: 1, quizzes_completed: 0, books_read: 0, reading_minutes: 0,
             claimed_rewards: [], activity_log: [{ id: 'init_1', title: `Registered as ${finalAssignedRole.toUpperCase()}`, date: 'Just now' }],
-            completed_challenges: [], challenge_attempts: []
+            completed_challenges: [], challenge_attempts: [], completed_book_ids: []
           }]);
         }
         alert(`Registered as ${finalAssignedRole.toUpperCase()}! Logging in...`);
@@ -949,6 +963,7 @@ export default function App() {
   const openBookModal = (book) => {
     setSelectedBook(book);
     setBookPageIndex(0);
+    setIsFullScreenReader(false);
     window.history.pushState({ bookId: book.id }, '', `#book-${book.id}`);
   };
 
@@ -1080,7 +1095,16 @@ export default function App() {
       : [bookForm.pageText.trim()];
 
     if (editingBook) {
-      const updatedBook = { ...editingBook, title: bookForm.title, author: bookForm.author, subject: bookForm.subject, summary: bookForm.summary, pages: parsedPages };
+      const updatedBook = {
+        ...editingBook,
+        title: bookForm.title,
+        author: bookForm.author,
+        subject: bookForm.subject,
+        cover_url: bookForm.cover_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80',
+        summary: bookForm.summary,
+        extract: bookForm.extract || parsedPages[0].slice(0, 120) + '...',
+        pages: parsedPages
+      };
       try {
         await supabase.from('books').update(updatedBook).eq('id', editingBook.id);
         setBooks(books.map(b => b.id === editingBook.id ? updatedBook : b));
@@ -1088,19 +1112,36 @@ export default function App() {
         alert("✅ Book updated!");
       } catch (err) { alert("Update failed: " + err.message); }
     } else {
-      const newBook = { id: `book_${Date.now()}`, title: bookForm.title, author: bookForm.author, subject: bookForm.subject, summary: bookForm.summary || `A book on ${bookForm.subject} by ${bookForm.author}.`, pages: parsedPages };
+      const newBook = {
+        id: `book_${Date.now()}`,
+        title: bookForm.title,
+        author: bookForm.author,
+        subject: bookForm.subject,
+        cover_url: bookForm.cover_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80',
+        summary: bookForm.summary || `A book on ${bookForm.subject} by ${bookForm.author}.`,
+        extract: bookForm.extract || parsedPages[0].slice(0, 120) + '...',
+        pages: parsedPages
+      };
       try {
         await supabase.from('books').insert([newBook]);
         setBooks([newBook, ...books]);
         alert("✅ Book created!");
       } catch (err) { alert("Create failed: " + err.message); }
     }
-    setBookForm({ title: '', author: '', subject: 'Dhivehi', summary: '', pageText: '' });
+    setBookForm({ title: '', author: '', subject: 'Dhivehi', cover_url: '', summary: '', extract: '', pageText: '' });
   };
 
   const startEditBook = (book) => {
     setEditingBook(book);
-    setBookForm({ title: book.title, author: book.author, subject: book.subject, summary: book.summary || '', pageText: Array.isArray(book.pages) ? book.pages.join('\n\n---PAGE---\n\n') : book.pages });
+    setBookForm({
+      title: book.title,
+      author: book.author,
+      subject: book.subject,
+      cover_url: book.cover_url || '',
+      summary: book.summary || '',
+      extract: book.extract || '',
+      pageText: Array.isArray(book.pages) ? book.pages.join('\n\n---PAGE---\n\n') : book.pages
+    });
   };
 
   const handleDeleteBook = async (id) => {
@@ -1454,7 +1495,6 @@ export default function App() {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-xs print:hidden">
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center justify-between w-full sm:w-auto">
-            {/* CLICKABLE LOGO LINK TO HOME DASHBOARD */}
             <div 
               onClick={() => navigateToTab('dashboard')} 
               className="flex items-center space-x-3 cursor-pointer hover:opacity-85 transition"
@@ -1600,7 +1640,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Non-Overlapping Subject Scroll Bar */}
             <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none py-1 w-full">
               <button
                 onClick={() => setSelectedSubject('All')}
@@ -1669,7 +1708,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 2: ONLINE LIBRARY */}
+        {/* TAB 2: ONLINE LIBRARY WITH COVERS & EXTRACTS */}
         {activeTab === 'library' && !activeQuiz && (
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-emerald-800 via-teal-700 to-cyan-800 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -1678,15 +1717,17 @@ export default function App() {
                   <Languages className="w-6 h-6 text-emerald-300" />
                   <h2 className="text-2xl sm:text-3xl font-black">Interactive E-Library</h2>
                 </div>
-                <p className="text-xs text-emerald-100">Read books in English, Dhivehi (ދިވެހި), and Islam with native Right-To-Left Faruma Thaana formatting.</p>
+                <p className="text-xs text-emerald-100">
+                  Read books in English, Dhivehi (ދިވެހި), and Islam. Completing a book awards EduCoins and permanently updates your library profile.
+                </p>
               </div>
 
-              <button onClick={rotateBookBatch} className="bg-white text-emerald-800 font-bold px-4 py-2 rounded-xl text-xs shadow-md">
+              <button onClick={rotateBookBatch} className="bg-white text-emerald-800 font-bold px-4 py-2 rounded-xl text-xs shadow-md hover:bg-emerald-50 transition">
                 🔄 Load Next Set of Books
               </button>
             </div>
 
-            {/* Non-Overlapping Subject Scroll Bar */}
+            {/* Subject Filter Bar */}
             <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none py-1 w-full">
               <button
                 onClick={() => { setSelectedSubject('All'); setBookBatchIndex(0); }}
@@ -1705,33 +1746,67 @@ export default function App() {
               ))}
             </div>
 
-            {/* Book Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Book Grid Cards with Cover Images & Extracts */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {currentBookBatch.map((book) => {
                 const isRTL = isRTLSubject(book.subject);
+                const isCompleted = completedBookIds.includes(book.id);
+
                 return (
-                  <div key={book.id} className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs flex flex-col justify-between">
+                  <div key={book.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center justify-between">
-                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${isRTL ? 'bg-amber-100 text-amber-800' : 'bg-emerald-50 text-emerald-700'}`}>
-                          {book.subject} • {Array.isArray(book.pages) ? book.pages.length : 1} Pages
+                      {/* Cover Image Container */}
+                      <div className="relative h-48 w-full bg-slate-100 overflow-hidden">
+                        <img
+                          src={book.cover_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80'}
+                          alt={book.title}
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                        />
+                        
+                        {/* Subject Badge */}
+                        <span className={`absolute top-3 left-3 text-[11px] font-bold px-2.5 py-1 rounded-xl shadow-xs ${isRTL ? 'bg-amber-500 text-white font-faruma' : 'bg-emerald-600 text-white'}`}>
+                          {book.subject}
                         </span>
-                        {isRTL && <span className="text-xs">🇲🇻</span>}
+
+                        {/* Completed Badge */}
+                        {isCompleted && (
+                          <span className="absolute top-3 right-3 bg-emerald-500 text-white text-[10px] font-black px-2.5 py-1 rounded-xl flex items-center space-x-1 shadow-xs">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Read</span>
+                          </span>
+                        )}
                       </div>
 
-                      <div className={isRTL ? 'text-right font-faruma' : 'text-left'} dir={isRTL ? 'rtl' : 'ltr'}>
-                        <h4 className={`font-bold text-slate-900 mt-2 leading-snug ${isRTL ? 'text-lg' : 'text-base'}`}>{book.title}</h4>
-                        <p className="text-xs text-slate-400 mt-0.5">By {book.author}</p>
-                        <p className={`text-slate-600 mt-2 line-clamp-3 leading-relaxed ${isRTL ? 'text-sm' : 'text-xs'}`}>{book.summary}</p>
+                      {/* Card Body & Extract */}
+                      <div className="p-5 space-y-3">
+                        <div className={isRTL ? 'text-right font-faruma' : 'text-left'} dir={isRTL ? 'rtl' : 'ltr'}>
+                          <h4 className={`font-black text-slate-900 ${isRTL ? 'text-xl' : 'text-base'}`}>{book.title}</h4>
+                          <p className="text-xs text-slate-400 mt-0.5">By {book.author}</p>
+                          
+                          {/* Extract / Teaser Box */}
+                          <div className={`mt-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-600 italic ${isRTL ? 'text-xs leading-relaxed font-faruma' : 'text-xs leading-relaxed font-serif'}`}>
+                            "{book.extract || (Array.isArray(book.pages) ? book.pages[0].slice(0, 120) + '...' : book.pages.slice(0, 120) + '...')}"
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => openBookModal(book)}
-                      className={`mt-4 w-full text-white font-bold py-2.5 rounded-2xl text-xs transition ${isRTL ? 'bg-amber-600 hover:bg-amber-700 font-faruma text-sm' : 'bg-emerald-600 hover:bg-emerald-700'}`}
-                    >
-                      {isRTL ? 'ފޮތް ހުޅުވާ' : 'Open Interactive Book'}
-                    </button>
+                    {/* Read Action Button */}
+                    <div className="p-5 pt-0">
+                      <button
+                        onClick={() => openBookModal(book)}
+                        className={`w-full text-white font-bold py-2.5 rounded-2xl text-xs transition flex items-center justify-center space-x-1.5 ${
+                          isCompleted
+                            ? 'bg-slate-800 hover:bg-slate-900'
+                            : isRTL
+                            ? 'bg-amber-600 hover:bg-amber-700 font-faruma text-sm'
+                            : 'bg-emerald-600 hover:bg-emerald-700'
+                        }`}
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        <span>{isCompleted ? (isRTL ? 'އަލުން ކިޔާ' : 'Read Again') : (isRTL ? 'ފޮތް ކިޔަން ފަށާ' : 'Read Book')}</span>
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -1759,7 +1834,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Non-Overlapping Subject Scroll Bar */}
             <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none py-1 w-full">
               <button
                 onClick={() => setSelectedSubject('All')}
@@ -1872,7 +1946,6 @@ export default function App() {
         {/* TAB 5: MY PROFILE & 10-QUIZ SUBJECT ANALYTICS */}
         {activeTab === 'profile' && !activeQuiz && (
           <div className="space-y-6 max-w-5xl mx-auto">
-            {/* User Profile Header */}
             <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
               <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left">
                 <div className="w-20 h-20 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center text-white text-3xl font-black shadow-lg">
@@ -1894,7 +1967,7 @@ export default function App() {
                 </div>
                 <div className="bg-slate-50 p-3.5 rounded-2xl border text-center">
                   <span className="text-[11px] font-bold text-slate-400 block">Books Read</span>
-                  <span className="text-lg font-black text-emerald-600">{booksRead}</span>
+                  <span className="text-lg font-black text-emerald-600">{completedBookIds.length || booksRead}</span>
                 </div>
                 <div className="bg-slate-50 p-3.5 rounded-2xl border text-center">
                   <span className="text-[11px] font-bold text-slate-400 block">Reading Mins</span>
@@ -1911,7 +1984,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* 10-Quiz Subject Performance Analytics */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <BarChart2 className="w-6 h-6 text-indigo-600" />
@@ -1932,7 +2004,6 @@ export default function App() {
         {/* TAB 6: TEACHER STUDIO */}
         {activeTab === 'studio' && (role === 'teacher' || role === 'admin') && (
           <div className="max-w-5xl mx-auto space-y-6">
-            {/* LIVE TEACHER TRACKER & HARD-COPY CERTIFICATE GENERATOR */}
             <TeacherStudentTracker subjects={ALL_SUBJECTS} />
 
             <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
@@ -2077,6 +2148,10 @@ export default function App() {
                         ))}
                       </select>
                     </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <input type="url" value={bookForm.cover_url} onChange={(e) => setBookForm({ ...bookForm, cover_url: e.target.value })} placeholder="Cover Image URL (https://...)" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
+                      <input type="text" value={bookForm.extract} onChange={(e) => setBookForm({ ...bookForm, extract: e.target.value })} placeholder="Short Extract / Teaser" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
+                    </div>
                     <textarea rows={5} value={bookForm.pageText} onChange={(e) => setBookForm({ ...bookForm, pageText: e.target.value })} placeholder="Page text... Use ---PAGE--- for chapter splits." className="w-full bg-slate-50 border rounded-xl p-3 text-xs" required />
                     <div className="flex space-x-2">
                       <button type="submit" className="bg-emerald-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs">{editingBook ? 'Save Changes' : 'Publish Book'}</button>
@@ -2090,9 +2165,12 @@ export default function App() {
                   <div className="divide-y divide-slate-100">
                     {books.map((b) => (
                       <div key={b.id} className="py-3 flex items-center justify-between">
-                        <div>
-                          <h4 className="font-bold text-xs text-slate-900">{b.title}</h4>
-                          <span className="text-[11px] text-slate-400">{b.subject} • By {b.author}</span>
+                        <div className="flex items-center space-x-3">
+                          <img src={b.cover_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80'} alt="" className="w-10 h-10 object-cover rounded-lg" />
+                          <div>
+                            <h4 className="font-bold text-xs text-slate-900">{b.title}</h4>
+                            <span className="text-[11px] text-slate-400">{b.subject} • By {b.author}</span>
+                          </div>
                         </div>
                         <div className="flex space-x-2">
                           <button onClick={() => startEditBook(b)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl"><Edit3 className="w-4 h-4" /></button>
@@ -2313,31 +2391,156 @@ export default function App() {
           </div>
         )}
 
-        {/* Interactive E-Book Reader Modal */}
+        {/* MOBILE-OPTIMIZED EASY READING E-BOOK READER MODAL */}
         {selectedBook && (() => {
           const isRTL = isRTLSubject(selectedBook.subject);
+
+          const themeStyles = {
+            light: {
+              bg: 'bg-white',
+              cardBg: 'bg-slate-50 border-slate-200',
+              text: 'text-slate-900',
+              subText: 'text-slate-500',
+              border: 'border-slate-200'
+            },
+            sepia: {
+              bg: 'bg-[#f8f1e5]',
+              cardBg: 'bg-[#f0e6d2] border-[#e2d5bd]',
+              text: 'text-[#433422]',
+              subText: 'text-[#7c664d]',
+              border: 'border-[#e2d5bd]'
+            },
+            dark: {
+              bg: 'bg-slate-900',
+              cardBg: 'bg-slate-800 border-slate-700',
+              text: 'text-slate-100',
+              subText: 'text-slate-400',
+              border: 'border-slate-800'
+            }
+          };
+
+          const currentTheme = themeStyles[readerTheme] || themeStyles.light;
+
+          const fontSizeClasses = {
+            sm: isRTL ? 'text-sm leading-relaxed' : 'text-xs sm:text-sm leading-relaxed',
+            base: isRTL ? 'text-base sm:text-lg leading-loose' : 'text-sm sm:text-base leading-relaxed',
+            lg: isRTL ? 'text-lg sm:text-xl leading-loose' : 'text-base sm:text-lg leading-relaxed',
+            xl: isRTL ? 'text-xl sm:text-2xl leading-loose' : 'text-lg sm:text-xl leading-relaxed',
+            '2xl': isRTL ? 'text-2xl sm:text-3xl leading-loose' : 'text-xl sm:text-2xl leading-relaxed'
+          };
+
           return (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-              <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col justify-between">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div
+              className={`fixed inset-0 z-50 flex items-center justify-center ${
+                isFullScreenReader ? 'p-0' : 'p-2 sm:p-4 bg-slate-900/70 backdrop-blur-xs'
+              }`}
+            >
+              <div
+                className={`${currentTheme.bg} ${currentTheme.text} transition-colors duration-200 ${
+                  isFullScreenReader
+                    ? 'w-full h-full rounded-none p-4 sm:p-8 flex flex-col justify-between overflow-y-auto'
+                    : 'rounded-3xl max-w-3xl w-full p-5 sm:p-8 space-y-5 max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col justify-between border ' + currentTheme.border
+                }`}
+              >
+                {/* HEADER CONTROLS BAR */}
+                <div className={`border-b ${currentTheme.border} pb-3 space-y-3`}>
+                  <div className="flex items-center justify-between">
                     <div className={isRTL ? 'text-right font-faruma' : 'text-left'} dir={isRTL ? 'rtl' : 'ltr'}>
-                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md ${isRTL ? 'bg-amber-100 text-amber-800' : 'bg-emerald-50 text-emerald-700'}`}>
+                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md ${isRTL ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
                         {selectedBook.subject}
                       </span>
-                      <h3 className="text-lg font-black text-slate-900 mt-1">{selectedBook.title}</h3>
-                      <p className="text-xs text-slate-400">By {selectedBook.author}</p>
+                      <h3 className="text-base sm:text-xl font-black mt-1 leading-snug">{selectedBook.title}</h3>
+                      <p className={`text-xs ${currentTheme.subText}`}>By {selectedBook.author}</p>
                     </div>
-                    <button onClick={() => setSelectedBook(null)} className="text-slate-400 text-xl font-bold p-1">✕</button>
+
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setIsFullScreenReader(!isFullScreenReader)}
+                        className={`p-2 rounded-xl text-xs font-bold border transition ${
+                          isFullScreenReader ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
+                        }`}
+                        title={isFullScreenReader ? "Exit Full Screen" : "Read in Full Screen"}
+                      >
+                        {isFullScreenReader ? '📉 Exit Fullscreen' : '📺 Fullscreen'}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setSelectedBook(null);
+                          setIsFullScreenReader(false);
+                        }}
+                        className={`p-2 text-lg font-bold ${currentTheme.subText} hover:opacity-75`}
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
 
+                  {/* EASY READING TOOLBAR */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <div className="flex items-center space-x-1 bg-slate-100/80 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold border border-slate-200/60 dark:border-slate-700">
+                      <span className="text-[10px] text-slate-500 px-1 font-sans">Font Size:</span>
+                      <button
+                        disabled={readerFontSize === 'sm'}
+                        onClick={() => {
+                          const sizes = ['sm', 'base', 'lg', 'xl', '2xl'];
+                          const idx = sizes.indexOf(readerFontSize);
+                          if (idx > 0) setReaderFontSize(sizes[idx - 1]);
+                        }}
+                        className="px-2 py-1 rounded-lg bg-white dark:bg-slate-700 shadow-2xs font-mono font-black text-slate-800 dark:text-slate-100 disabled:opacity-40"
+                      >
+                        A-
+                      </button>
+                      <span className="text-xs font-mono px-1 font-bold uppercase">{readerFontSize}</span>
+                      <button
+                        disabled={readerFontSize === '2xl'}
+                        onClick={() => {
+                          const sizes = ['sm', 'base', 'lg', 'xl', '2xl'];
+                          const idx = sizes.indexOf(readerFontSize);
+                          if (idx < sizes.length - 1) setReaderFontSize(sizes[idx + 1]);
+                        }}
+                        className="px-2 py-1 rounded-lg bg-white dark:bg-slate-700 shadow-2xs font-mono font-black text-slate-800 dark:text-slate-100 disabled:opacity-40"
+                      >
+                        A+
+                      </button>
+                    </div>
+
+                    <div className="flex items-center space-x-1.5 bg-slate-100/80 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold border border-slate-200/60 dark:border-slate-700">
+                      <button
+                        onClick={() => setReaderTheme('light')}
+                        className={`px-2.5 py-1 rounded-lg text-xs transition ${
+                          readerTheme === 'light' ? 'bg-white text-slate-900 shadow-2xs font-black' : 'text-slate-500'
+                        }`}
+                      >
+                        ☀️ Light
+                      </button>
+                      <button
+                        onClick={() => setReaderTheme('sepia')}
+                        className={`px-2.5 py-1 rounded-lg text-xs transition ${
+                          readerTheme === 'sepia' ? 'bg-[#f0e6d2] text-[#433422] shadow-2xs font-black' : 'text-slate-500'
+                        }`}
+                      >
+                        📜 Sepia
+                      </button>
+                      <button
+                        onClick={() => setReaderTheme('dark')}
+                        className={`px-2.5 py-1 rounded-lg text-xs transition ${
+                          readerTheme === 'dark' ? 'bg-slate-900 text-white shadow-2xs font-black' : 'text-slate-500'
+                        }`}
+                      >
+                        🌙 Dark
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* READING DISPLAY BODY */}
+                <div className="flex-1 my-4">
                   <div
                     dir={isRTL ? 'rtl' : 'ltr'}
-                    className={`bg-slate-50 p-6 rounded-2xl border border-slate-200 text-slate-800 whitespace-pre-line min-h-[220px] ${
-                      isRTL
-                        ? 'text-right font-faruma text-base sm:text-lg leading-loose tracking-wide'
-                        : 'text-left font-serif text-xs sm:text-sm leading-relaxed'
-                    }`}
+                    className={`${currentTheme.cardBg} p-5 sm:p-8 rounded-2xl border ${currentTheme.border} ${currentTheme.text} whitespace-pre-line min-h-[280px] ${
+                      fontSizeClasses[readerFontSize]
+                    } ${isRTL ? 'text-right font-faruma tracking-wide' : 'text-left font-serif'}`}
                   >
                     {Array.isArray(selectedBook.pages)
                       ? selectedBook.pages[bookPageIndex] || selectedBook.pages[0]
@@ -2345,26 +2548,29 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                {/* FOOTER PAGINATION BAR */}
+                <div className={`pt-3 border-t ${currentTheme.border} flex items-center justify-between`}>
                   <div className="flex items-center space-x-2">
                     <button
                       disabled={bookPageIndex === 0}
                       onClick={() => setBookPageIndex(p => Math.max(0, p - 1))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 ${bookPageIndex === 0 ? 'bg-slate-100 text-slate-300' : 'bg-slate-100 text-slate-700'}`}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1 ${
+                        bookPageIndex === 0 ? 'opacity-40 cursor-not-allowed bg-slate-200/50 text-slate-400' : 'bg-emerald-600 text-white shadow-xs hover:bg-emerald-700'
+                      }`}
                     >
-                      <ChevronLeft className="w-4 h-4" /> <span>Previous</span>
+                      <ChevronLeft className="w-4 h-4" /> <span>Prev Page</span>
                     </button>
 
-                    <span className="text-xs font-bold text-slate-500">
+                    <span className="text-xs font-bold px-2">
                       Page {bookPageIndex + 1} of {Array.isArray(selectedBook.pages) ? selectedBook.pages.length : 1}
                     </span>
 
                     {Array.isArray(selectedBook.pages) && bookPageIndex < selectedBook.pages.length - 1 && (
                       <button
                         onClick={() => setBookPageIndex(p => p + 1)}
-                        className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center space-x-1"
+                        className="px-3.5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center space-x-1 hover:bg-emerald-700"
                       >
-                        <span>Next</span> <ChevronRight className="w-4 h-4" />
+                        <span>Next Page</span> <ChevronRight className="w-4 h-4" />
                       </button>
                     )}
                   </div>
@@ -2372,16 +2578,31 @@ export default function App() {
                   {(!Array.isArray(selectedBook.pages) || bookPageIndex === selectedBook.pages.length - 1) && (
                     <button
                       onClick={() => {
+                        const newCompleted = Array.from(new Set([...completedBookIds, selectedBook.id]));
+                        const newCoins = coins + 15;
+                        const newXp = xp + 30;
+                        const newBooksCount = booksRead + 1;
+
                         setSelectedBook(null);
-                        setCoins(c => c + 15);
-                        setXp(x => x + 30);
-                        setBooksRead(b => b + 1);
-                        rotateBookBatch();
+                        setIsFullScreenReader(false);
+                        setCompletedBookIds(newCompleted);
+                        setCoins(newCoins);
+                        setXp(newXp);
+                        setBooksRead(newBooksCount);
+
                         playSound('coin');
                         confetti({ particleCount: 90, spread: 70 });
-                        alert("📖 Book Completed! Earned +15 EduCoins and +30 XP!");
+
+                        syncProfileToSupabase({
+                          coins: newCoins,
+                          xp: newXp,
+                          books_read: newBooksCount,
+                          completed_book_ids: newCompleted
+                        });
+
+                        alert("📖 Book Completed! Earned +15 EduCoins and +30 XP! Library status updated.");
                       }}
-                      className="bg-emerald-600 text-white font-black px-5 py-2 rounded-xl text-xs"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-5 py-2 rounded-xl text-xs shadow-md transition"
                     >
                       Finish & Claim
                     </button>
@@ -2392,7 +2613,7 @@ export default function App() {
           );
         })()}
 
-        {/* Quiz Runner Overlay & Game Over Container */}
+        {/* Quiz Runner Overlay */}
         {activeQuiz && (
           <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-3xl p-5 sm:p-8 shadow-md">
             {gameOver ? (
