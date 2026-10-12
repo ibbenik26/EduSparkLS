@@ -1566,7 +1566,12 @@ export default function App() {
         </header>
 
         {/* HERO / LANDING PAGE VIEW */}
-        
+        {authView === 'landing' && (
+          <main className="max-w-6xl w-full mx-auto px-6 py-12 z-10 flex-1 flex flex-col justify-center items-center text-center space-y-10">
+            <div className="inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/30 px-4 py-1.5 rounded-full text-indigo-300 text-xs font-bold">
+              <Sparkles className="w-4 h-4 text-indigo-400" />
+              <span>Next-Generation School Portal for Students & Teachers</span>
+            </div>
 
             <div className="space-y-4 max-w-3xl">
               <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight">
@@ -1575,13 +1580,6 @@ export default function App() {
               <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
                 Access Cambridge O-Level past papers, grade practice vaults, bilingual Dhivehi and Islam library e-books, gamified reward systems, and real-time teacher topic analytics.
               </p>
-            </div>
-
-            {authView === 'landing' && (
-          <main className="max-w-6xl w-full mx-auto px-6 py-12 z-10 flex-1 flex flex-col justify-center items-center text-center space-y-10">
-            <div className="inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/30 px-4 py-1.5 rounded-full text-indigo-300 text-xs font-bold">
-              <Sparkles className="w-4 h-4 text-indigo-400" />
-              <span>Next-Generation School Portal for Students & Teachers</span>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
