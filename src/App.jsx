@@ -1540,12 +1540,10 @@ export default function App() {
         {/* Landing Navigation Header */}
         <header className="max-w-7xl w-full mx-auto px-6 py-6 flex items-center justify-between z-10">
           <div onClick={() => setAuthView('landing')} className="flex items-center space-x-3 cursor-pointer">
-            <div className="bg-gradient-to-tr from-indigo-500 to-purple-600 p-2.5 rounded-2xl shadow-lg">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
+            <img src="/lhohi-school-logo.svg" alt="Lhohee School logo" className="w-12 h-12 object-contain" />
             <div>
               <h1 className="text-xl font-black tracking-tight text-white">
-                EduSpark <span className="text-indigo-400">IQ</span>
+                EduSpark <span className="text-indigo-400">LS</span>
               </h1>
               <p className="text-[10px] text-slate-400 font-medium">Educational Portal & E-Library</p>
             </div>
@@ -1921,12 +1919,10 @@ export default function App() {
               onClick={() => navigateToTab('dashboard')} 
               className="flex items-center space-x-3 cursor-pointer hover:opacity-85 transition"
             >
-              <div className="bg-gradient-to-tr from-indigo-600 to-purple-600 p-2 rounded-xl shadow-md">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
+              <img src="/lhohi-school-logo.svg" alt="Lhohee School logo" className="w-10 h-10 object-contain" />
               <div>
                 <h1 className="text-lg font-black tracking-tight text-slate-900">
-                  EduSpark <span className="text-indigo-600">IQ</span>
+                  EduSpark <span className="text-indigo-600">LS</span>
                 </h1>
                 <p className="text-[11px] text-slate-500 font-medium">School Student Portal & E-Library</p>
               </div>
