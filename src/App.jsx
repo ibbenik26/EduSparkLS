@@ -10,7 +10,7 @@ import {
   Book, BookOpenCheck, Library, Plus, ShieldCheck, Tag,
   Play, Pause, RotateCcw, FileText, KeyRound, ShieldAlert,
   Settings, Edit3, Sliders, Layers, Save, X, TrendingUp, Languages,
-  AlertTriangle, Printer
+  AlertTriangle, Printer, Quote, ArrowRight, HelpCircle, UserCheck
 } from 'lucide-react';
 
 // --- Standardized Core Subjects ---
@@ -175,7 +175,7 @@ const generateSubjectAnalytics = (subject, attempts = []) => {
   };
 };
 
-// --- Printable Certificate Modal ---
+// --- Printable Stage Certificate Modal ---
 function PrintableCertificateModal({ student, subject, onClose }) {
   const handlePrint = () => {
     window.print();
@@ -611,6 +611,19 @@ const INITIAL_QUIZZES = [
   }
 ];
 
+// --- Daily Quiz of the Day Teaser Question ---
+const DAILY_QUIZ_QUESTION = {
+  subject: 'Physics & Dhivehi Special',
+  title: 'Quiz of the Day (2026 Academic Edition)',
+  question_text: 'An object is dropped from a height. Ignoring air resistance, what remains CONSTANT as it falls?',
+  option_a: 'Its kinetic energy',
+  option_b: 'Its speed',
+  option_c: 'Its gravitational acceleration (g)',
+  option_d: 'Its potential energy',
+  correct_option: 'C',
+  explanation: 'Near Earth\'s surface, acceleration due to gravity (g = 9.8 m/s²) remains constant while speed increases.'
+};
+
 export default function App() {
   // --- Auth State ---
   const [user, setUser] = useState(null);
@@ -621,6 +634,11 @@ export default function App() {
   const [indexNumber, setIndexNumber] = useState('');
   const [teacherPasscode, setTeacherPasscode] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  const [authTab, setAuthTab] = useState('signin'); // 'signin' or 'register'
+
+  // --- Landing Page Interactive "Quiz of the Day" State ---
+  const [landingAnswer, setLandingAnswer] = useState(null);
+  const [landingSubmitted, setLandingSubmitted] = useState(false);
 
   // --- Student Stats ---
   const [studentGrade, setStudentGrade] = useState(7);
@@ -650,8 +668,8 @@ export default function App() {
   const [bookBatchIndex, setBookBatchIndex] = useState(0);
   const [selectedBook, setSelectedBook] = useState(null);
   const [bookPageIndex, setBookPageIndex] = useState(0);
-  const [readerFontSize, setReaderFontSize] = useState('base'); // 'sm', 'base', 'lg', 'xl', '2xl'
-  const [readerTheme, setReaderTheme] = useState('light');       // 'light', 'sepia', 'dark'
+  const [readerFontSize, setReaderFontSize] = useState('base');
+  const [readerTheme, setReaderTheme] = useState('light');
   const [isFullScreenReader, setIsFullScreenReader] = useState(false);
 
   // --- Global Filter State ---
@@ -704,7 +722,7 @@ export default function App() {
   const [editingQuiz, setEditingQuiz] = useState(null);
   const [quizForm, setQuizForm] = useState({ title: '', subject: 'Maths', grade: 7, subject_code: '', exam_year: 2024, variant: 'Paper 12', is_past_paper: false });
 
-  // --- Browser History & Back Button Navigation ---
+  // --- Navigation & History Routing ---
   const navigateToTab = (tabName) => {
     setActiveQuiz(null);
     setSelectedBook(null);
@@ -1354,1365 +1372,218 @@ export default function App() {
 
   const currentRank = getStudentRank(xp);
 
-  // --- Login Screen ---
+  // =========================================================================
+  // 🌟 ELEGANT PUBLIC LANDING & LOGIN PAGE (WHEN !USER)
+  // =========================================================================
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-100 text-slate-800 flex items-center justify-center p-4 font-sans">
-        <div className="max-w-md w-full bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl shadow-xl space-y-6">
-          <div className="text-center space-y-2">
-            <div className="w-14 h-14 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
-              <Sparkles className="w-7 h-7 text-white" />
-            </div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">
-              EduSpark <span className="text-indigo-600">IQ</span>
-            </h1>
-            <p className="text-xs text-slate-500">School Student Portal & E-Library</p>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-bold text-slate-600 block mb-1.5">Account Role</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setRole('student')}
-                  className={`py-2.5 text-xs font-bold rounded-xl border transition ${role === 'student' ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-slate-50 border-slate-200 text-slate-600'}`}
-                >
-                  🎓 Student
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('teacher')}
-                  className={`py-2.5 text-xs font-bold rounded-xl border transition ${role === 'teacher' ? 'bg-purple-600 border-purple-600 text-white shadow-md' : 'bg-slate-50 border-slate-200 text-slate-600'}`}
-                >
-                  👨‍🏫 Teacher / Admin
-                </button>
-              </div>
-            </div>
-
-            {role === 'student' ? (
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1.5">Grade Level</label>
-                  <select
-                    value={studentGrade}
-                    onChange={(e) => setStudentGrade(parseInt(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-800"
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((g) => (
-                      <option key={g} value={g}>Grade {g}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1.5">Student Index #</label>
-                  <input
-                    type="text"
-                    value={indexNumber}
-                    onChange={(e) => setIndexNumber(e.target.value)}
-                    placeholder="STU-2026-104"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="bg-purple-50 border border-purple-200 p-3.5 rounded-2xl space-y-2">
-                <div className="flex items-center space-x-1.5 text-purple-900 font-bold text-xs">
-                  <ShieldAlert className="w-4 h-4 text-purple-600" />
-                  <span>Teacher Authorization Security</span>
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-purple-900 block mb-1">Admin Passcode</label>
-                  <input
-                    type="password"
-                    value={teacherPasscode}
-                    onChange={(e) => setTeacherPasscode(e.target.value)}
-                    placeholder="SCH-TEACHER-2026"
-                    className="w-full bg-white border border-purple-200 rounded-xl px-3 py-2 text-xs font-mono text-purple-900"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="text-xs font-bold text-slate-600 block mb-1.5">Full Name</label>
-              <input
-                type="text"
-                value={authName}
-                onChange={(e) => setAuthName(e.target.value)}
-                placeholder="Full Name"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-slate-600 block mb-1.5">Email Address</label>
-              <input
-                type="email"
-                value={authEmail}
-                onChange={(e) => setAuthEmail(e.target.value)}
-                placeholder="email@school.edu"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-slate-600 block mb-1.5">Password</label>
-              <input
-                type="password"
-                value={authPassword}
-                onChange={(e) => setAuthPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 pt-2">
-              <button
-                onClick={() => handleAuth(false)}
-                disabled={authLoading}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-xs font-bold transition shadow-md"
-              >
-                {authLoading ? 'Signing in...' : 'Sign In'}
-              </button>
-              <button
-                onClick={() => handleAuth(true)}
-                disabled={authLoading}
-                className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 py-2.5 rounded-xl text-xs font-bold transition"
-              >
-                Register
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // --- Main App Interface ---
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-xs print:hidden">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center justify-between w-full sm:w-auto">
-            <div 
-              onClick={() => navigateToTab('dashboard')} 
-              className="flex items-center space-x-3 cursor-pointer hover:opacity-85 transition"
-            >
-              <div className="bg-gradient-to-tr from-indigo-600 to-purple-600 p-2 rounded-xl shadow-md">
+      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+        {/* LANDING NAVIGATION BAR */}
+        <header className="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 via-purple-500 to-amber-400 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-black tracking-tight text-slate-900">
-                  EduSpark <span className="text-indigo-600">IQ</span>
-                </h1>
-                <p className="text-[11px] text-slate-500 font-medium">School Student Portal & E-Library</p>
+                <span className="text-xl font-black tracking-tight text-white">
+                  EduSpark <span className="text-indigo-400">IQ</span>
+                </span>
+                <span className="hidden sm:inline-block text-[10px] bg-indigo-950 text-indigo-300 font-bold px-2 py-0.5 rounded-md ml-2 border border-indigo-800/50">
+                  2026 Academic Edition
+                </span>
               </div>
             </div>
 
-            <button onClick={handleLogout} className="sm:hidden p-2 text-slate-400 hover:text-slate-700 rounded-lg">
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto">
-            <div className="flex items-center space-x-2.5 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-700">
-              <span className={`px-2 py-0.5 rounded-full text-[11px] font-black ${currentRank.bg} ${currentRank.text}`}>
-                {role === 'teacher' ? '👨‍🏫 Teacher' : currentRank.title}
-              </span>
-              <div className="flex items-center space-x-1 text-amber-600">
-                <Coins className="w-3.5 h-3.5" />
-                <span>{coins}</span>
-              </div>
-              <div className="flex items-center space-x-1 text-indigo-600">
-                <Zap className="w-3.5 h-3.5" />
-                <span>{xp} XP</span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => navigateToTab('profile')}
-              className="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-3 py-1.5 rounded-xl transition text-xs font-bold text-slate-700"
-            >
-              <User className="w-3.5 h-3.5 text-indigo-600" />
-              <span>{authName || 'Profile'}</span>
-            </button>
-
-            <button onClick={handleLogout} className="hidden sm:block p-2 text-slate-400 hover:text-slate-700 rounded-lg">
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Navigation Tabs Bar */}
-        <div className="max-w-7xl mx-auto px-4 flex items-center space-x-1 sm:space-x-2 overflow-x-auto text-xs border-t border-slate-100 py-1.5 scrollbar-none">
-          <button
-            onClick={() => navigateToTab('dashboard')}
-            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <BookOpen className="w-3.5 h-3.5 text-indigo-600" /> <span>Grade {studentGrade} Vault</span>
-          </button>
-
-          <button
-            onClick={() => navigateToTab('library')}
-            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'library' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <Library className="w-3.5 h-3.5 text-emerald-600" /> <span>Online Library & Dhivehi Section</span>
-          </button>
-
-          <button
-            onClick={() => navigateToTab('olevel')}
-            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'olevel' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <GraduationCap className="w-3.5 h-3.5 text-amber-600" /> <span>O-Level Arena</span>
-          </button>
-
-          <button
-            onClick={() => navigateToTab('shop')}
-            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'shop' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <ShoppingBag className="w-3.5 h-3.5 text-amber-600" /> <span>Reward Shop</span>
-          </button>
-
-          <button
-            onClick={() => navigateToTab('profile')}
-            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'profile' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <User className="w-3.5 h-3.5 text-purple-600" /> <span>My Profile & Stats</span>
-          </button>
-
-          <button
-            onClick={() => { navigateToTab('leaderboard'); fetchLeaderboard(); }}
-            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'leaderboard' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <Trophy className="w-3.5 h-3.5 text-yellow-600" /> <span>Leaderboard</span>
-          </button>
-
-          {(role === 'teacher' || role === 'admin') && (
-            <>
-              <button
-                onClick={() => navigateToTab('studio')}
-                className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'studio' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'text-slate-600 hover:bg-slate-100'}`}
+            <div className="flex items-center space-x-3">
+              <a href="#daily-quiz" className="hidden md:inline-block text-xs font-bold text-slate-300 hover:text-white transition">
+                ⚡ Quiz of the Day
+              </a>
+              <a href="#books-showcase" className="hidden md:inline-block text-xs font-bold text-slate-300 hover:text-white transition">
+                📚 Books of the Week
+              </a>
+              <a
+                href="#auth-section"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-md shadow-indigo-600/30 flex items-center space-x-1.5"
               >
-                <BrainCircuit className="w-3.5 h-3.5 text-purple-600" /> <span>Teacher Studio</span>
-              </button>
-
-              <button
-                onClick={() => navigateToTab('settings')}
-                className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'settings' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'text-slate-600 hover:bg-slate-100'}`}
-              >
-                <Settings className="w-3.5 h-3.5 text-rose-600" /> <span>⚙️ Admin Settings</span>
-              </button>
-            </>
-          )}
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
-
-        {/* TAB 1: PRACTICE VAULT */}
-        {activeTab === 'dashboard' && !activeQuiz && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-xl font-black text-slate-900">Grade {studentGrade} Practice Vault</h3>
-                <p className="text-xs text-slate-500">Unlimited practice mode open for all students. Challenge mode is 1-attempt per quiz.</p>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search quizzes..."
-                  className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800"
-                />
-                <select
-                  value={studentGrade}
-                  onChange={(e) => setStudentGrade(parseInt(e.target.value))}
-                  className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-indigo-600"
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => (
-                    <option key={g} value={g}>Grade {g}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none py-1 w-full">
-              <button
-                onClick={() => setSelectedSubject('All')}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${selectedSubject === 'All' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-              >
-                All Subjects
-              </button>
-              {ALL_SUBJECTS.map((subj) => (
-                <button
-                  key={subj}
-                  onClick={() => setSelectedSubject(subj)}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${subj === 'Dhivehi' || subj === 'Islam' ? 'font-faruma' : ''} ${selectedSubject === subj ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                >
-                  {subj === 'Dhivehi' ? '🇲🇻 ދިވެހި' : subj === 'Islam' ? '☪️ އިސްލާމް' : subj}
-                </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {gradePracticeQuizzes.map((quiz) => {
-                const isChallengeDone = completedChallenges.includes(quiz.id);
-                return (
-                  <div key={quiz.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col justify-between hover:border-indigo-300 transition shadow-xs">
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg font-bold">
-                          {quiz.subject}
-                        </span>
-                        {(role === 'teacher' || role === 'admin') && (
-                          <button onClick={() => deleteQuiz(quiz.id)} className="p-1 text-slate-400 hover:text-red-600">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                      <h3 className="text-base font-bold text-slate-900 mb-2">{quiz.title}</h3>
-                      <p className="text-xs text-slate-500 mb-4">{quiz.questions.length} Questions</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100">
-                      <button onClick={() => startQuiz(quiz, 'practice')} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-bold transition">
-                        Practice
-                      </button>
-                      
-                      <button
-                        onClick={() => startQuiz(quiz, 'challenge')}
-                        disabled={isChallengeDone}
-                        className={`w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1 ${isChallengeDone ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs'}`}
-                      >
-                        {isChallengeDone ? (
-                          <>
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>✓ Completed</span>
-                          </>
-                        ) : (
-                          <>
-                            <Flame className="w-3.5 h-3.5 text-amber-300" />
-                            <span>Challenge</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                <span>Student / Staff Login</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
             </div>
           </div>
-        )}
+        </header>
 
-        {/* TAB 2: ONLINE LIBRARY WITH COVERS & EXTRACTS */}
-        {activeTab === 'library' && !activeQuiz && (
-          <div className="space-y-6">
-            <div className="bg-gradient-to-r from-emerald-800 via-teal-700 to-cyan-800 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div className="space-y-2 max-w-xl">
-                <div className="flex items-center space-x-2">
-                  <Languages className="w-6 h-6 text-emerald-300" />
-                  <h2 className="text-2xl sm:text-3xl font-black">Interactive E-Library</h2>
+        {/* HERO SECTION WITH EMBEDDED LOGIN/REGISTER CARD */}
+        <section className="relative overflow-hidden py-12 lg:py-20 px-4 sm:px-6 max-w-7xl mx-auto w-full">
+          {/* Background Ambient Glows */}
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute bottom-10 right-1/4 w-96 h-96 bg-purple-600/15 rounded-full blur-3xl pointer-events-none"></div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* HERO LEFT TEXT & INFOGRAPHICS */}
+            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+              <div className="inline-flex items-center space-x-2 bg-indigo-950/80 border border-indigo-800/60 px-3.5 py-1.5 rounded-full text-xs font-bold text-indigo-300">
+                <Flame className="w-4 h-4 text-amber-400 animate-pulse" />
+                <span>Maldives Premier Student E-Portal & Dhivehi Library</span>
+              </div>
+
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
+                Empowering Students with <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-amber-300">Interactive Intelligence</span>
+              </h1>
+
+              <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto lg:mx-0">
+                Master Cambridge O-Levels and Grade 1–10 syllabus with timed quizzes, custom Faruma Thaana Dhivehi books, automatic 10-quiz performance diagnostics, and printable stage award certificates.
+              </p>
+
+              {/* LIVE PORTAL STATS INFOGRAPHIC BAR */}
+              <div className="grid grid-cols-3 gap-3 pt-4 max-w-lg mx-auto lg:mx-0">
+                <div className="bg-slate-800/60 border border-slate-700/60 p-3.5 rounded-2xl text-center backdrop-blur-xs">
+                  <span className="text-xl sm:text-2xl font-black text-indigo-400 block">1,200+</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">Active Students</span>
                 </div>
-                <p className="text-xs text-emerald-100">
-                  Read books in English, Dhivehi (ދިވެހި), and Islam. Completing a book awards EduCoins and permanently updates your library profile.
-                </p>
-              </div>
-
-              <button onClick={rotateBookBatch} className="bg-white text-emerald-800 font-bold px-4 py-2 rounded-xl text-xs shadow-md hover:bg-emerald-50 transition">
-                🔄 Load Next Set of Books
-              </button>
-            </div>
-
-            {/* Subject Filter Bar */}
-            <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none py-1 w-full">
-              <button
-                onClick={() => { setSelectedSubject('All'); setBookBatchIndex(0); }}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${selectedSubject === 'All' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-              >
-                All Subjects
-              </button>
-              {ALL_SUBJECTS.map((subj) => (
-                <button
-                  key={subj}
-                  onClick={() => { setSelectedSubject(subj); setBookBatchIndex(0); }}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${subj === 'Dhivehi' || subj === 'Islam' ? 'font-faruma' : ''} ${selectedSubject === subj ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                >
-                  {subj === 'Dhivehi' ? '🇲🇻 ދިވެހި' : subj === 'Islam' ? '☪️ އިސްލާމް' : subj}
-                </button>
-              ))}
-            </div>
-
-            {/* Book Grid Cards with Cover Images & Extracts */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {currentBookBatch.map((book) => {
-                const isRTL = isRTLSubject(book.subject);
-                const isCompleted = completedBookIds.includes(book.id);
-
-                return (
-                  <div key={book.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between">
-                    <div>
-                      {/* Cover Image Container */}
-                      <div className="relative h-48 w-full bg-slate-100 overflow-hidden">
-                        <img
-                          src={book.cover_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80'}
-                          alt={book.title}
-                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                        />
-                        
-                        {/* Subject Badge */}
-                        <span className={`absolute top-3 left-3 text-[11px] font-bold px-2.5 py-1 rounded-xl shadow-xs ${isRTL ? 'bg-amber-500 text-white font-faruma' : 'bg-emerald-600 text-white'}`}>
-                          {book.subject}
-                        </span>
-
-                        {/* Completed Badge */}
-                        {isCompleted && (
-                          <span className="absolute top-3 right-3 bg-emerald-500 text-white text-[10px] font-black px-2.5 py-1 rounded-xl flex items-center space-x-1 shadow-xs">
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>Read</span>
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Card Body & Extract */}
-                      <div className="p-5 space-y-3">
-                        <div className={isRTL ? 'text-right font-faruma' : 'text-left'} dir={isRTL ? 'rtl' : 'ltr'}>
-                          <h4 className={`font-black text-slate-900 ${isRTL ? 'text-xl' : 'text-base'}`}>{book.title}</h4>
-                          <p className="text-xs text-slate-400 mt-0.5">By {book.author}</p>
-                          
-                          {/* Extract / Teaser Box */}
-                          <div className={`mt-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-600 italic ${isRTL ? 'text-xs leading-relaxed font-faruma' : 'text-xs leading-relaxed font-serif'}`}>
-                            "{book.extract || (Array.isArray(book.pages) ? book.pages[0].slice(0, 120) + '...' : book.pages.slice(0, 120) + '...')}"
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Read Action Button */}
-                    <div className="p-5 pt-0">
-                      <button
-                        onClick={() => openBookModal(book)}
-                        className={`w-full text-white font-bold py-2.5 rounded-2xl text-xs transition flex items-center justify-center space-x-1.5 ${
-                          isCompleted
-                            ? 'bg-slate-800 hover:bg-slate-900'
-                            : isRTL
-                            ? 'bg-amber-600 hover:bg-amber-700 font-faruma text-sm'
-                            : 'bg-emerald-600 hover:bg-emerald-700'
-                        }`}
-                      >
-                        <BookOpen className="w-4 h-4" />
-                        <span>{isCompleted ? (isRTL ? 'އަލުން ކިޔާ' : 'Read Again') : (isRTL ? 'ފޮތް ކިޔަން ފަށާ' : 'Read Book')}</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: O-LEVEL ARENA */}
-        {activeTab === 'olevel' && !activeQuiz && (
-          <div className="space-y-6">
-            <div className="bg-gradient-to-r from-amber-900 via-yellow-900 to-amber-950 text-white rounded-3xl p-6 sm:p-8 shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-black">O-Level Past Paper Arena 🎓</h2>
-                <p className="text-xs text-amber-100">Official Cambridge O-Level exam papers across all subjects.</p>
-              </div>
-
-              <div className="flex items-center space-x-2 w-full sm:w-auto">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search past papers..."
-                  className="bg-white/10 text-white placeholder-amber-200 border border-amber-700/50 rounded-xl px-3 py-1.5 text-xs w-full sm:w-48 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                />
+                <div className="bg-slate-800/60 border border-slate-700/60 p-3.5 rounded-2xl text-center backdrop-blur-xs">
+                  <span className="text-xl sm:text-2xl font-black text-amber-400 block">500+</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">Exam Quizzes</span>
+                </div>
+                <div className="bg-slate-800/60 border border-slate-700/60 p-3.5 rounded-2xl text-center backdrop-blur-xs">
+                  <span className="text-xl sm:text-2xl font-black text-emerald-400 block">🇲🇻 Faruma</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">Native Dhivehi</span>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none py-1 w-full">
-              <button
-                onClick={() => setSelectedSubject('All')}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${selectedSubject === 'All' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-              >
-                All Subjects
-              </button>
-              {ALL_SUBJECTS.map((subj) => (
-                <button
-                  key={subj}
-                  onClick={() => setSelectedSubject(subj)}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${subj === 'Dhivehi' || subj === 'Islam' ? 'font-faruma' : ''} ${selectedSubject === subj ? 'bg-amber-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                >
-                  {subj === 'Dhivehi' ? '🇲🇻 ދިވެހި' : subj === 'Islam' ? '☪️ އިސްލާމް' : subj}
-                </button>
-              ))}
-            </div>
+            {/* HERO RIGHT: SLEEK AUTHENTICATION CARD */}
+            <div id="auth-section" className="lg:col-span-5 w-full">
+              <div className="bg-slate-800/90 border border-slate-700/80 p-6 sm:p-8 rounded-3xl shadow-2xl shadow-indigo-950/50 backdrop-blur-md space-y-6">
+                
+                {/* LOGIN / REGISTER TOGGLE TABS */}
+                <div className="flex bg-slate-900/80 p-1.5 rounded-2xl border border-slate-700/60">
+                  <button
+                    type="button"
+                    onClick={() => setAuthTab('signin')}
+                    className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${authTab === 'signin' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    🔑 Sign In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAuthTab('register')}
+                    className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${authTab === 'register' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    ✨ Register Account
+                  </button>
+                </div>
 
-            {oLevelQuizzes.length === 0 ? (
-              <div className="text-center py-12 bg-white border border-slate-200 rounded-3xl p-6 space-y-3">
-                <GraduationCap className="w-10 h-10 text-amber-600 mx-auto" />
-                <h3 className="text-base font-bold text-slate-800">No O-Level Past Papers Found for "{selectedSubject}"</h3>
-                <p className="text-xs text-slate-500">Teachers can add O-Level past papers for this subject in the Teacher Studio!</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {oLevelQuizzes.map((quiz) => {
-                  const isChallengeDone = completedChallenges.includes(quiz.id);
-                  return (
-                    <div key={quiz.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col justify-between shadow-xs hover:border-amber-300 transition">
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs bg-amber-50 text-amber-800 px-2.5 py-1 rounded-lg font-bold">
-                            {quiz.subject} {quiz.subject_code ? `(${quiz.subject_code})` : ''}
-                          </span>
-                          {(role === 'teacher' || role === 'admin') && (
-                            <button onClick={() => deleteQuiz(quiz.id)} className="p-1 text-slate-400 hover:text-red-600">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                        <h3 className="text-base font-bold text-slate-900">{quiz.title}</h3>
-                        <p className="text-xs text-slate-500 mt-1 mb-4">{quiz.questions.length} Exam Questions</p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100">
-                        <button onClick={() => startQuiz(quiz, 'practice')} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-bold transition">
-                          Practice Mode
-                        </button>
-                        
-                        <button
-                          onClick={() => startQuiz(quiz, 'challenge')}
-                          disabled={isChallengeDone}
-                          className={`w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1 ${isChallengeDone ? 'bg-amber-50 border border-amber-200 text-amber-800 cursor-not-allowed' : 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs'}`}
-                        >
-                          {isChallengeDone ? (
-                            <>
-                              <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
-                              <span>✓ Completed</span>
-                            </>
-                          ) : (
-                            <span>Timed Exam</span>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 4: REWARD SHOP */}
-        {activeTab === 'shop' && !activeQuiz && (
-          <div className="space-y-6">
-            <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-black">EduCoins Reward Shop</h2>
-                <p className="text-xs text-amber-100">Redeem rewards earned from quizzes!</p>
-              </div>
-              <div className="bg-white text-amber-600 px-4 py-2 rounded-2xl font-black text-sm">{coins} Coins</div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {shopItems.map((item) => (
-                <div key={item.id} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
-                  <div>
-                    <span className="text-3xl">{item.icon}</span>
-                    <h3 className="font-bold text-slate-900 text-base mt-2">{item.name}</h3>
-                    <p className="text-xs text-slate-500 mt-1">{item.desc}</p>
-                  </div>
-
-                  <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                    <span className="font-black text-amber-600 text-sm">{item.cost} Coins</span>
+                {/* ROLE PICKER */}
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-2">I am signing in as:</label>
+                  <div className="grid grid-cols-2 gap-2">
                     <button
-                      onClick={() => handleRedeemReward(item)}
-                      disabled={coins < item.cost}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold ${coins >= item.cost ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-400'}`}
+                      type="button"
+                      onClick={() => setRole('student')}
+                      className={`py-2.5 px-3 text-xs font-bold rounded-xl border transition flex items-center justify-center space-x-1.5 ${
+                        role === 'student' ? 'bg-indigo-600/30 border-indigo-500 text-indigo-300' : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:text-slate-200'
+                      }`}
                     >
-                      Redeem
+                      <GraduationCap className="w-4 h-4 text-indigo-400" />
+                      <span>🎓 Student</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRole('teacher')}
+                      className={`py-2.5 px-3 text-xs font-bold rounded-xl border transition flex items-center justify-center space-x-1.5 ${
+                        role === 'teacher' ? 'bg-purple-600/30 border-purple-500 text-purple-300' : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <ShieldCheck className="w-4 h-4 text-purple-400" />
+                      <span>👨‍🏫 Teacher / Admin</span>
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* TAB 5: MY PROFILE & 10-QUIZ SUBJECT ANALYTICS */}
-        {activeTab === 'profile' && !activeQuiz && (
-          <div className="space-y-6 max-w-5xl mx-auto">
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
-              <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left">
-                <div className="w-20 h-20 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center text-white text-3xl font-black shadow-lg">
-                  {authName ? authName.charAt(0).toUpperCase() : 'U'}
-                </div>
-
-                <div className="space-y-1.5 flex-1">
-                  <h2 className="text-2xl font-black text-slate-900">{authName || 'User'}</h2>
-                  <p className="text-xs text-slate-500 font-medium">
-                    ID: <span className="font-mono font-bold text-indigo-600">{indexNumber}</span> • Grade {studentGrade} • Role: <span className="uppercase font-bold text-purple-600">{role}</span>
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-4 border-t border-slate-100">
-                <div className="bg-slate-50 p-3.5 rounded-2xl border text-center">
-                  <span className="text-[11px] font-bold text-slate-400 block">Quizzes Done</span>
-                  <span className="text-lg font-black text-slate-900">{quizzesCompleted}</span>
-                </div>
-                <div className="bg-slate-50 p-3.5 rounded-2xl border text-center">
-                  <span className="text-[11px] font-bold text-slate-400 block">Books Read</span>
-                  <span className="text-lg font-black text-emerald-600">{completedBookIds.length || booksRead}</span>
-                </div>
-                <div className="bg-slate-50 p-3.5 rounded-2xl border text-center">
-                  <span className="text-[11px] font-bold text-slate-400 block">Reading Mins</span>
-                  <span className="text-lg font-black text-teal-600">{readingMinutes}m</span>
-                </div>
-                <div className="bg-slate-50 p-3.5 rounded-2xl border text-center">
-                  <span className="text-[11px] font-bold text-slate-400 block">EduCoins</span>
-                  <span className="text-lg font-black text-amber-600">{coins}</span>
-                </div>
-                <div className="bg-slate-50 p-3.5 rounded-2xl border text-center col-span-2 sm:col-span-1">
-                  <span className="text-[11px] font-bold text-slate-400 block">Daily Streak</span>
-                  <span className="text-lg font-black text-orange-600">{streak} Days 🔥</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <BarChart2 className="w-6 h-6 text-indigo-600" />
-                <h3 className="text-lg font-black text-slate-900">Subject Diagnostics & 10-Quiz Diagnostic Reports</h3>
-              </div>
-              
-              {ALL_SUBJECTS.map((subj) => (
-                <SubjectAnalyticsCard
-                  key={subj}
-                  subject={subj}
-                  attempts={challengeAttempts}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 6: TEACHER STUDIO */}
-        {activeTab === 'studio' && (role === 'teacher' || role === 'admin') && (
-          <div className="max-w-5xl mx-auto space-y-6">
-            <TeacherStudentTracker subjects={ALL_SUBJECTS} />
-
-            <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
-              <div className="flex items-center space-x-3">
-                <BrainCircuit className="w-7 h-7 text-purple-600" />
-                <div>
-                  <h2 className="text-xl font-black text-slate-900">Teacher Quiz Publishing Studio</h2>
-                  <p className="text-xs text-slate-500">Configure metadata and publish custom practice quizzes or O-Level past papers.</p>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-600 block mb-1">Select Target Arena</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setTargetArena('olevel')}
-                    className={`py-2.5 rounded-2xl text-xs font-bold border transition ${targetArena === 'olevel' ? 'bg-amber-500 border-amber-500 text-white' : 'bg-slate-50 border-slate-200 text-slate-600'}`}
-                  >
-                    🎓 O-Level Past Paper Arena
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTargetArena('vault')}
-                    className={`py-2.5 rounded-2xl text-xs font-bold border transition ${targetArena === 'vault' ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-600'}`}
-                  >
-                    📖 Grade Practice Vault
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                {targetArena === 'vault' ? (
-                  <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Grade Level</label>
-                    <select
-                      value={studioGrade}
-                      onChange={(e) => setStudioGrade(parseInt(e.target.value))}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800"
-                    >
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => (
-                        <option key={g} value={g}>Grade {g}</option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Subject Code</label>
-                    <input
-                      type="text"
-                      value={studioSubjectCode}
-                      onChange={(e) => setStudioSubjectCode(e.target.value)}
-                      placeholder="e.g. 0625"
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Subject Name</label>
-                  <select
-                    value={studioSubject}
-                    onChange={(e) => setStudioSubject(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800"
-                  >
-                    {ALL_SUBJECTS.map((subj) => (
-                      <option key={subj} value={subj}>{subj}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Exam Year</label>
-                  <input
-                    type="number"
-                    value={studioYear}
-                    onChange={(e) => setStudioYear(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Paper / Variant</label>
-                  <input
-                    type="text"
-                    value={studioVariant}
-                    onChange={(e) => setStudioVariant(e.target.value)}
-                    placeholder="Paper 12"
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <textarea rows={8} value={jsonInputText} onChange={(e) => setJsonInputText(e.target.value)} className="w-full bg-slate-50 border rounded-xl p-3 text-xs font-mono" />
-                <button onClick={handleJsonImport} className="w-full bg-purple-600 text-white font-bold py-3 rounded-2xl text-xs shadow-md hover:bg-purple-700 transition">
-                  Save JSON Quiz to Supabase
-                </button>
-              </div>
-
-              {studioMsg.text && (
-                <div className={`p-3 rounded-xl text-xs ${studioMsg.type === 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>
-                  {studioMsg.text}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 7: COMPLETE ADMIN CRUD CENTER */}
-        {activeTab === 'settings' && (role === 'teacher' || role === 'admin') && (
-          <div className="max-w-5xl mx-auto space-y-6">
-            <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
-              <div className="flex items-center space-x-3">
-                <Settings className="w-7 h-7 text-rose-600" />
-                <div>
-                  <h2 className="text-xl font-black text-slate-900">Admin CRUD Management Center</h2>
-                  <p className="text-xs text-slate-500">Full Create, Read, Edit, and Delete access for Books, Shop Prizes, Badges, and Quizzes.</p>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2 pt-2 border-t border-slate-100 overflow-x-auto scrollbar-none">
-                <button onClick={() => setAdminTab('books')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'books' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>📚 Manage Books ({books.length})</button>
-                <button onClick={() => setAdminTab('prizes')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'prizes' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'}`}>🎁 Shop Prizes ({shopItems.length})</button>
-                <button onClick={() => setAdminTab('badges')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'badges' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600'}`}>🏅 Badges ({badges.length})</button>
-                <button onClick={() => setAdminTab('quizzes')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'quizzes' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>📝 Quizzes ({quizzes.length})</button>
-              </div>
-            </div>
-
-            {/* 1. BOOKS CRUD */}
-            {adminTab === 'books' && (
-              <div className="space-y-6">
-                <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
-                  <h3 className="text-base font-black text-slate-900">{editingBook ? '✏️ Edit Book' : '➕ Create New Multi-Page Book'}</h3>
-                  <form onSubmit={handleSaveBook} className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <input type="text" value={bookForm.title} onChange={(e) => setBookForm({ ...bookForm, title: e.target.value })} placeholder="Book Title" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                      <input type="text" value={bookForm.author} onChange={(e) => setBookForm({ ...bookForm, author: e.target.value })} placeholder="Author Name" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                      <select value={bookForm.subject} onChange={(e) => setBookForm({ ...bookForm, subject: e.target.value })} className="bg-slate-50 border rounded-xl p-2.5 text-xs font-bold text-slate-800">
-                        {ALL_SUBJECTS.map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
+                {/* AUTH FORM INPUTS */}
+                <div className="space-y-3.5">
+                  {authTab === 'register' && (
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-300 block mb-1">Full Name</label>
+                      <input
+                        type="text"
+                        value={authName}
+                        onChange={(e) => setAuthName(e.target.value)}
+                        placeholder="e.g. Aminath Hassan"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                      />
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <input type="url" value={bookForm.cover_url} onChange={(e) => setBookForm({ ...bookForm, cover_url: e.target.value })} placeholder="Cover Image URL (https://...)" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                      <input type="text" value={bookForm.extract} onChange={(e) => setBookForm({ ...bookForm, extract: e.target.value })} placeholder="Short Extract / Teaser" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                    </div>
-                    <textarea rows={5} value={bookForm.pageText} onChange={(e) => setBookForm({ ...bookForm, pageText: e.target.value })} placeholder="Page text... Use ---PAGE--- for chapter splits." className="w-full bg-slate-50 border rounded-xl p-3 text-xs" required />
-                    <div className="flex space-x-2">
-                      <button type="submit" className="bg-emerald-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs">{editingBook ? 'Save Changes' : 'Publish Book'}</button>
-                      {editingBook && <button type="button" onClick={() => setEditingBook(null)} className="bg-slate-100 text-slate-600 font-bold px-4 py-2.5 rounded-xl text-xs">Cancel</button>}
-                    </div>
-                  </form>
-                </div>
+                  )}
 
-                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-3">
-                  <h3 className="text-base font-black text-slate-900">Book Catalog</h3>
-                  <div className="divide-y divide-slate-100">
-                    {books.map((b) => (
-                      <div key={b.id} className="py-3 flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <img src={b.cover_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80'} alt="" className="w-10 h-10 object-cover rounded-lg" />
-                          <div>
-                            <h4 className="font-bold text-xs text-slate-900">{b.title}</h4>
-                            <span className="text-[11px] text-slate-400">{b.subject} • By {b.author}</span>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button onClick={() => startEditBook(b)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl"><Edit3 className="w-4 h-4" /></button>
-                          <button onClick={() => handleDeleteBook(b.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 2. SHOP PRIZES CRUD */}
-            {adminTab === 'prizes' && (
-              <div className="space-y-6">
-                <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
-                  <h3 className="text-base font-black text-slate-900">{editingPrize ? '✏️ Edit Shop Prize' : '➕ Create New Shop Prize'}</h3>
-                  <form onSubmit={handleSavePrize} className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                      <input type="text" value={prizeForm.name} onChange={(e) => setPrizeForm({ ...prizeForm, name: e.target.value })} placeholder="Prize Name" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                      <input type="number" value={prizeForm.cost} onChange={(e) => setPrizeForm({ ...prizeForm, cost: e.target.value })} placeholder="EduCoins Cost" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                      <input type="text" value={prizeForm.icon} onChange={(e) => setPrizeForm({ ...prizeForm, icon: e.target.value })} placeholder="Emoji Icon (e.g. 🎟️)" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                      <select value={prizeForm.category} onChange={(e) => setPrizeForm({ ...prizeForm, category: e.target.value })} className="bg-slate-50 border rounded-xl p-2.5 text-xs font-bold text-slate-800">
-                        <option value="Privilege">Privilege</option>
-                        <option value="Digital Perk">Digital Perk</option>
-                        <option value="Booster">Booster</option>
-                      </select>
-                    </div>
-                    <input type="text" value={prizeForm.desc} onChange={(e) => setPrizeForm({ ...prizeForm, desc: e.target.value })} placeholder="Reward Description" className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                    <div className="flex space-x-2">
-                      <button type="submit" className="bg-amber-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs">{editingPrize ? 'Save Changes' : 'Create Prize'}</button>
-                      {editingPrize && <button type="button" onClick={() => setEditingPrize(null)} className="bg-slate-100 text-slate-600 font-bold px-4 py-2.5 rounded-xl text-xs">Cancel</button>}
-                    </div>
-                  </form>
-                </div>
-
-                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-3">
-                  <h3 className="text-base font-black text-slate-900">Shop Catalog</h3>
-                  <div className="divide-y divide-slate-100">
-                    {shopItems.map((item) => (
-                      <div key={item.id} className="py-3 flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-2xl">{item.icon}</span>
-                          <div>
-                            <h4 className="font-bold text-xs text-slate-900">{item.name}</h4>
-                            <span className="text-[11px] text-amber-600 font-bold">{item.cost} Coins • {item.category}</span>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button onClick={() => startEditPrize(item)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl"><Edit3 className="w-4 h-4" /></button>
-                          <button onClick={() => handleDeletePrize(item.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 3. BADGES CRUD */}
-            {adminTab === 'badges' && (
-              <div className="space-y-6">
-                <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
-                  <h3 className="text-base font-black text-slate-900">{editingBadge ? '✏️ Edit Badge' : '➕ Create New Badge'}</h3>
-                  <form onSubmit={handleSaveBadge} className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <input type="text" value={badgeForm.title} onChange={(e) => setBadgeForm({ ...badgeForm, title: e.target.value })} placeholder="Badge Title" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                      <input type="text" value={badgeForm.desc} onChange={(e) => setBadgeForm({ ...badgeForm, desc: e.target.value })} placeholder="Description" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                      <input type="text" value={badgeForm.icon} onChange={(e) => setBadgeForm({ ...badgeForm, icon: e.target.value })} placeholder="Icon (e.g. 🏅)" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  {role === 'student' ? (
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-500 block">Min Quizzes</label>
-                        <input type="number" value={badgeForm.minQuizzes} onChange={(e) => setBadgeForm({ ...badgeForm, minQuizzes: e.target.value })} className="w-full bg-white border rounded-lg p-1.5 text-xs" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 block">Min Books</label>
-                        <input type="number" value={badgeForm.minBooks} onChange={(e) => setBadgeForm({ ...badgeForm, minBooks: e.target.value })} className="w-full bg-white border rounded-lg p-1.5 text-xs" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 block">Min XP</label>
-                        <input type="number" value={badgeForm.minXp} onChange={(e) => setBadgeForm({ ...badgeForm, minXp: e.target.value })} className="w-full bg-white border rounded-lg p-1.5 text-xs" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 block">Min Coins</label>
-                        <input type="number" value={badgeForm.minCoins} onChange={(e) => setBadgeForm({ ...badgeForm, minCoins: e.target.value })} className="w-full bg-white border rounded-lg p-1.5 text-xs" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 block">Min Streak</label>
-                        <input type="number" value={badgeForm.minStreak} onChange={(e) => setBadgeForm({ ...badgeForm, minStreak: e.target.value })} className="w-full bg-white border rounded-lg p-1.5 text-xs" />
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-2">
-                      <button type="submit" className="bg-purple-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs">{editingBadge ? 'Save Changes' : 'Create Badge'}</button>
-                      {editingBadge && <button type="button" onClick={() => setEditingBadge(null)} className="bg-slate-100 text-slate-600 font-bold px-4 py-2.5 rounded-xl text-xs">Cancel</button>}
-                    </div>
-                  </form>
-                </div>
-
-                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-3">
-                  <h3 className="text-base font-black text-slate-900">Badges Collection</h3>
-                  <div className="divide-y divide-slate-100">
-                    {badges.map((b) => (
-                      <div key={b.id} className="py-3 flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-2xl">{b.icon || '🏅'}</span>
-                          <div>
-                            <h4 className="font-bold text-xs text-slate-900">{b.title}</h4>
-                            <span className="text-[11px] text-slate-500">{b.desc}</span>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button onClick={() => startEditBadge(b)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl"><Edit3 className="w-4 h-4" /></button>
-                          <button onClick={() => handleDeleteBadge(b.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 4. QUIZZES CRUD */}
-            {adminTab === 'quizzes' && (
-              <div className="space-y-6">
-                {editingQuiz && (
-                  <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
-                    <h3 className="text-base font-black text-slate-900">✏️ Edit Quiz Metadata</h3>
-                    <form onSubmit={handleSaveQuizMetadata} className="space-y-3">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <input type="text" value={quizForm.title} onChange={(e) => setQuizForm({ ...quizForm, title: e.target.value })} placeholder="Quiz Title" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                        <select value={quizForm.subject} onChange={(e) => setQuizForm({ ...quizForm, subject: e.target.value })} className="bg-slate-50 border rounded-xl p-2.5 text-xs font-bold text-slate-800">
-                          {ALL_SUBJECTS.map((s) => (
-                            <option key={s} value={s}>{s}</option>
-                          ))}
-                        </select>
-                        <select value={quizForm.grade} onChange={(e) => setQuizForm({ ...quizForm, grade: parseInt(e.target.value) })} className="bg-slate-50 border rounded-xl p-2.5 text-xs font-bold text-slate-800">
-                          {[1,2,3,4,5,6,7,8,9,10].map(g => (
+                        <label className="text-[11px] font-bold text-slate-300 block mb-1">Grade Level</label>
+                        <select
+                          value={studentGrade}
+                          onChange={(e) => setStudentGrade(parseInt(e.target.value))}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-100 focus:outline-none"
+                        >
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((g) => (
                             <option key={g} value={g}>Grade {g}</option>
                           ))}
                         </select>
                       </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <input type="text" value={quizForm.subject_code} onChange={(e) => setQuizForm({ ...quizForm, subject_code: e.target.value })} placeholder="Subject Code (e.g. 0625)" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                        <input type="number" value={quizForm.exam_year} onChange={(e) => setQuizForm({ ...quizForm, exam_year: e.target.value })} placeholder="Exam Year" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                        <input type="text" value={quizForm.variant} onChange={(e) => setQuizForm({ ...quizForm, variant: e.target.value })} placeholder="Variant (Paper 12)" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                      </div>
-
-                      <div className="flex items-center space-x-2 pt-1">
-                        <input type="checkbox" id="past_paper_chk" checked={quizForm.is_past_paper} onChange={(e) => setQuizForm({ ...quizForm, is_past_paper: e.target.checked })} />
-                        <label htmlFor="past_paper_chk" className="text-xs font-bold text-slate-700">Set as O-Level Past Paper</label>
-                      </div>
-
-                      <div className="flex space-x-2">
-                        <button type="submit" className="bg-indigo-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs">Save Quiz Changes</button>
-                        <button type="button" onClick={() => setEditingQuiz(null)} className="bg-slate-100 text-slate-600 font-bold px-4 py-2.5 rounded-xl text-xs">Cancel</button>
-                      </div>
-                    </form>
-                  </div>
-                )}
-
-                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-3">
-                  <h3 className="text-base font-black text-slate-900">Published Quizzes Database ({quizzes.length})</h3>
-                  <div className="divide-y divide-slate-100">
-                    {quizzes.map((q) => (
-                      <div key={q.id} className="py-3 flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700">{q.subject}</span>
-                            {q.is_past_paper && <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800">O-Level</span>}
-                          </div>
-                          <h4 className="font-bold text-xs text-slate-900 mt-1">{q.title}</h4>
-                          <span className="text-[11px] text-slate-400">{q.questions ? q.questions.length : 0} Questions • Grade {q.grade}</span>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button onClick={() => startEditQuiz(q)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl"><Edit3 className="w-4 h-4" /></button>
-                          <button onClick={() => deleteQuiz(q.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 8: LEADERBOARD */}
-        {activeTab === 'leaderboard' && (
-          <div className="max-w-xl mx-auto space-y-4">
-            <div className="bg-white border border-slate-200 p-6 rounded-3xl text-center space-y-2 shadow-xs">
-              <Trophy className="w-10 h-10 text-yellow-500 mx-auto" />
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900">School Leaderboard</h2>
-              <p className="text-xs text-slate-500">Live ranks calculated from combined quiz & reading XP!</p>
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-3xl divide-y divide-slate-100 shadow-xs">
-              {leaderboardUsers.length === 0 ? (
-                <div className="p-6 text-center text-xs text-slate-400">Loading student rankings from Supabase...</div>
-              ) : (
-                leaderboardUsers.map((s, idx) => (
-                  <div key={idx} className="p-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-base font-bold w-6">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`}</span>
                       <div>
-                        <h4 className="font-bold text-xs sm:text-sm text-slate-900">{s.full_name || 'Student'}</h4>
-                        <span className="text-[11px] text-slate-500 font-mono">ID: {s.index_number || 'N/A'} • Grade {s.grade}</span>
+                        <label className="text-[11px] font-bold text-slate-300 block mb-1">Index Number</label>
+                        <input
+                          type="text"
+                          value={indexNumber}
+                          onChange={(e) => setIndexNumber(e.target.value)}
+                          placeholder="STU-2026-104"
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+                        />
                       </div>
                     </div>
-                    <span className="text-xs sm:text-sm font-black text-indigo-600">{s.xp} XP</span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* MOBILE-OPTIMIZED EASY READING E-BOOK READER MODAL */}
-        {selectedBook && (() => {
-          const isRTL = isRTLSubject(selectedBook.subject);
-
-          const themeStyles = {
-            light: {
-              bg: 'bg-white',
-              cardBg: 'bg-slate-50 border-slate-200',
-              text: 'text-slate-900',
-              subText: 'text-slate-500',
-              border: 'border-slate-200'
-            },
-            sepia: {
-              bg: 'bg-[#f8f1e5]',
-              cardBg: 'bg-[#f0e6d2] border-[#e2d5bd]',
-              text: 'text-[#433422]',
-              subText: 'text-[#7c664d]',
-              border: 'border-[#e2d5bd]'
-            },
-            dark: {
-              bg: 'bg-slate-900',
-              cardBg: 'bg-slate-800 border-slate-700',
-              text: 'text-slate-100',
-              subText: 'text-slate-400',
-              border: 'border-slate-800'
-            }
-          };
-
-          const currentTheme = themeStyles[readerTheme] || themeStyles.light;
-
-          const fontSizeClasses = {
-            sm: isRTL ? 'text-sm leading-relaxed' : 'text-xs sm:text-sm leading-relaxed',
-            base: isRTL ? 'text-base sm:text-lg leading-loose' : 'text-sm sm:text-base leading-relaxed',
-            lg: isRTL ? 'text-lg sm:text-xl leading-loose' : 'text-base sm:text-lg leading-relaxed',
-            xl: isRTL ? 'text-xl sm:text-2xl leading-loose' : 'text-lg sm:text-xl leading-relaxed',
-            '2xl': isRTL ? 'text-2xl sm:text-3xl leading-loose' : 'text-xl sm:text-2xl leading-relaxed'
-          };
-
-          return (
-            <div
-              className={`fixed inset-0 z-50 flex items-center justify-center ${
-                isFullScreenReader ? 'p-0' : 'p-2 sm:p-4 bg-slate-900/70 backdrop-blur-xs'
-              }`}
-            >
-              <div
-                className={`${currentTheme.bg} ${currentTheme.text} transition-colors duration-200 ${
-                  isFullScreenReader
-                    ? 'w-full h-full rounded-none p-4 sm:p-8 flex flex-col justify-between overflow-y-auto'
-                    : 'rounded-3xl max-w-3xl w-full p-5 sm:p-8 space-y-5 max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col justify-between border ' + currentTheme.border
-                }`}
-              >
-                {/* HEADER CONTROLS BAR */}
-                <div className={`border-b ${currentTheme.border} pb-3 space-y-3`}>
-                  <div className="flex items-center justify-between">
-                    <div className={isRTL ? 'text-right font-faruma' : 'text-left'} dir={isRTL ? 'rtl' : 'ltr'}>
-                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md ${isRTL ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                        {selectedBook.subject}
-                      </span>
-                      <h3 className="text-base sm:text-xl font-black mt-1 leading-snug">{selectedBook.title}</h3>
-                      <p className={`text-xs ${currentTheme.subText}`}>By {selectedBook.author}</p>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setIsFullScreenReader(!isFullScreenReader)}
-                        className={`p-2 rounded-xl text-xs font-bold border transition ${
-                          isFullScreenReader ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
-                        }`}
-                        title={isFullScreenReader ? "Exit Full Screen" : "Read in Full Screen"}
-                      >
-                        {isFullScreenReader ? '📉 Exit Fullscreen' : '📺 Fullscreen'}
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setSelectedBook(null);
-                          setIsFullScreenReader(false);
-                        }}
-                        className={`p-2 text-lg font-bold ${currentTheme.subText} hover:opacity-75`}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* EASY READING TOOLBAR */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                    <div className="flex items-center space-x-1 bg-slate-100/80 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold border border-slate-200/60 dark:border-slate-700">
-                      <span className="text-[10px] text-slate-500 px-1 font-sans">Font Size:</span>
-                      <button
-                        disabled={readerFontSize === 'sm'}
-                        onClick={() => {
-                          const sizes = ['sm', 'base', 'lg', 'xl', '2xl'];
-                          const idx = sizes.indexOf(readerFontSize);
-                          if (idx > 0) setReaderFontSize(sizes[idx - 1]);
-                        }}
-                        className="px-2 py-1 rounded-lg bg-white dark:bg-slate-700 shadow-2xs font-mono font-black text-slate-800 dark:text-slate-100 disabled:opacity-40"
-                      >
-                        A-
-                      </button>
-                      <span className="text-xs font-mono px-1 font-bold uppercase">{readerFontSize}</span>
-                      <button
-                        disabled={readerFontSize === '2xl'}
-                        onClick={() => {
-                          const sizes = ['sm', 'base', 'lg', 'xl', '2xl'];
-                          const idx = sizes.indexOf(readerFontSize);
-                          if (idx < sizes.length - 1) setReaderFontSize(sizes[idx + 1]);
-                        }}
-                        className="px-2 py-1 rounded-lg bg-white dark:bg-slate-700 shadow-2xs font-mono font-black text-slate-800 dark:text-slate-100 disabled:opacity-40"
-                      >
-                        A+
-                      </button>
-                    </div>
-
-                    <div className="flex items-center space-x-1.5 bg-slate-100/80 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold border border-slate-200/60 dark:border-slate-700">
-                      <button
-                        onClick={() => setReaderTheme('light')}
-                        className={`px-2.5 py-1 rounded-lg text-xs transition ${
-                          readerTheme === 'light' ? 'bg-white text-slate-900 shadow-2xs font-black' : 'text-slate-500'
-                        }`}
-                      >
-                        ☀️ Light
-                      </button>
-                      <button
-                        onClick={() => setReaderTheme('sepia')}
-                        className={`px-2.5 py-1 rounded-lg text-xs transition ${
-                          readerTheme === 'sepia' ? 'bg-[#f0e6d2] text-[#433422] shadow-2xs font-black' : 'text-slate-500'
-                        }`}
-                      >
-                        📜 Sepia
-                      </button>
-                      <button
-                        onClick={() => setReaderTheme('dark')}
-                        className={`px-2.5 py-1 rounded-lg text-xs transition ${
-                          readerTheme === 'dark' ? 'bg-slate-900 text-white shadow-2xs font-black' : 'text-slate-500'
-                        }`}
-                      >
-                        🌙 Dark
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* READING DISPLAY BODY */}
-                <div className="flex-1 my-4">
-                  <div
-                    dir={isRTL ? 'rtl' : 'ltr'}
-                    className={`${currentTheme.cardBg} p-5 sm:p-8 rounded-2xl border ${currentTheme.border} ${currentTheme.text} whitespace-pre-line min-h-[280px] ${
-                      fontSizeClasses[readerFontSize]
-                    } ${isRTL ? 'text-right font-faruma tracking-wide' : 'text-left font-serif'}`}
-                  >
-                    {Array.isArray(selectedBook.pages)
-                      ? selectedBook.pages[bookPageIndex] || selectedBook.pages[0]
-                      : selectedBook.pages}
-                  </div>
-                </div>
-
-                {/* FOOTER PAGINATION BAR */}
-                <div className={`pt-3 border-t ${currentTheme.border} flex items-center justify-between`}>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      disabled={bookPageIndex === 0}
-                      onClick={() => setBookPageIndex(p => Math.max(0, p - 1))}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1 ${
-                        bookPageIndex === 0 ? 'opacity-40 cursor-not-allowed bg-slate-200/50 text-slate-400' : 'bg-emerald-600 text-white shadow-xs hover:bg-emerald-700'
-                      }`}
-                    >
-                      <ChevronLeft className="w-4 h-4" /> <span>Prev Page</span>
-                    </button>
-
-                    <span className="text-xs font-bold px-2">
-                      Page {bookPageIndex + 1} of {Array.isArray(selectedBook.pages) ? selectedBook.pages.length : 1}
-                    </span>
-
-                    {Array.isArray(selectedBook.pages) && bookPageIndex < selectedBook.pages.length - 1 && (
-                      <button
-                        onClick={() => setBookPageIndex(p => p + 1)}
-                        className="px-3.5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center space-x-1 hover:bg-emerald-700"
-                      >
-                        <span>Next Page</span> <ChevronRight className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  {(!Array.isArray(selectedBook.pages) || bookPageIndex === selectedBook.pages.length - 1) && (
-                    <button
-                      onClick={() => {
-                        const newCompleted = Array.from(new Set([...completedBookIds, selectedBook.id]));
-                        const newCoins = coins + 15;
-                        const newXp = xp + 30;
-                        const newBooksCount = booksRead + 1;
-
-                        setSelectedBook(null);
-                        setIsFullScreenReader(false);
-                        setCompletedBookIds(newCompleted);
-                        setCoins(newCoins);
-                        setXp(newXp);
-                        setBooksRead(newBooksCount);
-
-                        playSound('coin');
-                        confetti({ particleCount: 90, spread: 70 });
-
-                        syncProfileToSupabase({
-                          coins: newCoins,
-                          xp: newXp,
-                          books_read: newBooksCount,
-                          completed_book_ids: newCompleted
-                        });
-
-                        alert("📖 Book Completed! Earned +15 EduCoins and +30 XP! Library status updated.");
-                      }}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-5 py-2 rounded-xl text-xs shadow-md transition"
-                    >
-                      Finish & Claim
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Quiz Runner Overlay */}
-        {activeQuiz && (
-          <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-3xl p-5 sm:p-8 shadow-md">
-            {gameOver ? (
-              <div className="text-center py-6 space-y-5">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-3xl">
-                  💔
-                </div>
-                <h2 className="text-2xl font-black text-slate-900">Game Over!</h2>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  You ran out of hearts (lives) in Challenge Mode. Practice questions in Practice Mode to boost your confidence and try again!
-                </p>
-                <div className="flex justify-center space-x-3 pt-2">
-                  <button
-                    onClick={() => startQuiz(activeQuiz, 'practice')}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-6 py-2.5 rounded-xl text-xs transition"
-                  >
-                    Switch to Practice Mode
-                  </button>
-                  <button
-                    onClick={() => setActiveQuiz(null)}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs transition"
-                  >
-                    Back to Portal
-                  </button>
-                </div>
-              </div>
-            ) : !quizFinished ? (
-              <>
-                <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
-                  <span className="text-xs font-semibold text-slate-500">Question {currentQuestionIdx + 1} of {activeQuiz.questions.length}</span>
-                  {quizMode === 'challenge' && (
-                    <div className="flex items-center space-x-3">
-                      <div className="flex items-center space-x-1">
-                        {[...Array(hearts)].map((_, i) => (
-                          <Heart key={i} className="w-4 h-4 text-red-500 fill-red-500" />
-                        ))}
+                  ) : (
+                    <div className="bg-purple-950/60 border border-purple-800/60 p-3 rounded-2xl space-y-1.5">
+                      <div className="flex items-center space-x-1.5 text-purple-300 font-bold text-xs">
+                        <ShieldAlert className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Teacher Passcode Security</span>
                       </div>
-                      <div className="flex items-center space-x-1 text-amber-700 font-mono font-bold text-xs bg-amber-50 px-2.5 py-1 rounded-full">
-                        <Clock className="w-3.5 h-3.5" /> <span>{timer}s</span>
-                      </div>
+                      <input
+                        type="password"
+                        value={teacherPasscode}
+                        onChange={(e) => setTeacherPasscode(e.target.value)}
+                        placeholder="Passcode: SCH-TEACHER-2026"
+                        className="w-full bg-slate-900 border border-purple-800/80 rounded-xl px-3 py-2 text-xs font-mono text-purple-200 placeholder-slate-500 focus:outline-none"
+                      />
                     </div>
                   )}
-                </div>
 
-                <h2 className="text-base sm:text-lg font-extrabold text-slate-900 mb-6 leading-relaxed">
-                  {activeQuiz.questions[currentQuestionIdx].question_text}
-                </h2>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Email Address</label>
+                    <input
+                      type="email"
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      placeholder="student@school.edu.mv"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+                    />
+                  </div>
 
-                <div className="space-y-2.5 mb-6">
-                  {['A', 'B', 'C', 'D'].map((optKey) => {
-                    const optionText = activeQuiz.questions[currentQuestionIdx][`option_${optKey.toLowerCase()}`];
-                    const isSelected = selectedOption === optKey;
-                    const isCorrect = optKey === activeQuiz.questions[currentQuestionIdx].correct_option;
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Password</label>
+                    <input
+                      type="password"
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+                    />
+                  </div>
 
-                    let btnStyle = 'bg-slate-50 border-slate-200 text-slate-700';
-                    if (showExplanation) {
-                      if (isCorrect) btnStyle = 'bg-emerald-50 border-emerald-500 text-emerald-900 font-bold';
-                      else if (isSelected) btnStyle = 'bg-red-50 border-red-400 text-red-900';
-                    }
-
-                    return (
-                      <button
-                        key={optKey}
-                        onClick={() => handleAnswerSubmit(optKey)}
-                        disabled={showExplanation}
-                        className={`w-full p-3.5 rounded-2xl border text-left flex items-center justify-between transition ${btnStyle}`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <span className="w-6 h-6 rounded-lg bg-white border flex items-center justify-center font-bold text-xs text-indigo-700">
-                            {optKey}
-                          </span>
-                          <span className="text-xs sm:text-sm">{optionText}</span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {showExplanation && (
                   <button
-                    onClick={nextQuestion}
-                    className="w-full bg-indigo-600 text-white font-bold py-3 rounded-2xl transition flex items-center justify-center space-x-2"
+                    type="button"
+                    onClick={() => handleAuth(authTab === 'register')}
+                    disabled={authLoading}
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold py-3 rounded-xl text-xs transition shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 mt-2"
                   >
-                    <span>{currentQuestionIdx + 1 < activeQuiz.questions.length ? 'Next Question' : 'Finish Test'}</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                )}
-              </>
-            ) : (
-              <div className="text-center py-4 space-y-6">
-                <Trophy className="w-12 h-12 text-amber-600 mx-auto" />
-                <h2 className="text-2xl font-black text-slate-900">Quiz Complete!</h2>
-                <p className="text-xs text-slate-500">Score: {score} / {activeQuiz.questions.length} • +{score * 15} EduCoins</p>
-                <button onClick={() => setActiveQuiz(null)} className="bg-indigo-600 text-white font-bold px-8 py-3 rounded-2xl text-xs">Return to Portal</button>
-              </div>
-            )}
-          </div>
-        )}
-      </main>
-    </div>
-  );
-}
+                    <span>{authLoading ? 'Verifying Account...' : authTab === 'signin' ? 'Sign In to Student Portal' : 'Create Free Student Account'}</span>
+                    <ArrowRight className="w-4 h-4" />
