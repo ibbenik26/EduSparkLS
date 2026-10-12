@@ -23,10 +23,10 @@ const ALL_SUBJECTS = [
   'Chemistry',
   'Biology',
   'Economics',
-  'Business Studies',
+  'Business ',
   'Accounting',
-  'Computer Science',
-  'Social Studies',
+  'Computer ',
+  'S.Studies',
   'Science'
 ];
 
@@ -1587,3 +1587,4 @@ export default function App() {
                   >
                     <span>{authLoading ? 'Verifying Account...' : authTab === 'signin' ? 'Sign In to Student Portal' : 'Create Free Student Account'}</span>
                     <ArrowRight className="w-4 h-4" />
+                    </button>
