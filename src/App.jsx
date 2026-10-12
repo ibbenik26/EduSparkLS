@@ -93,7 +93,7 @@ const getStudentRank = (xp) => {
   return { title: 'Novice', level: 1, text: 'text-slate-600', bg: 'bg-slate-100' };
 };
 
-// --- 10-Quiz Subject Analytics & Feedback Engine ---
+// --- Topic-Level Subject Analytics Engine ---
 const generateSubjectAnalytics = (subject, attempts = []) => {
   const subjectAttempts = attempts.filter(a => (a.subject || '').toLowerCase() === subject.toLowerCase());
   const completedCount = subjectAttempts.length;
@@ -104,10 +104,23 @@ const generateSubjectAnalytics = (subject, attempts = []) => {
   let totalQuestions = 0;
   let totalTimeSeconds = 0;
 
+  const topicStats = {};
+
   subjectAttempts.forEach(a => {
     totalScore += a.score || 0;
     totalQuestions += a.total || 0;
     totalTimeSeconds += a.timeSpentSeconds || (a.total * 30);
+
+    if (a.questionDetails && Array.isArray(a.questionDetails)) {
+      a.questionDetails.forEach(qd => {
+        const topicName = qd.question_text || 'General Concept';
+        if (!topicStats[topicName]) {
+          topicStats[topicName] = { correct: 0, total: 0, explanation: qd.explanation };
+        }
+        topicStats[topicName].total += 1;
+        if (qd.is_correct) topicStats[topicName].correct += 1;
+      });
+    }
   });
 
   const accuracy = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
@@ -123,40 +136,17 @@ const generateSubjectAnalytics = (subject, attempts = []) => {
   else if (accuracy >= 50) { predictedGrade = 'C'; gradeColor = 'text-amber-600'; gradeBg = 'bg-amber-50 border-amber-200'; }
   else if (accuracy >= 40) { predictedGrade = 'D'; gradeColor = 'text-orange-600'; gradeBg = 'bg-orange-50 border-orange-200'; }
 
-  const strengths = [];
-  const weaknesses = [];
+  const strongTopics = [];
+  const weakTopics = [];
 
-  if (accuracy >= 75) {
-    strengths.push('High concept retention and option elimination accuracy.');
-    strengths.push('Consistent execution under timed challenge conditions.');
-  } else if (accuracy >= 55) {
-    strengths.push('Good grasp of basic syllabus concepts.');
-    weaknesses.push('Occasional errors on multi-step analytical questions.');
-  } else {
-    weaknesses.push('Core concept gaps requiring immediate revision of fundamental topics.');
-  }
-
-  if (avgSecondsPerQ < 20 && accuracy < 60) {
-    weaknesses.push('Rushing through questions (Avg <20s/Q). Read all choices carefully.');
-  } else if (avgSecondsPerQ > 50 && accuracy >= 70) {
-    strengths.push('Careful, methodical problem-solving style.');
-    weaknesses.push('Pacing is slow (Avg >50s/Q). Practice timed drills to improve speed.');
-  } else if (avgSecondsPerQ <= 40 && accuracy >= 80) {
-    strengths.push('Optimal balance of high accuracy and fast pace!');
-  }
-
-  let trendMessage = 'Steady consistency across test sessions.';
-  if (completedCount >= 4) {
-    const half = Math.floor(completedCount / 2);
-    const firstHalfAvg = subjectAttempts.slice(0, half).reduce((s, a) => s + (a.percentage || 0), 0) / half;
-    const secondHalfAvg = subjectAttempts.slice(half).reduce((s, a) => s + (a.percentage || 0), 0) / (completedCount - half);
-
-    if (secondHalfAvg - firstHalfAvg >= 8) {
-      trendMessage = `📈 Strong improvement! Score accuracy increased by +${Math.round(secondHalfAvg - firstHalfAvg)}% in recent tests.`;
-    } else if (firstHalfAvg - secondHalfAvg >= 8) {
-      trendMessage = `📉 Score dip noticed (-${Math.round(firstHalfAvg - secondHalfAvg)}%). Re-visit difficult topics in the E-Library.`;
+  Object.entries(topicStats).forEach(([topic, stat]) => {
+    const topicAcc = Math.round((stat.correct / stat.total) * 100);
+    if (topicAcc >= 70) {
+      strongTopics.push({ topic, accuracy: topicAcc });
+    } else {
+      weakTopics.push({ topic, accuracy: topicAcc, explanation: stat.explanation });
     }
-  }
+  });
 
   return {
     subject,
@@ -168,18 +158,15 @@ const generateSubjectAnalytics = (subject, attempts = []) => {
     predictedGrade,
     gradeColor,
     gradeBg,
-    strengths,
-    weaknesses,
-    trendMessage,
+    strongTopics,
+    weakTopics,
     isCompleteReportUnlocked: completedCount >= 10
   };
 };
 
 // --- Printable Certificate Modal ---
 function PrintableCertificateModal({ student, subject, onClose }) {
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => { window.print(); };
 
   return (
     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
@@ -201,8 +188,6 @@ function PrintableCertificateModal({ student, subject, onClose }) {
         <div className="p-8 sm:p-12 border-8 border-double border-amber-500 rounded-2xl bg-gradient-to-b from-amber-50/40 via-white to-amber-50/20 text-center space-y-6 relative print:p-8 print:border-4">
           <div className="absolute top-3 left-3 text-2xl text-amber-500">🎓</div>
           <div className="absolute top-3 right-3 text-2xl text-amber-500">🏆</div>
-          <div className="absolute bottom-3 left-3 text-2xl text-amber-500">⭐</div>
-          <div className="absolute bottom-3 right-3 text-2xl text-amber-500">📜</div>
 
           <div className="space-y-1">
             <p className="text-xs font-black tracking-widest uppercase text-amber-800">EduSpark IQ Academic Excellence Award</p>
@@ -259,102 +244,86 @@ function PrintableCertificateModal({ student, subject, onClose }) {
   );
 }
 
-// --- Teacher Quiz Weak Area & Misconception Inspector ---
-function ClassQuizDiagnosticModal({ quiz, studentProfiles, onClose }) {
-  if (!quiz) return null;
+// --- Teacher Student Topic Diagnostics Inspector Modal ---
+function StudentTopicDiagnosticModal({ student, subjects = ALL_SUBJECTS, onClose }) {
+  if (!student) return null;
 
-  const allAttempts = studentProfiles.flatMap(s => s.challenge_attempts || []).filter(a => a.quizId === quiz.id);
-
-  const questionStats = quiz.questions.map((q, idx) => {
-    const qKey = q.id || idx;
-    let correctCount = 0;
-    let wrongCount = 0;
-    const choiceDistributions = { A: 0, B: 0, C: 0, D: 0 };
-
-    allAttempts.forEach(attempt => {
-      const qDetail = (attempt.questionDetails || []).find(qd => qd.id === qKey || qd.question_text === q.question_text);
-      if (qDetail) {
-        if (qDetail.is_correct) correctCount++;
-        else wrongCount++;
-
-        if (qDetail.user_option && choiceDistributions[qDetail.user_option] !== undefined) {
-          choiceDistributions[qDetail.user_option]++;
-        }
-      }
-    });
-
-    const totalAttempts = correctCount + wrongCount;
-    const failureRate = totalAttempts > 0 ? Math.round((wrongCount / totalAttempts) * 100) : 0;
-
-    return {
-      question_text: q.question_text,
-      correct_option: q.correct_option,
-      explanation: q.explanation,
-      totalAttempts,
-      correctCount,
-      wrongCount,
-      failureRate,
-      choiceDistributions
-    };
-  }).sort((a, b) => b.failureRate - a.failureRate);
+  const attempts = student.challenge_attempts || [];
 
   return (
     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-4xl w-full p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-3xl w-full p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b pb-4">
           <div>
-            <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Class Weak Areas & Misconception Inspector</span>
-            <h2 className="text-xl font-black text-slate-900 mt-0.5">{quiz.title}</h2>
-            <p className="text-xs text-slate-500">Aggregated performance across {allAttempts.length} student submission logs.</p>
+            <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Teacher Diagnostic Inspector</span>
+            <h2 className="text-xl font-black text-slate-900 mt-0.5">{student.full_name} — Topic Weakness & Strength Breakdown</h2>
+            <p className="text-xs text-slate-500 font-mono">Index No: {student.index_number || 'N/A'} • Grade {student.grade}</p>
           </div>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
         </div>
 
-        {allAttempts.length === 0 ? (
+        {attempts.length === 0 ? (
           <div className="text-center py-12 text-slate-400 text-xs">
-            No student attempt data recorded for this quiz yet.
+            This student has not submitted any quiz challenges yet.
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start space-x-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-              <div className="text-xs text-amber-900 space-y-1">
-                <p className="font-bold">Teaching Action Plan:</p>
-                <p>Questions below are ordered from highest student failure rate to lowest. Focus classroom revision on questions with failure rates over 40%.</p>
-              </div>
-            </div>
+            {subjects.map(subj => {
+              const stats = generateSubjectAnalytics(subj, attempts);
+              if (!stats) return null;
 
-            <div className="space-y-3">
-              {questionStats.map((qs, i) => (
-                <div key={i} className={`p-4 rounded-2xl border ${qs.failureRate >= 40 ? 'bg-rose-50/40 border-rose-200' : 'bg-slate-50 border-slate-200'}`}>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center space-x-2">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-black ${qs.failureRate >= 40 ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                        {qs.failureRate}% Student Error Rate
-                      </span>
-                      <span className="text-xs text-slate-500 font-medium">({qs.wrongCount} wrong / {qs.totalAttempts} answers)</span>
+              return (
+                <div key={subj} className="border border-slate-200 rounded-2xl p-4 bg-slate-50 space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                    <h3 className="font-bold text-sm text-slate-900">{subj} Topic Report</h3>
+                    <span className={`px-3 py-1 rounded-full text-xs font-black ${stats.gradeBg} ${stats.gradeColor}`}>
+                      Grade: {stats.predictedGrade} ({stats.accuracy}%)
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Strong Topics */}
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-1">
+                      <h4 className="text-xs font-black text-emerald-800">👍 Topics Mastered ({stats.strongTopics.length})</h4>
+                      {stats.strongTopics.length === 0 ? (
+                        <p className="text-[11px] text-emerald-700 italic">No strong topics recorded yet.</p>
+                      ) : (
+                        <ul className="text-xs text-emerald-900 space-y-1">
+                          {stats.strongTopics.map((st, i) => (
+                            <li key={i} className="flex justify-between items-center bg-white/70 px-2 py-1 rounded-lg">
+                              <span className="font-medium truncate max-w-[180px]">{st.topic}</span>
+                              <span className="font-bold text-emerald-700">{st.accuracy}%</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
-                    <span className="text-xs font-bold font-mono text-indigo-700">Correct Choice: Option {qs.correct_option}</span>
+
+                    {/* Weak Topics */}
+                    <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 space-y-1">
+                      <h4 className="text-xs font-black text-rose-800">🎯 Topics Needing Revision ({stats.weakTopics.length})</h4>
+                      {stats.weakTopics.length === 0 ? (
+                        <p className="text-[11px] text-rose-700 italic">No weak topics! Excellent performance.</p>
+                      ) : (
+                        <ul className="text-xs text-rose-900 space-y-1">
+                          {stats.weakTopics.map((wt, i) => (
+                            <li key={i} className="bg-white/70 p-2 rounded-lg space-y-0.5">
+                              <div className="flex justify-between font-bold">
+                                <span className="truncate max-w-[180px]">{wt.topic}</span>
+                                <span className="text-rose-700">{wt.accuracy}%</span>
+                              </div>
+                              {wt.explanation && (
+                                <p className="text-[10px] text-slate-600 italic">Reason: {wt.explanation}</p>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   </div>
-
-                  <h4 className="text-sm font-bold text-slate-900 mb-2">{qs.question_text}</h4>
-
-                  <div className="grid grid-cols-4 gap-2 my-3 text-[11px] font-bold">
-                    {['A', 'B', 'C', 'D'].map(opt => (
-                      <div key={opt} className={`p-2 rounded-xl text-center border ${opt === qs.correct_option ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-white border-slate-200 text-slate-600'}`}>
-                        <span>Option {opt}: {qs.choiceDistributions[opt] || 0} votes</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {qs.explanation && (
-                    <p className="text-xs text-slate-600 bg-white/80 p-2.5 rounded-xl border border-slate-200/60 mt-2">
-                      <span className="font-bold text-slate-800">Concept Explanation:</span> {qs.explanation}
-                    </p>
-                  )}
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -363,13 +332,13 @@ function ClassQuizDiagnosticModal({ quiz, studentProfiles, onClose }) {
 }
 
 // --- Live Teacher Student Quiz Tracker Component ---
-function TeacherStudentTracker({ subjects = ALL_SUBJECTS, quizzes = [] }) {
+function TeacherStudentTracker({ subjects = ALL_SUBJECTS }) {
   const [selectedSubj, setSelectedSubj] = useState('Physics');
   const [selectedGradeFilter, setSelectedGradeFilter] = useState('All');
   const [studentProfiles, setStudentProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [certStudent, setCertStudent] = useState(null);
-  const [selectedQuizDiagnostic, setSelectedQuizDiagnostic] = useState(null);
+  const [inspectStudent, setInspectStudent] = useState(null);
 
   useEffect(() => {
     fetchStudentQuizStatus();
@@ -424,14 +393,12 @@ function TeacherStudentTracker({ subjects = ALL_SUBJECTS, quizzes = [] }) {
   .filter(s => selectedGradeFilter === 'All' || s.grade === parseInt(selectedGradeFilter))
   .sort((a, b) => b.subjectAccuracy - a.subjectAccuracy || b.subjectQuizzesDone - a.subjectQuizzesDone);
 
-  const subjectQuizzes = quizzes.filter(q => (q.subject || '').toLowerCase() === selectedSubj.toLowerCase());
-
   return (
     <div className="space-y-5 bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div>
-          <h3 className="text-lg font-black text-slate-900">Student Quiz Tracker & Award Panel</h3>
-          <p className="text-xs text-slate-500">Monitor quiz participation and print certificates for top performers.</p>
+          <h3 className="text-lg font-black text-slate-900">Class Topic Diagnostics & Award Panel</h3>
+          <p className="text-xs text-slate-500">Teachers can inspect individual student weak topics and issue certificates.</p>
         </div>
 
         <div className="flex items-center space-x-2">
@@ -460,24 +427,6 @@ function TeacherStudentTracker({ subjects = ALL_SUBJECTS, quizzes = [] }) {
         </div>
       </div>
 
-      {subjectQuizzes.length > 0 && (
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
-          <span className="text-[11px] font-bold text-slate-500 block uppercase">Class Misconception Inspector</span>
-          <div className="flex flex-wrap gap-2">
-            {subjectQuizzes.map(q => (
-              <button
-                key={q.id}
-                onClick={() => setSelectedQuizDiagnostic(q)}
-                className="bg-white border border-slate-200 hover:border-indigo-400 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-800 flex items-center space-x-1.5 transition shadow-2xs"
-              >
-                <BarChart2 className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Inspect: {q.title}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {loading ? (
         <div className="text-center py-8 text-xs text-slate-400">Loading student records...</div>
       ) : processedStudents.length === 0 ? (
@@ -494,7 +443,7 @@ function TeacherStudentTracker({ subjects = ALL_SUBJECTS, quizzes = [] }) {
                 <th className="py-2.5 px-3 text-center">Quizzes Done</th>
                 <th className="py-2.5 px-3 text-center">Accuracy</th>
                 <th className="py-2.5 px-3 text-center">Predicted Grade</th>
-                <th className="py-2.5 px-3 text-right">Certificate Action</th>
+                <th className="py-2.5 px-3 text-right">Teacher Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -513,18 +462,26 @@ function TeacherStudentTracker({ subjects = ALL_SUBJECTS, quizzes = [] }) {
                       {s.subjectGrade}
                     </span>
                   </td>
-                  <td className="py-3 px-3 text-right">
+                  <td className="py-3 px-3 text-right flex items-center justify-end space-x-1.5">
+                    <button
+                      onClick={() => setInspectStudent(s)}
+                      className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition flex items-center space-x-1"
+                    >
+                      <BarChart2 className="w-3.5 h-3.5" />
+                      <span>Inspect Weak Topics</span>
+                    </button>
+
                     <button
                       onClick={() => setCertStudent(s)}
                       disabled={s.subjectQuizzesDone === 0}
-                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition flex items-center space-x-1 ml-auto ${
+                      className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition flex items-center space-x-1 ${
                         s.subjectQuizzesDone > 0
                           ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-xs'
                           : 'bg-slate-100 text-slate-300 cursor-not-allowed'
                       }`}
                     >
                       <Award className="w-3.5 h-3.5" />
-                      <span>Issue Certificate</span>
+                      <span>Certificate</span>
                     </button>
                   </td>
                 </tr>
@@ -542,11 +499,11 @@ function TeacherStudentTracker({ subjects = ALL_SUBJECTS, quizzes = [] }) {
         />
       )}
 
-      {selectedQuizDiagnostic && (
-        <ClassQuizDiagnosticModal
-          quiz={selectedQuizDiagnostic}
-          studentProfiles={studentProfiles}
-          onClose={() => setSelectedQuizDiagnostic(null)}
+      {inspectStudent && (
+        <StudentTopicDiagnosticModal
+          student={inspectStudent}
+          subjects={subjects}
+          onClose={() => setInspectStudent(null)}
         />
       )}
     </div>
@@ -563,7 +520,7 @@ function SubjectAnalyticsCard({ subject, attempts }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-3">
         <div>
           <div className="flex items-center space-x-2">
-            <h3 className="text-lg font-black text-slate-900">{stats.subject} Performance Summary</h3>
+            <h3 className="text-lg font-black text-slate-900">{stats.subject} Topic Performance Summary</h3>
             {stats.isCompleteReportUnlocked ? (
               <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">
                 ✓ 10-Quiz Diagnostic Complete
@@ -598,38 +555,48 @@ function SubjectAnalyticsCard({ subject, attempts }) {
         </div>
       </div>
 
-      {!stats.isCompleteReportUnlocked && (
-        <div className="space-y-1.5 bg-amber-50/60 p-3 rounded-2xl border border-amber-200/60">
-          <div className="flex justify-between text-xs font-bold text-amber-900">
-            <span>Complete 10 quizzes for full diagnostic report</span>
-            <span>{stats.completedCount} / 10 Quizzes</span>
-          </div>
-          <div className="w-full bg-amber-200/50 h-2 rounded-full overflow-hidden">
-            <div
-              className="bg-amber-500 h-full transition-all duration-500"
-              style={{ width: `${(stats.completedCount / 10) * 100}%` }}
-            ></div>
-          </div>
-        </div>
-      )}
-
-      <div className="bg-slate-50 p-3 rounded-xl text-xs font-semibold text-slate-700 border">
-        {stats.trendMessage}
-      </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="bg-emerald-50/50 border border-emerald-200/60 rounded-2xl p-4 space-y-2">
-          <h4 className="text-xs font-black text-emerald-800">👍 Areas Good (Strengths)</h4>
-          <ul className="text-xs text-emerald-900 space-y-1 list-disc list-inside font-medium">
-            {stats.strengths.map((s, i) => <li key={i}>{s}</li>)}
-          </ul>
+        {/* Strong Topics Card */}
+        <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-2xl p-4 space-y-2">
+          <h4 className="text-xs font-black text-emerald-800 flex items-center space-x-1">
+            <span>👍 Topics Mastered ({stats.strongTopics.length})</span>
+          </h4>
+          {stats.strongTopics.length === 0 ? (
+            <p className="text-xs text-emerald-700 italic">No mastered topics recorded yet.</p>
+          ) : (
+            <ul className="text-xs text-emerald-900 space-y-1">
+              {stats.strongTopics.map((st, i) => (
+                <li key={i} className="flex justify-between items-center bg-white/80 px-2.5 py-1.5 rounded-xl border border-emerald-100">
+                  <span className="font-semibold text-slate-800">{st.topic}</span>
+                  <span className="font-bold text-emerald-700">{st.accuracy}%</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        <div className="bg-rose-50/50 border border-rose-200/60 rounded-2xl p-4 space-y-2">
-          <h4 className="text-xs font-black text-rose-800">🎯 Areas Needing Improvement</h4>
-          <ul className="text-xs text-rose-900 space-y-1 list-disc list-inside font-medium">
-            {stats.weaknesses.map((w, i) => <li key={i}>{w}</li>)}
-          </ul>
+        {/* Weak Topics Card */}
+        <div className="bg-rose-50/60 border border-rose-200/80 rounded-2xl p-4 space-y-2">
+          <h4 className="text-xs font-black text-rose-800 flex items-center space-x-1">
+            <span>🎯 Weak Topics Needing Revision ({stats.weakTopics.length})</span>
+          </h4>
+          {stats.weakTopics.length === 0 ? (
+            <p className="text-xs text-rose-700 italic">No weak topics found! Excellent work.</p>
+          ) : (
+            <ul className="text-xs text-rose-900 space-y-1.5">
+              {stats.weakTopics.map((wt, i) => (
+                <li key={i} className="bg-white/80 p-2 rounded-xl border border-rose-100 space-y-0.5">
+                  <div className="flex justify-between font-bold text-slate-800">
+                    <span>{wt.topic}</span>
+                    <span className="text-rose-600">{wt.accuracy}%</span>
+                  </div>
+                  {wt.explanation && (
+                    <p className="text-[10px] text-slate-500 italic">Focus: {wt.explanation}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>
@@ -745,7 +712,6 @@ const INITIAL_QUIZZES = [
 
 export default function App() {
   // --- Auth View State ---
-  // Modes: 'landing' | 'login' | 'register' | 'forgot_password'
   const [authView, setAuthView] = useState('landing');
 
   // --- Auth Credentials State ---
@@ -1611,10 +1577,10 @@ export default function App() {
 
             <div className="space-y-4 max-w-3xl">
               <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight">
-                Empowering Students with <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">Smart Diagnostic Learning</span>
+                Empowering Students with <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">Smart Topic Diagnostics</span>
               </h1>
               <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
-                Access Cambridge O-Level past papers, grade practice vaults, bilingual Dhivehi and Islam library e-books, gamified reward systems, and real-time teacher analytics.
+                Access Cambridge O-Level past papers, grade practice vaults, bilingual Dhivehi and Islam library e-books, gamified reward systems, and real-time teacher topic analytics.
               </p>
             </div>
 
@@ -1641,7 +1607,7 @@ export default function App() {
                   <GraduationCap className="w-5 h-5" />
                 </div>
                 <h3 className="text-sm font-bold text-white">Cambridge O-Level Arena</h3>
-                <p className="text-xs text-slate-400">Interactive timed practice with instant explanations and score reports.</p>
+                <p className="text-xs text-slate-400">Interactive timed practice for Grades 8–10 with instant explanations.</p>
               </div>
 
               <div className="bg-slate-800/60 border border-slate-700/60 p-5 rounded-3xl space-y-2">
@@ -1656,8 +1622,8 @@ export default function App() {
                 <div className="w-10 h-10 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-400">
                   <BarChart2 className="w-5 h-5" />
                 </div>
-                <h3 className="text-sm font-bold text-white">Class Misconception Inspector</h3>
-                <p className="text-xs text-slate-400">Question-level error tracking for teachers to pinpoint weak class areas.</p>
+                <h3 className="text-sm font-bold text-white">Teacher Topic Inspector</h3>
+                <p className="text-xs text-slate-400">Topic-by-topic weakness matrix showing teachers exact areas to re-teach.</p>
               </div>
 
               <div className="bg-slate-800/60 border border-slate-700/60 p-5 rounded-3xl space-y-2">
@@ -2016,12 +1982,15 @@ export default function App() {
             <Library className="w-3.5 h-3.5 text-emerald-600" /> <span>Online Library & Dhivehi Section</span>
           </button>
 
-          <button
-            onClick={() => navigateToTab('olevel')}
-            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'olevel' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <GraduationCap className="w-3.5 h-3.5 text-amber-600" /> <span>O-Level Arena</span>
-          </button>
+          {/* O-Level Past Paper Arena — Restricted to Grade 8, 9, 10 & Teachers ONLY */}
+          {(role === 'teacher' || role === 'admin' || studentGrade >= 8) && (
+            <button
+              onClick={() => navigateToTab('olevel')}
+              className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'olevel' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+              <GraduationCap className="w-3.5 h-3.5 text-amber-600" /> <span>O-Level Arena</span>
+            </button>
+          )}
 
           <button
             onClick={() => navigateToTab('shop')}
@@ -2034,7 +2003,7 @@ export default function App() {
             onClick={() => navigateToTab('profile')}
             className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'profile' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'text-slate-600 hover:bg-slate-100'}`}
           >
-            <User className="w-3.5 h-3.5 text-purple-600" /> <span>My Profile & Stats</span>
+            <User className="w-3.5 h-3.5 text-purple-600" /> <span>My Profile & Topic Stats</span>
           </button>
 
           <button
@@ -2067,13 +2036,13 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
 
-        {/* TAB 1: PRACTICE VAULT */}
+        {/* TAB 1: GRADE PRACTICE VAULT */}
         {activeTab === 'dashboard' && !activeQuiz && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-xl font-black text-slate-900">Grade {studentGrade} Practice Vault</h3>
-                <p className="text-xs text-slate-500">Unlimited practice mode open for all students. Challenge mode is 1-attempt per quiz.</p>
+                <p className="text-xs text-slate-500">Practice questions curated for your current grade syllabus.</p>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -2084,15 +2053,19 @@ export default function App() {
                   placeholder="Search quizzes..."
                   className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800"
                 />
-                <select
-                  value={studentGrade}
-                  onChange={(e) => setStudentGrade(parseInt(e.target.value))}
-                  className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-indigo-600"
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => (
-                    <option key={g} value={g}>Grade {g}</option>
-                  ))}
-                </select>
+
+                {/* Grade selector enabled for teachers only */}
+                {(role === 'teacher' || role === 'admin') && (
+                  <select
+                    value={studentGrade}
+                    onChange={(e) => setStudentGrade(parseInt(e.target.value))}
+                    className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-indigo-600"
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => (
+                      <option key={g} value={g}>Grade {g}</option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
 
@@ -2270,8 +2243,8 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 3: O-LEVEL ARENA */}
-        {activeTab === 'olevel' && !activeQuiz && (
+        {/* TAB 3: O-LEVEL ARENA (Grades 8, 9, 10 & Teachers) */}
+        {activeTab === 'olevel' && !activeQuiz && (role === 'teacher' || role === 'admin' || studentGrade >= 8) && (
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-amber-900 via-yellow-900 to-amber-950 text-white rounded-3xl p-6 sm:p-8 shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
@@ -2399,7 +2372,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 5: MY PROFILE & 10-QUIZ SUBJECT ANALYTICS */}
+        {/* TAB 5: MY PROFILE & TOPIC ANALYTICS */}
         {activeTab === 'profile' && !activeQuiz && (
           <div className="space-y-6 max-w-5xl mx-auto">
             <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
@@ -2443,7 +2416,7 @@ export default function App() {
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <BarChart2 className="w-6 h-6 text-indigo-600" />
-                <h3 className="text-lg font-black text-slate-900">Subject Diagnostics & 10-Quiz Diagnostic Reports</h3>
+                <h3 className="text-lg font-black text-slate-900">Topic Strengths & Weaknesses Diagnostics</h3>
               </div>
               
               {ALL_SUBJECTS.map((subj) => (
@@ -2460,7 +2433,7 @@ export default function App() {
         {/* TAB 6: TEACHER STUDIO */}
         {activeTab === 'studio' && (role === 'teacher' || role === 'admin') && (
           <div className="max-w-5xl mx-auto space-y-6">
-            <TeacherStudentTracker subjects={ALL_SUBJECTS} quizzes={quizzes} />
+            <TeacherStudentTracker subjects={ALL_SUBJECTS} />
 
             <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
               <div className="flex items-center space-x-3">
