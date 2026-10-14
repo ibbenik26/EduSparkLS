@@ -12,7 +12,7 @@ import {
   Settings, Edit3, Sliders, Layers, Save, X, TrendingUp, Languages,
   AlertTriangle, Printer, ArrowRight, Mail, HelpCircle, Eye, EyeOff,
   Package, ShoppingCart, DollarSign, PiggyBank, History, Box,
-  AlertCircle, CheckCircle
+  AlertCircle, CheckCircle, Smile
 } from 'lucide-react';
 
 // --- Standardized Core Subjects ---
@@ -31,6 +31,9 @@ const ALL_SUBJECTS = [
   'Social Studies',
   'Science'
 ];
+
+// Quick Emoji Palette for Gift Shop Items
+const QUICK_EMOJIS = ['🎒', '📓', '📐', '🖍️', '🎨', '🎟️', '⚡', '🎁', '⚽', '🏆', '📱', '📚', '🧩', '🎮', '🎧', '✏️'];
 
 // --- Helper for RTL Script Detection ---
 const isRTLSubject = (subject) => {
@@ -705,9 +708,9 @@ function SubjectAnalyticsCard({ subject, attempts }) {
 const INITIAL_SHOP_ITEMS = [
   { id: 'item_1', name: 'Deluxe Geometry Set', category: 'School Supplies', cost: 250, stock: 12, is_real: true, icon: '📐', desc: 'Complete metal geometry compass set for Math class.' },
   { id: 'item_2', name: 'EduSpark Branded Notebook', category: 'Stationery', cost: 180, stock: 20, is_real: true, icon: '📓', desc: 'Hardcover 200-page lined notebook.' },
-  { id: 'item_3', name: 'Homework Waiver Pass', category: 'Privilege', cost: 300, stock: 50, is_real: false, icon: '🎟️', desc: '1 homework waiver card approved by your class teacher.' },
+  { id: 'item_3', name: 'Homework Waiver Pass', category: 'Privileges', cost: 300, stock: 50, is_real: false, icon: '🎟️', desc: '1 homework waiver card approved by your class teacher.' },
   { id: 'item_4', name: 'Color Marker Set (12 Pack)', category: 'School Supplies', cost: 200, stock: 8, is_real: true, icon: '🖍️', desc: 'Highlighter & marker dual-tip set.' },
-  { id: 'item_5', name: '24h Double XP Booster', category: 'Digital Perk', cost: 150, stock: 999, is_real: false, icon: '⚡', desc: 'Earn 2x XP for all quizzes and library reading completed today.' }
+  { id: 'item_5', name: '24h Double XP Booster', category: 'Digital Perks', cost: 150, stock: 999, is_real: false, icon: '⚡', desc: 'Earn 2x XP for all quizzes and library reading completed today.' }
 ];
 
 const INITIAL_BOOKS = [
@@ -886,7 +889,6 @@ export default function App() {
   const [leaderboardUsers, setLeaderboardUsers] = useState([]);
 
   // --- E-Library State & Controls ---
-  const [bookBatchIndex, setBookBatchIndex] = useState(0);
   const [selectedBook, setSelectedBook] = useState(null);
   const [claimingBook, setClaimingBook] = useState(null);
   const [bookPageIndex, setBookPageIndex] = useState(0);
@@ -1143,7 +1145,7 @@ export default function App() {
       if (error) throw error;
     } catch (err) {
       alert("Login Error: " + err.message);
-    } finally {
+    } fontally {
       setAuthLoading(false);
     }
   };
@@ -1271,6 +1273,10 @@ export default function App() {
   };
 
   const openBookModal = (book) => {
+    if (completedBookIds.includes(book.id)) {
+      alert("⚠️ You have already completed reading this book and logged its hours!");
+      return;
+    }
     setSelectedBook(book);
     setBookPageIndex(0);
     setIsFullScreenReader(false);
@@ -1397,8 +1403,14 @@ export default function App() {
     });
   };
 
-  // --- Claim Verified Reading Hours ---
+  // --- Claim Verified Reading Hours (STRICT DUPLICATE LOCK) ---
   const handleClaimVerifiedReadingHours = (book) => {
+    if (completedBookIds.includes(book.id)) {
+      alert("⚠️ You have already logged reading hours for this book! Duplicate logs are disabled.");
+      setClaimingBook(null);
+      return;
+    }
+
     const hoursToCredit = parseFloat(book.reading_hours) || 2.0;
     const newReadingHours = Math.round((readingHours + hoursToCredit) * 10) / 10;
     const coinsGained = Math.round(hoursToCredit * 15);
@@ -1779,7 +1791,7 @@ export default function App() {
   const currentRank = getStudentRank(xp);
 
   // =========================================================================
-  // --- AUTHENTICATION & LANDING PAGE VIEWS (UNAUTHENTICATED) ---
+  // --- AUTHENTICATION & UPGRADED LANDING PAGE VIEWS (UNAUTHENTICATED) ---
   // =========================================================================
   if (!user) {
     return (
@@ -1818,10 +1830,10 @@ export default function App() {
 
         {/* HERO LANDING VIEW */}
         {authView === 'landing' && (
-          <main className="max-w-6xl w-full mx-auto px-6 py-12 z-10 flex-1 flex flex-col justify-center items-center text-center space-y-10">
+          <main className="max-w-6xl w-full mx-auto px-6 py-10 z-10 flex-1 flex flex-col justify-center items-center text-center space-y-10">
             <div className="inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/30 px-4 py-1.5 rounded-full text-indigo-300 text-xs font-bold">
               <Sparkles className="w-4 h-4 text-indigo-400" />
-              <span>Next-Generation School Portal for Students & Teachers</span>
+              <span>Next-Generation School Portal for Students, Teachers & Store Managers</span>
             </div>
 
             <div className="space-y-4 max-w-3xl">
@@ -1838,7 +1850,7 @@ export default function App() {
                 onClick={() => setAuthView('register')}
                 className="w-full sm:w-auto bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold px-8 py-3.5 rounded-2xl text-sm shadow-xl transition flex items-center justify-center space-x-2"
               >
-                <span>Get Started — Student / Teacher</span>
+                <span>Get Started — Student / Teacher / Shop CP</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
               <button
@@ -1849,7 +1861,27 @@ export default function App() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full pt-8 text-left">
+            {/* PLATFORM STATS TICKER */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full py-4 border-y border-slate-800 text-center">
+              <div>
+                <span className="text-2xl font-black text-indigo-400 block">Grade 1–10</span>
+                <span className="text-[11px] text-slate-400 font-medium">Curriculum Practice Vaults</span>
+              </div>
+              <div>
+                <span className="text-2xl font-black text-purple-400 block">Cambridge 0625/2210</span>
+                <span className="text-[11px] text-slate-400 font-medium">O-Level Timed Exam Arena</span>
+              </div>
+              <div>
+                <span className="text-2xl font-black text-emerald-400 block">🇲🇻 Dhivehi & Islam</span>
+                <span className="text-[11px] text-slate-400 font-medium">Interactive RTL Reader</span>
+              </div>
+              <div>
+                <span className="text-2xl font-black text-amber-400 block">Kids Economics</span>
+                <span className="text-[11px] text-slate-400 font-medium">EduCoins & Real Gift Shop</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full text-left">
               <div className="bg-slate-800/60 border border-slate-700/60 p-5 rounded-3xl space-y-2">
                 <div className="w-10 h-10 bg-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400">
                   <GraduationCap className="w-5 h-5" />
@@ -2227,7 +2259,7 @@ export default function App() {
         </div>
 
         {/* Navigation Tabs Bar */}
-        <div className="max-w-7xl mx-auto w-full px-4 flex flex-nowrap md:flex-wrap items-center gap-x-1 sm:gap-x-2 gap-y-1 overflow-x-auto md:overflow-visible text-xs border-t border-slate-100 py-1.5 portal-nav-scroll">
+        <div className="max-w-7xl mx-auto px-4 flex items-center space-x-1 sm:space-x-2 overflow-x-auto text-xs border-t border-slate-100 py-1.5 scrollbar-none">
           <button
             onClick={() => navigateToTab('dashboard')}
             className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-slate-600 hover:bg-slate-100'}`}
@@ -2411,7 +2443,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 2: ONLINE E-LIBRARY & PHYSICAL SCHOOL BOOKS */}
+        {/* TAB 2: ONLINE E-LIBRARY & PHYSICAL SCHOOL BOOKS (WITH STRICT RE-LOG LOCK) */}
         {activeTab === 'library' && !activeQuiz && (
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-emerald-800 via-teal-700 to-cyan-800 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -2487,22 +2519,29 @@ export default function App() {
                       <div className="grid grid-cols-2 gap-2">
                         <button
                           onClick={() => openBookModal(book)}
-                          className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-2xl text-xs flex items-center justify-center space-x-1 transition"
+                          disabled={isCompleted}
+                          className={`w-full font-bold py-2.5 rounded-2xl text-xs flex items-center justify-center space-x-1 transition ${
+                            isCompleted ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                          }`}
                         >
                           <BookOpen className="w-3.5 h-3.5" />
-                          <span>Read Online</span>
+                          <span>{isCompleted ? '✓ Read' : 'Read Online'}</span>
                         </button>
 
                         <button
                           onClick={() => setClaimingBook(book)}
+                          disabled={isCompleted}
                           className={`w-full font-bold py-2.5 rounded-2xl text-xs flex items-center justify-center space-x-1 transition ${
-                            isCompleted ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                            isCompleted ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-not-allowed opacity-90' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
                           }`}
                         >
                           <Award className="w-3.5 h-3.5" />
                           <span>{isCompleted ? '✓ Logged' : 'Claim Hours'}</span>
                         </button>
                       </div>
+                      {isCompleted && (
+                        <p className="text-[10px] text-center font-bold text-emerald-600">✓ Book completed & hours logged!</p>
+                      )}
                     </div>
                   </div>
                 );
@@ -2873,7 +2912,10 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Emoji Icon</label>
+                    <label className="text-xs font-bold text-slate-700 block mb-1 flex items-center justify-between">
+                      <span>Emoji Icon</span>
+                      <span className="text-[10px] text-slate-400 font-normal">(Click quick palette below)</span>
+                    </label>
                     <input
                       type="text"
                       value={shopItemForm.icon}
@@ -2881,6 +2923,21 @@ export default function App() {
                       placeholder="e.g. 🎨"
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800"
                     />
+                    
+                    {/* QUICK EMOJI PICKER RIBBON */}
+                    <div className="flex items-center space-x-1 overflow-x-auto py-1.5 scrollbar-none mt-1">
+                      {QUICK_EMOJIS.map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => setShopItemForm({ ...shopItemForm, icon: emoji })}
+                          className="p-1 hover:bg-amber-100 rounded-lg text-base transition shrink-0"
+                          title={`Select ${emoji}`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -3482,6 +3539,13 @@ export default function App() {
                   {(!Array.isArray(selectedBook.pages) || bookPageIndex === selectedBook.pages.length - 1) && (
                     <button
                       onClick={() => {
+                        if (completedBookIds.includes(selectedBook.id)) {
+                          alert("⚠️ You have already completed reading this book and claimed your rewards!");
+                          setSelectedBook(null);
+                          setIsFullScreenReader(false);
+                          return;
+                        }
+
                         const newCompleted = Array.from(new Set([...completedBookIds, selectedBook.id]));
                         const coinsGained = 15;
                         const newCoins = coins + coinsGained;
