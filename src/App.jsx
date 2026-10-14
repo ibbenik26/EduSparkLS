@@ -93,7 +93,7 @@ const getStudentRank = (xp) => {
   return { title: 'Novice', level: 1, text: 'text-slate-600', bg: 'bg-slate-100' };
 };
 
-// --- Syllabus Topic Analytics Engine ---
+// --- Topic-Level Subject Analytics Engine ---
 const generateSubjectAnalytics = (subject, attempts = []) => {
   const subjectAttempts = attempts.filter(a => (a.subject || '').toLowerCase() === subject.toLowerCase());
   const completedCount = subjectAttempts.length;
@@ -113,17 +113,12 @@ const generateSubjectAnalytics = (subject, attempts = []) => {
 
     if (a.questionDetails && Array.isArray(a.questionDetails)) {
       a.questionDetails.forEach(qd => {
-        // Group strictly by assigned topic (e.g. "Kinematics & Motion", "Energy", "Algebra")
-        const topicName = qd.topic || qd.question_text || 'General Concept';
+        const topicName = qd.question_text || 'General Concept';
         if (!topicStats[topicName]) {
-          topicStats[topicName] = { correct: 0, total: 0, explanations: [] };
+          topicStats[topicName] = { correct: 0, total: 0, explanation: qd.explanation };
         }
         topicStats[topicName].total += 1;
-        if (qd.is_correct) {
-          topicStats[topicName].correct += 1;
-        } else if (qd.explanation && !topicStats[topicName].explanations.includes(qd.explanation)) {
-          topicStats[topicName].explanations.push(qd.explanation);
-        }
+        if (qd.is_correct) topicStats[topicName].correct += 1;
       });
     }
   });
@@ -147,14 +142,9 @@ const generateSubjectAnalytics = (subject, attempts = []) => {
   Object.entries(topicStats).forEach(([topic, stat]) => {
     const topicAcc = Math.round((stat.correct / stat.total) * 100);
     if (topicAcc >= 70) {
-      strongTopics.push({ topic, accuracy: topicAcc, totalAttempted: stat.total });
+      strongTopics.push({ topic, accuracy: topicAcc });
     } else {
-      weakTopics.push({
-        topic,
-        accuracy: topicAcc,
-        totalAttempted: stat.total,
-        explanation: stat.explanations.join(' • ') || 'Needs foundational review.'
-      });
+      weakTopics.push({ topic, accuracy: topicAcc, explanation: stat.explanation });
     }
   });
 
@@ -265,8 +255,8 @@ function StudentTopicDiagnosticModal({ student, subjects = ALL_SUBJECTS, onClose
       <div className="bg-white rounded-3xl max-w-3xl w-full p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b pb-4">
           <div>
-            <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Teacher Topic Diagnostic Inspector</span>
-            <h2 className="text-xl font-black text-slate-900 mt-0.5">{student.full_name} — Syllabus Topic Breakdown</h2>
+            <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Teacher Diagnostic Inspector</span>
+            <h2 className="text-xl font-black text-slate-900 mt-0.5">{student.full_name} — Topic Weakness & Strength Breakdown</h2>
             <p className="text-xs text-slate-500 font-mono">Index No: {student.index_number || 'N/A'} • Grade {student.grade}</p>
           </div>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
@@ -294,9 +284,9 @@ function StudentTopicDiagnosticModal({ student, subjects = ALL_SUBJECTS, onClose
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Strong Topics */}
                     <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-1">
-                      <h4 className="text-xs font-black text-emerald-800">👍 Syllabus Topics Mastered ({stats.strongTopics.length})</h4>
+                      <h4 className="text-xs font-black text-emerald-800">👍 Topics Mastered ({stats.strongTopics.length})</h4>
                       {stats.strongTopics.length === 0 ? (
-                        <p className="text-[11px] text-emerald-700 italic">No mastered topics recorded yet.</p>
+                        <p className="text-[11px] text-emerald-700 italic">No strong topics recorded yet.</p>
                       ) : (
                         <ul className="text-xs text-emerald-900 space-y-1">
                           {stats.strongTopics.map((st, i) => (
@@ -311,9 +301,9 @@ function StudentTopicDiagnosticModal({ student, subjects = ALL_SUBJECTS, onClose
 
                     {/* Weak Topics */}
                     <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 space-y-1">
-                      <h4 className="text-xs font-black text-rose-800">🎯 Weak Topics Needing Re-teaching ({stats.weakTopics.length})</h4>
+                      <h4 className="text-xs font-black text-rose-800">🎯 Topics Needing Revision ({stats.weakTopics.length})</h4>
                       {stats.weakTopics.length === 0 ? (
-                        <p className="text-[11px] text-rose-700 italic">No weak topics! Excellent overall performance.</p>
+                        <p className="text-[11px] text-rose-700 italic">No weak topics! Excellent performance.</p>
                       ) : (
                         <ul className="text-xs text-rose-900 space-y-1">
                           {stats.weakTopics.map((wt, i) => (
@@ -323,7 +313,7 @@ function StudentTopicDiagnosticModal({ student, subjects = ALL_SUBJECTS, onClose
                                 <span className="text-rose-700">{wt.accuracy}%</span>
                               </div>
                               {wt.explanation && (
-                                <p className="text-[10px] text-slate-600 italic">Syllabus Focus: {wt.explanation}</p>
+                                <p className="text-[10px] text-slate-600 italic">Reason: {wt.explanation}</p>
                               )}
                             </li>
                           ))}
@@ -530,10 +520,10 @@ function SubjectAnalyticsCard({ subject, attempts }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-3">
         <div>
           <div className="flex items-center space-x-2">
-            <h3 className="text-lg font-black text-slate-900">{stats.subject} Syllabus Diagnostics</h3>
+            <h3 className="text-lg font-black text-slate-900">{stats.subject} Topic Performance Summary</h3>
             {stats.isCompleteReportUnlocked ? (
               <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">
-                ✓ Diagnostic Report Complete
+                ✓ 10-Quiz Diagnostic Complete
               </span>
             ) : (
               <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full">
@@ -541,7 +531,7 @@ function SubjectAnalyticsCard({ subject, attempts }) {
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">Topic mastery breakdown aggregated across attempted quizzes.</p>
+          <p className="text-xs text-slate-500 mt-0.5">Performance profile based on completed quiz attempts.</p>
         </div>
 
         <div className={`px-4 py-2 rounded-2xl border text-center font-black ${stats.gradeBg}`}>
@@ -679,17 +669,9 @@ const INITIAL_QUIZZES = [
     questions: [
       {
         id: 'q1_1',
-        topic: 'Kinematics & Motion',
         question_text: 'A car accelerates uniformly from rest to a velocity of 20 m/s in 5 seconds. What is its acceleration?',
         option_a: '2 m/s²', option_b: '4 m/s²', option_c: '5 m/s²', option_d: '100 m/s²',
         correct_option: 'B', explanation: 'Acceleration a = (v - u) / t = (20 - 0) / 5 = 4 m/s².'
-      },
-      {
-        id: 'q1_2',
-        topic: 'Thermal Physics',
-        question_text: 'Which method of thermal energy transfer does NOT require a medium?',
-        option_a: 'Conduction', option_b: 'Convection', option_c: 'Radiation', option_d: 'Evaporation',
-        correct_option: 'C', explanation: 'Radiation travels via electromagnetic waves and works in a vacuum.'
       }
     ]
   },
@@ -705,7 +687,6 @@ const INITIAL_QUIZZES = [
     questions: [
       {
         id: 'q2_1',
-        topic: 'Data Structures',
         question_text: 'Which data structure operates on a First-In, First-Out (FIFO) basis?',
         option_a: 'Stack', option_b: 'Queue', option_c: 'Array', option_d: 'Tree',
         correct_option: 'B', explanation: 'Queues process items in the order they arrive (FIFO).'
@@ -721,7 +702,6 @@ const INITIAL_QUIZZES = [
     questions: [
       {
         id: 'q7_1',
-        topic: 'Algebraic Expressions',
         question_text: 'Simplify: 3x + 5x - 2x',
         option_a: '6x', option_b: '10x', option_c: '8x', option_d: '4x',
         correct_option: 'A', explanation: '(3 + 5 - 2)x = 6x.'
@@ -804,14 +784,13 @@ export default function App() {
   const [studioVariant, setStudioVariant] = useState('Paper 22');
   const [jsonInputText, setJsonInputText] = useState(`[
   {
-    "topic": "Kinematics & Motion",
-    "question_text": "What does the gradient of a distance-time graph represent?",
-    "option_a": "Acceleration",
-    "option_b": "Speed",
-    "option_c": "Displacement",
-    "option_d": "Force",
+    "question_text": "What is the capital of Japan?",
+    "option_a": "Beijing",
+    "option_b": "Tokyo",
+    "option_c": "Seoul",
+    "option_d": "Bangkok",
     "correct_option": "B",
-    "explanation": "Speed is given by the gradient (change in distance over time)."
+    "explanation": "Tokyo is the capital city of Japan."
   }
 ]`);
   const [studioMsg, setStudioMsg] = useState({ type: '', text: '' });
@@ -1016,7 +995,7 @@ export default function App() {
       if (error) throw error;
     } catch (err) {
       alert("Login Error: " + err.message);
-    } fontally {
+    } finally {
       setAuthLoading(false);
     }
   };
@@ -1223,7 +1202,6 @@ export default function App() {
           const chosen = userAnswers[qKey] || null;
           return {
             id: qKey,
-            topic: q.topic || 'General Concept', // Ensure q.topic is permanently mapped
             question_text: q.question_text,
             correct_option: q.correct_option,
             user_option: chosen,
@@ -1480,7 +1458,7 @@ export default function App() {
     }
   };
 
-  // --- Teacher Studio JSON Import (Supports Option 2 Topic Tagging) ---
+  // --- Teacher Studio JSON Import ---
   const handleJsonImport = async () => {
     setStudioMsg({ type: '', text: '' });
     try {
@@ -1489,7 +1467,6 @@ export default function App() {
 
       const formattedQuestions = parsed.map((q, idx) => ({
         id: `q_json_${Date.now()}_${idx}`,
-        topic: q.topic || 'General Concept', // <--- Preserves Option 2 Syllabus Topic Field
         question_text: q.question_text || q.question || 'Question Text',
         option_a: q.option_a || (q.options ? q.options[0] : 'Option A'),
         option_b: q.option_b || (q.options ? q.options[1] : 'Option B'),
@@ -1518,7 +1495,7 @@ export default function App() {
       if (error) throw error;
 
       setQuizzes((prev) => [newQuiz, ...prev]);
-      setStudioMsg({ type: 'success', text: `✅ Saved quiz with ${formattedQuestions.length} questions and topic tags to database!` });
+      setStudioMsg({ type: 'success', text: `✅ Saved quiz with ${formattedQuestions.length} questions to database!` });
     } catch (err) {
       setStudioMsg({ type: 'error', text: `Failed to save quiz: ${err.message}` });
     }
@@ -1561,20 +1538,18 @@ export default function App() {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
 
         {/* Landing Navigation Header */}
-        <header className="max-w-7xl w-full mx-auto px-6 py-6 flex items-center justify-between z-10">
-          <div onClick={() => setAuthView('landing')} className="flex items-center space-x-3 cursor-pointer">
-            <div className="bg-gradient-to-tr from-indigo-500 to-purple-600 p-2.5 rounded-2xl shadow-lg">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
+        <header className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-wrap items-center justify-between gap-y-3 z-10">
+          <div onClick={() => setAuthView('landing')} className="flex w-full sm:w-auto items-center space-x-2 sm:space-x-3 cursor-pointer">
+            <img src="/lhohi-school-logo.svg" alt="Lhohee School logo" className="w-14 h-14 object-contain shrink-0" />
             <div>
-              <h1 className="text-xl font-black tracking-tight text-white">
-                EduSpark <span className="text-indigo-400">IQ</span>
+              <h1 className="text-base sm:text-xl font-black tracking-tight text-white whitespace-nowrap">
+                EduSpark <span className="text-indigo-400">LS</span>
               </h1>
-              <p className="text-[10px] text-slate-400 font-medium">Educational Portal & E-Library</p>
+              <p className="text-sm text-slate-400 font-medium">Quiz Portal for Students &amp; Teachers</p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex w-full sm:w-auto justify-end items-center space-x-3">
             <button
               onClick={() => setAuthView('login')}
               className={`px-5 py-2 rounded-xl text-xs font-bold transition ${authView === 'login' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-300 hover:text-white'}`}
@@ -1926,7 +1901,7 @@ export default function App() {
         )}
 
         <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-800">
-          EduSpark IQ © 2026 • School Student Portal & E-Library
+          EduSpark LS © 2026 • Lhohee School Student Portal & E-Library
         </footer>
       </div>
     );
@@ -1942,16 +1917,14 @@ export default function App() {
           <div className="flex items-center justify-between w-full sm:w-auto">
             <div 
               onClick={() => navigateToTab('dashboard')} 
-              className="flex items-center space-x-3 cursor-pointer hover:opacity-85 transition"
+              className="flex min-w-0 items-center space-x-2 sm:space-x-3 cursor-pointer hover:opacity-85 transition"
             >
-              <div className="bg-gradient-to-tr from-indigo-600 to-purple-600 p-2 rounded-xl shadow-md">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-black tracking-tight text-slate-900">
-                  EduSpark <span className="text-indigo-600">IQ</span>
+              <img src="/lhohi-school-logo.svg" alt="Lhohee School logo" className="w-12 h-12 object-contain shrink-0" />
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 whitespace-nowrap">
+                  EduSpark <span className="text-indigo-600">LS</span>
                 </h1>
-                <p className="text-[11px] text-slate-500 font-medium">School Student Portal & E-Library</p>
+                <p className="text-sm text-slate-500 font-medium">Next-Generation School Portal for Students &amp; Teachers</p>
               </div>
             </div>
 
@@ -2439,7 +2412,7 @@ export default function App() {
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <BarChart2 className="w-6 h-6 text-indigo-600" />
-                <h3 className="text-lg font-black text-slate-900">Syllabus Topic Strengths & Weaknesses</h3>
+                <h3 className="text-lg font-black text-slate-900">Topic Strengths & Weaknesses Diagnostics</h3>
               </div>
               
               {ALL_SUBJECTS.map((subj) => (
@@ -2463,7 +2436,7 @@ export default function App() {
                 <BrainCircuit className="w-7 h-7 text-purple-600" />
                 <div>
                   <h2 className="text-xl font-black text-slate-900">Teacher Quiz Publishing Studio</h2>
-                  <p className="text-xs text-slate-500">Import structured JSON past papers with pre-tagged syllabus topics.</p>
+                  <p className="text-xs text-slate-500">Configure metadata and publish custom practice quizzes or O-Level past papers.</p>
                 </div>
               </div>
 
@@ -2552,7 +2525,7 @@ export default function App() {
               <div className="space-y-3">
                 <textarea rows={8} value={jsonInputText} onChange={(e) => setJsonInputText(e.target.value)} className="w-full bg-slate-50 border rounded-xl p-3 text-xs font-mono" />
                 <button onClick={handleJsonImport} className="w-full bg-purple-600 text-white font-bold py-3 rounded-2xl text-xs shadow-md hover:bg-purple-700 transition">
-                  Save Topic-Tagged JSON Quiz to Supabase
+                  Save JSON Quiz to Supabase
                 </button>
               </div>
 
@@ -3110,15 +3083,6 @@ export default function App() {
                     </div>
                   )}
                 </div>
-
-                {/* Display Current Question Topic Badge */}
-                {activeQuiz.questions[currentQuestionIdx].topic && (
-                  <div className="mb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg border border-indigo-100">
-                      Topic: {activeQuiz.questions[currentQuestionIdx].topic}
-                    </span>
-                  </div>
-                )}
 
                 <h2 className="text-base sm:text-lg font-extrabold text-slate-900 mb-6 leading-relaxed">
                   {activeQuiz.questions[currentQuestionIdx].question_text}
