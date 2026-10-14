@@ -10,7 +10,9 @@ import {
   Book, BookOpenCheck, Library, Plus, ShieldCheck, Tag,
   Play, Pause, RotateCcw, FileText, KeyRound, ShieldAlert,
   Settings, Edit3, Sliders, Layers, Save, X, TrendingUp, Languages,
-  AlertTriangle, Printer, ArrowRight, Mail, HelpCircle, Eye, EyeOff
+  AlertTriangle, Printer, ArrowRight, Mail, HelpCircle, Eye, EyeOff,
+  Package, ShoppingCart, DollarSign, PiggyBank, History, Box,
+  AlertCircle, CheckCircle
 } from 'lucide-react';
 
 // --- Standardized Core Subjects ---
@@ -30,7 +32,7 @@ const ALL_SUBJECTS = [
   'Science'
 ];
 
-// --- Helper for RTL Script Detection (Dhivehi & Islam) ---
+// --- Helper for RTL Script Detection ---
 const isRTLSubject = (subject) => {
   return subject === 'Dhivehi' || subject === 'Islam' || subject === 'ދިވެހި' || subject === 'އިސްލާމް';
 };
@@ -253,7 +255,7 @@ function PrintableCertificateModal({ student, subject, onClose }) {
   );
 }
 
-// --- Book-Specific Library Code Verification Modal ---
+// --- Claim Reading Hours Verification Modal ---
 function ClaimReadingHoursModal({ book, onVerified, onClose }) {
   const [passcodeInput, setPasscodeInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -301,7 +303,7 @@ function ClaimReadingHoursModal({ book, onVerified, onClose }) {
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-800 block flex items-center justify-between">
               <span>🔑 Enter Book Claim Code:</span>
-              <span className="text-[10px] text-slate-400 font-normal">(Provided by school librarian)</span>
+              <span className="text-[10px] text-slate-400 font-normal">(Provided by librarian)</span>
             </label>
             <div className="relative">
               <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -699,11 +701,13 @@ function SubjectAnalyticsCard({ subject, attempts }) {
   );
 }
 
-// --- Initial Datasets ---
+// --- Initial Datasets with Economics Shop Items ---
 const INITIAL_SHOP_ITEMS = [
-  { id: 'item_1', name: 'Homework Waiver Pass', category: 'Privilege', cost: 300, icon: '🎟️', desc: '1 homework waiver card approved by your class teacher.' },
-  { id: 'item_2', name: 'Golden Profile Border', category: 'Digital Perk', cost: 150, icon: '👑', desc: 'Custom shiny gold frame around your avatar on the leaderboard.' },
-  { id: 'item_3', name: '24h Double XP Booster', category: 'Booster', cost: 200, icon: '⚡', desc: 'Earn 2x XP for all quizzes and library reading completed today.' }
+  { id: 'item_1', name: 'Deluxe Geometry Set', category: 'School Supplies', cost: 250, stock: 12, is_real: true, icon: '📐', desc: 'Complete metal geometry compass set for Math class.' },
+  { id: 'item_2', name: 'EduSpark Branded Notebook', category: 'Stationery', cost: 180, stock: 20, is_real: true, icon: '📓', desc: 'Hardcover 200-page lined notebook.' },
+  { id: 'item_3', name: 'Homework Waiver Pass', category: 'Privilege', cost: 300, stock: 50, is_real: false, icon: '🎟️', desc: '1 homework waiver card approved by your class teacher.' },
+  { id: 'item_4', name: 'Color Marker Set (12 Pack)', category: 'School Supplies', cost: 200, stock: 8, is_real: true, icon: '🖍️', desc: 'Highlighter & marker dual-tip set.' },
+  { id: 'item_5', name: '24h Double XP Booster', category: 'Digital Perk', cost: 150, stock: 999, is_real: false, icon: '⚡', desc: 'Earn 2x XP for all quizzes and library reading completed today.' }
 ];
 
 const INITIAL_BOOKS = [
@@ -828,7 +832,7 @@ export default function App() {
 
   // --- Auth Credentials State ---
   const [user, setUser] = useState(null);
-  const [role, setRole] = useState('student');
+  const [role, setRole] = useState('student'); // 'student', 'teacher', 'shop_admin', 'admin'
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
@@ -838,10 +842,13 @@ export default function App() {
   const [showPassword, setShowPassword] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
-  // --- Student Stats ---
+  // --- Student Stats & Cash Management State ---
   const [studentGrade, setStudentGrade] = useState(7);
-  const [coins, setCoins] = useState(150);
-  const [xp, setXp] = useState(240);
+  const [coins, setCoins] = useState(350);
+  const [xp, setXp] = useState(420);
+  const [totalEarned, setTotalEarned] = useState(600);
+  const [totalSpent, setTotalSpent] = useState(250);
+  const [savingsGoal, setSavingsGoal] = useState({ item: 'Deluxe Geometry Set', target: 250 });
   const [streak, setStreak] = useState(1);
   const [quizzesCompleted, setQuizzesCompleted] = useState(0);
   const [booksRead, setBooksRead] = useState(0);
@@ -849,6 +856,22 @@ export default function App() {
   const [claimedRewards, setClaimedRewards] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  // --- Shop Orders Ledger State ---
+  const [orders, setOrders] = useState([
+    {
+      id: 'ord_101',
+      student_id: 'stu_1',
+      student_name: 'Adam Zahir',
+      index_number: 'STU-2026-012',
+      item_id: 'item_2',
+      item_name: 'EduSpark Branded Notebook',
+      cost: 180,
+      status: 'Pending',
+      date: '2026-10-14 10:30 AM',
+      claim_code: 'ES-SHOP-8821'
+    }
+  ]);
 
   // --- Subject Analytics & Challenge Tracking ---
   const [completedChallenges, setCompletedChallenges] = useState([]);
@@ -862,7 +885,7 @@ export default function App() {
   const [badges, setBadges] = useState(INITIAL_BADGES);
   const [leaderboardUsers, setLeaderboardUsers] = useState([]);
 
-  // --- E-Library State & Mobile Easy Reader Controls ---
+  // --- E-Library State & Controls ---
   const [bookBatchIndex, setBookBatchIndex] = useState(0);
   const [selectedBook, setSelectedBook] = useState(null);
   const [claimingBook, setClaimingBook] = useState(null);
@@ -909,7 +932,7 @@ export default function App() {
 ]`);
   const [studioMsg, setStudioMsg] = useState({ type: '', text: '' });
 
-  // --- Admin CRUD Center State ---
+  // --- Admin / Shop CRUD State ---
   const [adminTab, setAdminTab] = useState('books');
   const [editingBook, setEditingBook] = useState(null);
   const [bookForm, setBookForm] = useState({
@@ -917,8 +940,10 @@ export default function App() {
     reading_hours: 2.0, claim_code: ''
   });
 
-  const [editingPrize, setEditingPrize] = useState(null);
-  const [prizeForm, setPrizeForm] = useState({ name: '', category: 'Privilege', cost: 200, icon: '🎁', desc: '' });
+  const [editingShopItem, setEditingShopItem] = useState(null);
+  const [shopItemForm, setShopItemForm] = useState({
+    name: '', category: 'School Supplies', cost: 200, stock: 10, is_real: true, icon: '🎒', desc: ''
+  });
 
   const [editingBadge, setEditingBadge] = useState(null);
   const [badgeForm, setBadgeForm] = useState({ title: '', desc: '', icon: '🏅', minQuizzes: 0, minBooks: 0, minXp: 0, minCoins: 0, minStreak: 0 });
@@ -1047,8 +1072,10 @@ export default function App() {
         setIndexNumber(data.index_number || 'STU-2026-0000');
         setRole(data.role || 'student');
         setStudentGrade(data.grade || 7);
-        setCoins(data.coins ?? 150);
-        setXp(data.xp ?? 240);
+        setCoins(data.coins ?? 350);
+        setXp(data.xp ?? 420);
+        setTotalEarned(data.total_earned ?? 600);
+        setTotalSpent(data.total_spent ?? 250);
         setStreak(data.streak ?? 1);
         setQuizzesCompleted(data.quizzes_completed ?? 0);
         setBooksRead(data.books_read ?? 0);
@@ -1074,6 +1101,8 @@ export default function App() {
         grade: studentGrade,
         coins: updates.coins ?? coins,
         xp: updates.xp ?? xp,
+        total_earned: updates.total_earned ?? totalEarned,
+        total_spent: updates.total_spent ?? totalSpent,
         streak: updates.streak ?? streak,
         quizzes_completed: updates.quizzes_completed ?? quizzesCompleted,
         books_read: updates.books_read ?? booksRead,
@@ -1128,8 +1157,8 @@ export default function App() {
       return alert('Please enter your Student Index Number.');
     }
 
-    if (role === 'teacher' || role === 'admin') {
-      if (!teacherPasscode.trim()) return alert('Secret Admin Passcode required for Teacher registration.');
+    if (role === 'teacher' || role === 'admin' || role === 'shop_admin') {
+      if (!teacherPasscode.trim()) return alert('Secret Admin Passcode required.');
       try {
         const { data: settingData } = await supabase.from('app_settings').select('value').eq('key', 'teacher_passcode').single();
         const validPasscode = settingData?.value || 'SCH-TEACHER-2026';
@@ -1159,8 +1188,10 @@ export default function App() {
           index_number: assignedIndex,
           role,
           grade: studentGrade,
-          coins: 150,
-          xp: 240,
+          coins: 350,
+          xp: 420,
+          total_earned: 600,
+          total_spent: 250,
           streak: 1,
           quizzes_completed: 0,
           books_read: 0,
@@ -1292,6 +1323,7 @@ export default function App() {
     const coinsEarned = score * 15;
     const xpEarned = score * 30;
     const newCoins = coins + coinsEarned;
+    const newTotalEarned = totalEarned + coinsEarned;
     const newXp = xp + xpEarned;
     const newQuizzesCount = quizzesCompleted + 1;
 
@@ -1349,12 +1381,14 @@ export default function App() {
     ];
 
     setCoins(newCoins);
+    setTotalEarned(newTotalEarned);
     setXp(newXp);
     setQuizzesCompleted(newQuizzesCount);
     setActivityLog(newLog);
 
     syncProfileToSupabase({
       coins: newCoins,
+      total_earned: newTotalEarned,
       xp: newXp,
       quizzes_completed: newQuizzesCount,
       activity_log: newLog,
@@ -1367,7 +1401,9 @@ export default function App() {
   const handleClaimVerifiedReadingHours = (book) => {
     const hoursToCredit = parseFloat(book.reading_hours) || 2.0;
     const newReadingHours = Math.round((readingHours + hoursToCredit) * 10) / 10;
-    const newCoins = coins + Math.round(hoursToCredit * 15);
+    const coinsGained = Math.round(hoursToCredit * 15);
+    const newCoins = coins + coinsGained;
+    const newTotalEarned = totalEarned + coinsGained;
     const newXp = xp + Math.round(hoursToCredit * 30);
     const newCompletedBookIds = Array.from(new Set([...completedBookIds, book.id]));
     const newBooksReadCount = booksRead + 1;
@@ -1377,7 +1413,7 @@ export default function App() {
         id: `act_${Date.now()}`,
         title: `📚 Logged Library Book: ${book.title}`,
         readingHoursLogged: hoursToCredit,
-        coinsGained: Math.round(hoursToCredit * 15),
+        coinsGained: coinsGained,
         xpGained: Math.round(hoursToCredit * 30),
         date: 'Just now'
       },
@@ -1386,6 +1422,7 @@ export default function App() {
 
     setReadingHours(newReadingHours);
     setCoins(newCoins);
+    setTotalEarned(newTotalEarned);
     setXp(newXp);
     setBooksRead(newBooksReadCount);
     setCompletedBookIds(newCompletedBookIds);
@@ -1398,31 +1435,126 @@ export default function App() {
     syncProfileToSupabase({
       reading_hours: newReadingHours,
       coins: newCoins,
+      total_earned: newTotalEarned,
       xp: newXp,
       books_read: newBooksReadCount,
       completed_book_ids: newCompletedBookIds,
       activity_log: newLog
     });
 
-    alert(`🎉 Verified! Logged +${hoursToCredit} Reading Hours, +${Math.round(hoursToCredit * 15)} EduCoins, and +${Math.round(hoursToCredit * 30)} XP!`);
+    alert(`🎉 Verified! Logged +${hoursToCredit} Reading Hours, +${coinsGained} EduCoins, and +${Math.round(hoursToCredit * 30)} XP!`);
   };
 
-  // --- Redeem Reward ---
-  const handleRedeemReward = (item) => {
-    if (coins < item.cost) return alert(`Insufficient EduCoins! You need ${item.cost - coins} more coins.`);
-    if (confirm(`Redeem "${item.name}" for ${item.cost} EduCoins?`)) {
-      const newCoins = coins - item.cost;
-      const redemption = { id: `claimed_${Date.now()}`, name: item.name, date: new Date().toISOString().split('T')[0], code: `ES-${Math.floor(1000 + Math.random() * 9000)}` };
-      const newClaimed = [redemption, ...claimedRewards];
-      const newLog = [{ id: `act_${Date.now()}`, title: `Redeemed Reward: ${item.name}`, cost: item.cost, date: 'Just now' }, ...activityLog];
+  // =========================================================================
+  // --- KIDS CASH MANAGEMENT & GIFT SHOP HANDLERS ---
+  // =========================================================================
 
-      setCoins(newCoins); setClaimedRewards(newClaimed); setActivityLog(newLog);
-      playSound('coin'); confetti({ particleCount: 100, spread: 70 });
-      syncProfileToSupabase({ coins: newCoins, claimed_rewards: newClaimed, activity_log: newLog });
+  const handlePurchaseItem = (item) => {
+    if (coins < item.cost) {
+      alert(`❌ Insufficient EduCoins!\nYou need ${item.cost - coins} more EduCoins to purchase this item. Keep learning to earn more!`);
+      return;
+    }
+
+    if (item.stock <= 0) {
+      alert("⚠️ Sorry, this item is currently out of stock in the school shop!");
+      return;
+    }
+
+    if (confirm(`Confirm Purchase:\nItem: ${item.name}\nCost: ${item.cost} EduCoins\n\nYour balance after purchase: ${coins - item.cost} EduCoins`)) {
+      const newCoins = coins - item.cost;
+      const newSpent = totalSpent + item.cost;
+      const claimCode = `ES-SHOP-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      const newOrder = {
+        id: `ord_${Date.now()}`,
+        student_id: user?.id || 'stu_demo',
+        student_name: authName || 'Student Learner',
+        index_number: indexNumber || 'STU-2026-001',
+        item_id: item.id,
+        item_name: item.name,
+        cost: item.cost,
+        status: 'Pending',
+        date: new Date().toLocaleString(),
+        claim_code: claimCode
+      };
+
+      // Deduct item stock
+      const updatedItems = shopItems.map(i => i.id === item.id ? { ...i, stock: Math.max(0, i.stock - 1) } : i);
+
+      setCoins(newCoins);
+      setTotalSpent(newSpent);
+      setOrders([newOrder, ...orders]);
+      setShopItems(updatedItems);
+
+      playSound('coin');
+      confetti({ particleCount: 100, spread: 70 });
+
+      syncProfileToSupabase({ coins: newCoins, total_spent: newSpent });
+      alert(`🎉 Purchase Successful!\nShow Claim Code "${claimCode}" at the School Gift Shop to collect your physical item.`);
     }
   };
 
-  // --- Admin CRUD Operations ---
+  // --- Shop Control Panel Handlers (CP Manager / Teacher) ---
+  const handleSaveInventoryItem = async (e) => {
+    e.preventDefault();
+    if (!shopItemForm.name || !shopItemForm.cost) return alert("Please specify item name and cost.");
+
+    const formattedItem = {
+      name: shopItemForm.name,
+      category: shopItemForm.category,
+      cost: parseInt(shopItemForm.cost),
+      stock: parseInt(shopItemForm.stock),
+      is_real: shopItemForm.is_real,
+      icon: shopItemForm.icon || '🎒',
+      desc: shopItemForm.desc || ''
+    };
+
+    if (editingShopItem) {
+      const updated = { ...editingShopItem, ...formattedItem };
+      try {
+        await supabase.from('shop_items').update(updated).eq('id', editingShopItem.id);
+        setShopItems(shopItems.map(i => i.id === editingShopItem.id ? updated : i));
+        setEditingShopItem(null);
+        alert("✅ Gift Shop Item Updated!");
+      } catch (err) { alert("Update failed: " + err.message); }
+    } else {
+      const newItem = { id: `item_${Date.now()}`, ...formattedItem };
+      try {
+        await supabase.from('shop_items').insert([newItem]);
+        setShopItems([newItem, ...shopItems]);
+        alert("✅ New Gift Shop Item Created!");
+      } catch (err) { alert("Create failed: " + err.message); }
+    }
+    setShopItemForm({ name: '', category: 'School Supplies', cost: 200, stock: 10, is_real: true, icon: '🎒', desc: '' });
+  };
+
+  const handleUpdateOrderStatus = (orderId, newStatus) => {
+    const targetOrder = orders.find(o => o.id === orderId);
+    if (!targetOrder) return;
+
+    if (newStatus === 'Cancelled') {
+      if (confirm(`Cancel order for ${targetOrder.student_name} and refund ${targetOrder.cost} EduCoins?`)) {
+        setCoins(prev => prev + targetOrder.cost);
+        setTotalSpent(prev => Math.max(0, prev - targetOrder.cost));
+        
+        // Return item stock
+        setShopItems(shopItems.map(i => i.id === targetOrder.item_id ? { ...i, stock: i.stock + 1 } : i));
+        setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'Cancelled' } : o));
+      }
+      return;
+    }
+
+    setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+  };
+
+  const handleDeleteInventoryItem = async (id) => {
+    if (confirm("Delete this shop item?")) {
+      try { await supabase.from('shop_items').delete().eq('id', id); } catch (e) { console.warn(e); }
+      setShopItems(shopItems.filter(i => i.id !== id));
+    }
+  };
+
+  // --- Admin Books & Badges CRUD Operations ---
   const handleSaveBook = async (e) => {
     e.preventDefault();
     if (!bookForm.title || !bookForm.author || !bookForm.pageText) return alert("Please fill title, author, and chapter page text.");
@@ -1481,41 +1613,6 @@ export default function App() {
     if (confirm("Delete this book?")) {
       try { await supabase.from('books').delete().eq('id', id); } catch (e) { console.warn(e); }
       setBooks(books.filter(b => b.id !== id));
-    }
-  };
-
-  const handleSavePrize = async (e) => {
-    e.preventDefault();
-    if (!prizeForm.name || !prizeForm.cost) return alert("Please fill prize name and cost.");
-
-    if (editingPrize) {
-      const updatedPrize = { ...editingPrize, name: prizeForm.name, category: prizeForm.category, cost: parseInt(prizeForm.cost), icon: prizeForm.icon, desc: prizeForm.desc };
-      try {
-        await supabase.from('shop_items').update(updatedPrize).eq('id', editingPrize.id);
-        setShopItems(shopItems.map(i => i.id === editingPrize.id ? updatedPrize : i));
-        setEditingPrize(null);
-        alert("✅ Shop prize updated!");
-      } catch (err) { alert("Update failed: " + err.message); }
-    } else {
-      const newPrize = { id: `item_${Date.now()}`, name: prizeForm.name, category: prizeForm.category, cost: parseInt(prizeForm.cost), icon: prizeForm.icon, desc: prizeForm.desc };
-      try {
-        await supabase.from('shop_items').insert([newPrize]);
-        setShopItems([newPrize, ...shopItems]);
-        alert("✅ Shop prize created!");
-      } catch (err) { alert("Create failed: " + err.message); }
-    }
-    setPrizeForm({ name: '', category: 'Privilege', cost: 200, icon: '🎁', desc: '' });
-  };
-
-  const startEditPrize = (item) => {
-    setEditingPrize(item);
-    setPrizeForm({ name: item.name, category: item.category, cost: item.cost, icon: item.icon, desc: item.desc || '' });
-  };
-
-  const handleDeletePrize = async (id) => {
-    if (confirm("Delete this shop prize?")) {
-      try { await supabase.from('shop_items').delete().eq('id', id); } catch (e) { console.warn(e); }
-      setShopItems(shopItems.filter(i => i.id !== id));
     }
   };
 
@@ -1679,13 +1776,6 @@ export default function App() {
   });
 
   const filteredLibraryBooks = books.filter(b => selectedSubject === 'All' || b.subject === selectedSubject);
-  const currentBookBatch = filteredLibraryBooks.slice(bookBatchIndex * 3, (bookBatchIndex * 3) + 3);
-
-  const rotateBookBatch = () => {
-    const totalBatches = Math.ceil(filteredLibraryBooks.length / 3) || 1;
-    setBookBatchIndex((prev) => (prev + 1) % totalBatches);
-  };
-
   const currentRank = getStudentRank(xp);
 
   // =========================================================================
@@ -1739,7 +1829,7 @@ export default function App() {
                 Empowering Students with <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">Smart Topic Diagnostics</span>
               </h1>
               <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
-                Access Cambridge O-Level past papers, grade practice vaults, bilingual Dhivehi and Islam library e-books, physical library reading hour logging, and real-time teacher topic analytics.
+                Access Cambridge O-Level past papers, grade practice vaults, bilingual Dhivehi and Islam library e-books, physical library reading hour logging, and kids cash management gift shop.
               </p>
             </div>
 
@@ -1788,8 +1878,8 @@ export default function App() {
                 <div className="w-10 h-10 bg-purple-500/20 rounded-2xl flex items-center justify-center text-purple-400">
                   <Coins className="w-5 h-5" />
                 </div>
-                <h3 className="text-sm font-bold text-white">Gamified Rewards</h3>
-                <p className="text-xs text-slate-400">Earn EduCoins for reading and testing to redeem shop privileges.</p>
+                <h3 className="text-sm font-bold text-white">Kids Cash & Gift Shop</h3>
+                <p className="text-xs text-slate-400">Earn EduCoins for reading and testing to buy real items at the school shop.</p>
               </div>
             </div>
           </main>
@@ -1878,26 +1968,33 @@ export default function App() {
             <div className="bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-2xl space-y-5">
               <div className="text-center space-y-1">
                 <h2 className="text-2xl font-black text-white">Create Account</h2>
-                <p className="text-xs text-slate-400">Register as a Student or Teacher</p>
+                <p className="text-xs text-slate-400">Register as Student, Teacher, or Shop Manager</p>
               </div>
 
               <form onSubmit={handleRegister} className="space-y-3.5">
                 <div>
                   <label className="text-xs font-bold text-slate-300 block mb-1">Account Role</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-1.5">
                     <button
                       type="button"
                       onClick={() => setRole('student')}
-                      className={`py-2 text-xs font-bold rounded-xl border transition ${role === 'student' ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
+                      className={`py-2 text-[11px] font-bold rounded-xl border transition ${role === 'student' ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
                     >
                       🎓 Student
                     </button>
                     <button
                       type="button"
                       onClick={() => setRole('teacher')}
-                      className={`py-2 text-xs font-bold rounded-xl border transition ${role === 'teacher' ? 'bg-purple-600 border-purple-600 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
+                      className={`py-2 text-[11px] font-bold rounded-xl border transition ${role === 'teacher' ? 'bg-purple-600 border-purple-600 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
                     >
                       👨‍🏫 Teacher
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRole('shop_admin')}
+                      className={`py-2 text-[11px] font-bold rounded-xl border transition ${role === 'shop_admin' ? 'bg-amber-600 border-amber-600 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
+                    >
+                      🏬 Shop CP
                     </button>
                   </div>
                 </div>
@@ -2096,9 +2193,10 @@ export default function App() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto">
+            {/* Wallet Widget */}
             <div className="flex items-center space-x-2.5 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-700">
               <span className={`px-2 py-0.5 rounded-full text-[11px] font-black ${currentRank.bg} ${currentRank.text}`}>
-                {role === 'teacher' ? '👨‍🏫 Teacher' : currentRank.title}
+                {role === 'teacher' ? '👨‍🏫 Teacher' : role === 'shop_admin' ? '🏬 Shop CP' : currentRank.title}
               </span>
               <div className="flex items-center space-x-1 text-emerald-700">
                 <Clock className="w-3.5 h-3.5 text-emerald-600" />
@@ -2106,7 +2204,7 @@ export default function App() {
               </div>
               <div className="flex items-center space-x-1 text-amber-600">
                 <Coins className="w-3.5 h-3.5" />
-                <span>{coins}</span>
+                <span>{coins} Coins</span>
               </div>
               <div className="flex items-center space-x-1 text-indigo-600">
                 <Zap className="w-3.5 h-3.5" />
@@ -2155,9 +2253,16 @@ export default function App() {
 
           <button
             onClick={() => navigateToTab('shop')}
-            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'shop' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'text-slate-600 hover:bg-slate-100'}`}
+            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'shop' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}`}
           >
-            <ShoppingBag className="w-3.5 h-3.5 text-amber-600" /> <span>Reward Shop</span>
+            <ShoppingBag className="w-3.5 h-3.5" /> <span>Student Gift Shop</span>
+          </button>
+
+          <button
+            onClick={() => navigateToTab('my_orders')}
+            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'my_orders' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}`}
+          >
+            <History className="w-3.5 h-3.5" /> <span>My Orders & Ledger</span>
           </button>
 
           <button
@@ -2174,6 +2279,15 @@ export default function App() {
             <Trophy className="w-3.5 h-3.5 text-yellow-600" /> <span>Leaderboard</span>
           </button>
 
+          {(role === 'shop_admin' || role === 'teacher' || role === 'admin') && (
+            <button
+              onClick={() => navigateToTab('shop_management')}
+              className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'shop_management' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-800 hover:bg-slate-200'}`}
+            >
+              <Settings className="w-3.5 h-3.5 text-amber-400" /> <span>🏬 Shop CP</span>
+            </button>
+          )}
+
           {(role === 'teacher' || role === 'admin') && (
             <>
               <button
@@ -2187,7 +2301,7 @@ export default function App() {
                 onClick={() => navigateToTab('settings')}
                 className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'settings' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'text-slate-600 hover:bg-slate-100'}`}
               >
-                <Settings className="w-3.5 h-3.5 text-rose-600" /> <span>⚙️ Admin Settings</span>
+                <Settings className="w-3.5 h-3.5 text-rose-600" /> <span>⚙️ System Admin</span>
               </button>
             </>
           )}
@@ -2317,10 +2431,9 @@ export default function App() {
               </div>
             </div>
 
-            {/* Subject Filter Bar */}
             <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none py-1 w-full">
               <button
-                onClick={() => { setSelectedSubject('All'); setBookBatchIndex(0); }}
+                onClick={() => setSelectedSubject('All')}
                 className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${selectedSubject === 'All' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
               >
                 All Subjects
@@ -2328,7 +2441,7 @@ export default function App() {
               {ALL_SUBJECTS.map((subj) => (
                 <button
                   key={subj}
-                  onClick={() => { setSelectedSubject(subj); setBookBatchIndex(0); }}
+                  onClick={() => setSelectedSubject(subj)}
                   className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${subj === 'Dhivehi' || subj === 'Islam' ? 'font-faruma' : ''} ${selectedSubject === subj ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {subj === 'Dhivehi' ? '🇲🇻 ދިވެހި' : subj === 'Islam' ? '☪️ އިސްލާމް' : subj}
@@ -2336,7 +2449,6 @@ export default function App() {
               ))}
             </div>
 
-            {/* Book Grid Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {filteredLibraryBooks.map((book) => {
                 const isRTL = isRTLSubject(book.subject);
@@ -2345,37 +2457,25 @@ export default function App() {
                 return (
                   <div key={book.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between">
                     <div>
-                      {/* Cover Image Container */}
                       <div className="relative h-48 w-full bg-slate-100 overflow-hidden">
                         <img
                           src={book.cover_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80'}
                           alt={book.title}
                           className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                         />
-                        
                         <span className={`absolute top-3 left-3 text-[11px] font-bold px-2.5 py-1 rounded-xl shadow-xs ${isRTL ? 'bg-amber-500 text-white font-faruma' : 'bg-emerald-600 text-white'}`}>
                           {book.subject}
                         </span>
-
                         <span className="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-xs text-amber-300 text-[11px] font-black px-2.5 py-1 rounded-xl flex items-center space-x-1 shadow-xs">
                           <Clock className="w-3.5 h-3.5" />
                           <span>{book.reading_hours || 2.0} Reading Hrs</span>
                         </span>
-
-                        {isCompleted && (
-                          <span className="absolute top-3 right-3 bg-emerald-500 text-white text-[10px] font-black px-2.5 py-1 rounded-xl flex items-center space-x-1 shadow-xs">
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>Logged</span>
-                          </span>
-                        )}
                       </div>
 
-                      {/* Card Body */}
                       <div className="p-5 space-y-3">
                         <div className={isRTL ? 'text-right font-faruma' : 'text-left'} dir={isRTL ? 'rtl' : 'ltr'}>
                           <h4 className={`font-black text-slate-900 ${isRTL ? 'text-xl' : 'text-base'}`}>{book.title}</h4>
                           <p className="text-xs text-slate-400 mt-0.5">By {book.author}</p>
-                          
                           <div className={`mt-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-600 italic ${isRTL ? 'text-xs leading-relaxed font-faruma' : 'text-xs leading-relaxed font-serif'}`}>
                             "{book.extract || (Array.isArray(book.pages) ? book.pages[0].slice(0, 120) + '...' : '')}"
                           </div>
@@ -2383,7 +2483,6 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="p-5 pt-0 space-y-2">
                       <div className="grid grid-cols-2 gap-2">
                         <button
@@ -2397,9 +2496,7 @@ export default function App() {
                         <button
                           onClick={() => setClaimingBook(book)}
                           className={`w-full font-bold py-2.5 rounded-2xl text-xs flex items-center justify-center space-x-1 transition ${
-                            isCompleted
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                            isCompleted ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
                           }`}
                         >
                           <Award className="w-3.5 h-3.5" />
@@ -2429,7 +2526,7 @@ export default function App() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search past papers..."
-                  className="bg-white/10 text-white placeholder-amber-200 border border-amber-700/50 rounded-xl px-3 py-1.5 text-xs w-full sm:w-48 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="bg-white/10 text-white placeholder-amber-200 border border-amber-700/50 rounded-xl px-3 py-1.5 text-xs w-full sm:w-48 focus:outline-none"
                 />
               </div>
             </div>
@@ -2452,98 +2549,429 @@ export default function App() {
               ))}
             </div>
 
-            {oLevelQuizzes.length === 0 ? (
-              <div className="text-center py-12 bg-white border border-slate-200 rounded-3xl p-6 space-y-3">
-                <GraduationCap className="w-10 h-10 text-amber-600 mx-auto" />
-                <h3 className="text-base font-bold text-slate-800">No O-Level Past Papers Found for "{selectedSubject}"</h3>
-                <p className="text-xs text-slate-500">Teachers can add O-Level past papers for this subject in the Teacher Studio!</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {oLevelQuizzes.map((quiz) => {
+                const isChallengeDone = completedChallenges.includes(quiz.id);
+                return (
+                  <div key={quiz.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col justify-between shadow-xs hover:border-amber-300 transition">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs bg-amber-50 text-amber-800 px-2.5 py-1 rounded-lg font-bold">
+                          {quiz.subject} {quiz.subject_code ? `(${quiz.subject_code})` : ''}
+                        </span>
+                        {(role === 'teacher' || role === 'admin') && (
+                          <button onClick={() => deleteQuiz(quiz.id)} className="p-1 text-slate-400 hover:text-red-600">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      <h3 className="text-base font-bold text-slate-900">{quiz.title}</h3>
+                      <p className="text-xs text-slate-500 mt-1 mb-4">{quiz.questions.length} Exam Questions</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100">
+                      <button onClick={() => startQuiz(quiz, 'practice')} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-bold transition">
+                        Practice Mode
+                      </button>
+                      
+                      <button
+                        onClick={() => startQuiz(quiz, 'challenge')}
+                        disabled={isChallengeDone}
+                        className={`w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1 ${isChallengeDone ? 'bg-amber-50 border border-amber-200 text-amber-800 cursor-not-allowed' : 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs'}`}
+                      >
+                        {isChallengeDone ? (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
+                            <span>✓ Completed</span>
+                          </>
+                        ) : (
+                          <span>Timed Exam</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: STUDENT GIFT SHOP & KIDS CASH MANAGEMENT HUB */}
+        {activeTab === 'shop' && !activeQuiz && (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white rounded-3xl p-6 sm:p-8 shadow-md space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider bg-white/20 px-3 py-1 rounded-full">
+                    💡 Smart Economics & Cash Management
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-black mt-2">Welcome to Your Wallet Hub!</h2>
+                  <p className="text-xs text-amber-100 mt-1">
+                    Earn EduCoins by answering quizzes and logging library reading. Spend wisely or save for bigger goals!
+                  </p>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-center min-w-[160px]">
+                  <span className="text-[10px] uppercase font-bold text-amber-200 block">Available Balance</span>
+                  <span className="text-3xl font-black text-white">{coins} 🪙</span>
+                </div>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {oLevelQuizzes.map((quiz) => {
-                  const isChallengeDone = completedChallenges.includes(quiz.id);
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                <div className="bg-white/10 backdrop-blur-xs p-3.5 rounded-2xl border border-white/10 flex items-center space-x-3">
+                  <div className="p-2.5 bg-emerald-500/20 rounded-xl text-emerald-300">
+                    <DollarSign className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-amber-100 font-bold block">Lifetime Earned</span>
+                    <span className="text-base font-black">{totalEarned} EduCoins</span>
+                  </div>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-xs p-3.5 rounded-2xl border border-white/10 flex items-center space-x-3">
+                  <div className="p-2.5 bg-rose-500/20 rounded-xl text-rose-300">
+                    <ShoppingBag className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-amber-100 font-bold block">Total Spent</span>
+                    <span className="text-base font-black">{totalSpent} EduCoins</span>
+                  </div>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-xs p-3.5 rounded-2xl border border-white/10 flex items-center space-x-3">
+                  <div className="p-2.5 bg-purple-500/20 rounded-xl text-purple-300">
+                    <PiggyBank className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-amber-100 font-bold block">Savings Goal</span>
+                    <span className="text-base font-black">{savingsGoal.item} ({Math.min(100, Math.round((coins / savingsGoal.target) * 100))}%)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-black text-slate-900">School Gift Shop Items</h3>
+                  <p className="text-xs text-slate-500">Real items can be claimed physically at the school store!</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {shopItems.map((item) => {
+                  const canAfford = coins >= item.cost;
+                  const inStock = item.stock > 0;
+
                   return (
-                    <div key={quiz.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col justify-between shadow-xs hover:border-amber-300 transition">
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs bg-amber-50 text-amber-800 px-2.5 py-1 rounded-lg font-bold">
-                            {quiz.subject} {quiz.subject_code ? `(${quiz.subject_code})` : ''}
+                    <div key={item.id} className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs hover:border-amber-400 transition flex flex-col justify-between space-y-4">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between">
+                          <span className="text-4xl p-2 bg-amber-50 rounded-2xl">{item.icon}</span>
+                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${item.is_real ? 'bg-emerald-100 text-emerald-800' : 'bg-purple-100 text-purple-800'}`}>
+                            {item.is_real ? '🎒 Physical Item' : '✨ Digital Perk'}
                           </span>
-                          {(role === 'teacher' || role === 'admin') && (
-                            <button onClick={() => deleteQuiz(quiz.id)} className="p-1 text-slate-400 hover:text-red-600">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
                         </div>
-                        <h3 className="text-base font-bold text-slate-900">{quiz.title}</h3>
-                        <p className="text-xs text-slate-500 mt-1 mb-4">{quiz.questions.length} Exam Questions</p>
+
+                        <div>
+                          <h4 className="font-bold text-slate-900 text-base">{item.name}</h4>
+                          <span className="text-[11px] text-slate-400 font-medium block">{item.category}</span>
+                          <p className="text-xs text-slate-600 mt-2 leading-relaxed">{item.desc}</p>
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100">
-                        <button onClick={() => startQuiz(quiz, 'practice')} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-bold transition">
-                          Practice Mode
-                        </button>
-                        
+                      <div className="pt-3 border-t border-slate-100 space-y-3">
+                        <div className="flex items-center justify-between text-xs font-bold">
+                          <span className="text-amber-600 font-black text-lg">{item.cost} EduCoins</span>
+                          <span className={`${inStock ? 'text-slate-500' : 'text-rose-600 font-bold'}`}>
+                            {inStock ? `Stock: ${item.stock}` : 'Out of Stock'}
+                          </span>
+                        </div>
+
                         <button
-                          onClick={() => startQuiz(quiz, 'challenge')}
-                          disabled={isChallengeDone}
-                          className={`w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1 ${isChallengeDone ? 'bg-amber-50 border border-amber-200 text-amber-800 cursor-not-allowed' : 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs'}`}
+                          onClick={() => handlePurchaseItem(item)}
+                          disabled={!canAfford || !inStock}
+                          className={`w-full py-2.5 rounded-2xl text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                            !inStock
+                              ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                              : canAfford
+                              ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-md'
+                              : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                          }`}
                         >
-                          {isChallengeDone ? (
-                            <>
-                              <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
-                              <span>✓ Completed</span>
-                            </>
-                          ) : (
-                            <span>Timed Exam</span>
-                          )}
+                          <ShoppingCart className="w-4 h-4" />
+                          <span>
+                            {!inStock ? 'Out of Stock' : canAfford ? 'Buy with EduCoins' : `Need ${item.cost - coins} More Coins`}
+                          </span>
                         </button>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            )}
+            </div>
           </div>
         )}
 
-        {/* TAB 4: REWARD SHOP */}
-        {activeTab === 'shop' && !activeQuiz && (
-          <div className="space-y-6">
-            <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-black">EduCoins Reward Shop</h2>
-                <p className="text-xs text-amber-100">Redeem rewards earned from quizzes and library reading!</p>
-              </div>
-              <div className="bg-white text-amber-600 px-4 py-2 rounded-2xl font-black text-sm">{coins} Coins</div>
+        {/* TAB 5: MY ORDERS & CASH LEDGER */}
+        {activeTab === 'my_orders' && !activeQuiz && (
+          <div className="space-y-6 max-w-4xl mx-auto">
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-2">
+              <h3 className="text-xl font-black text-slate-900">My Purchase Ledger & Claim Codes</h3>
+              <p className="text-xs text-slate-500">
+                Show your claim code to the school store manager to receive your physical items!
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {shopItems.map((item) => (
-                <div key={item.id} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
+            <div className="bg-white border border-slate-200 rounded-3xl divide-y divide-slate-100 shadow-xs overflow-hidden">
+              {orders.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-400">You haven't purchased any items yet.</div>
+              ) : (
+                orders.map((ord) => (
+                  <div key={ord.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-black text-sm text-slate-900">{ord.item_name}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          ord.status === 'Fulfilled' ? 'bg-emerald-100 text-emerald-800' :
+                          ord.status === 'Cancelled' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {ord.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500">Date: {ord.date} • Cost: {ord.cost} EduCoins</p>
+                    </div>
+
+                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl text-center sm:text-right">
+                      <span className="text-[10px] font-bold text-slate-400 block uppercase">Store Claim Code</span>
+                      <span className="font-mono font-black text-sm text-indigo-600">{ord.claim_code}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: DEDICATED SHOP CONTROL PANEL (CP MANAGER/TEACHER) */}
+        {activeTab === 'shop_management' && (role === 'shop_admin' || role === 'teacher' || role === 'admin') && (
+          <div className="space-y-8 max-w-5xl mx-auto">
+            <div className="bg-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg space-y-2">
+              <div className="flex items-center space-x-2 text-amber-400">
+                <Settings className="w-5 h-5" />
+                <span className="text-xs font-bold uppercase tracking-wider">Separate Shop Control Panel</span>
+              </div>
+              <h2 className="text-2xl font-black">Gift Shop Management Console</h2>
+              <p className="text-xs text-slate-400">
+                Manage physical item inventory, prices, real-time stock levels, and process student orders.
+              </p>
+            </div>
+
+            {/* ORDER FULFILLMENT & STUDENT PURCHASES LEDGER */}
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <h3 className="text-base font-black text-slate-900">Student Purchase Orders & Fulfillment</h3>
+                  <p className="text-xs text-slate-500">Verify student claim codes and hand over physical store items.</p>
+                </div>
+                <span className="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full">
+                  {orders.filter(o => o.status === 'Pending').length} Pending Requests
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">
+                      <th className="py-2 px-3">Student</th>
+                      <th className="py-2 px-3">Item Purchased</th>
+                      <th className="py-2 px-3">Cost</th>
+                      <th className="py-2 px-3 font-mono">Claim Code</th>
+                      <th className="py-2 px-3 text-center">Status</th>
+                      <th className="py-2 px-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {orders.map((ord) => (
+                      <tr key={ord.id} className="hover:bg-slate-50">
+                        <td className="py-3 px-3 font-bold text-slate-900">
+                          {ord.student_name}
+                          <span className="block text-[10px] text-slate-400 font-mono font-normal">{ord.index_number}</span>
+                        </td>
+                        <td className="py-3 px-3 font-semibold text-slate-800">{ord.item_name}</td>
+                        <td className="py-3 px-3 font-bold text-amber-600">{ord.cost} Coins</td>
+                        <td className="py-3 px-3 font-mono font-bold text-indigo-600">{ord.claim_code}</td>
+                        <td className="py-3 px-3 text-center">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
+                            ord.status === 'Fulfilled' ? 'bg-emerald-100 text-emerald-800' :
+                            ord.status === 'Cancelled' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {ord.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-right space-x-1">
+                          {ord.status === 'Pending' && (
+                            <>
+                              <button
+                                onClick={() => handleUpdateOrderStatus(ord.id, 'Fulfilled')}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg font-bold text-[11px] shadow-xs"
+                              >
+                                ✓ Hand Over Item
+                              </button>
+                              <button
+                                onClick={() => handleUpdateOrderStatus(ord.id, 'Cancelled')}
+                                className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2 py-1 rounded-lg font-bold text-[11px]"
+                              >
+                                Refund
+                              </button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* INVENTORY MANAGEMENT FORM & TABLE */}
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-6">
+              <div className="border-b border-slate-100 pb-3">
+                <h3 className="text-base font-black text-slate-900">
+                  {editingShopItem ? '✏️ Edit Gift Shop Item' : '➕ Add New Gift Shop Item'}
+                </h3>
+                <p className="text-xs text-slate-500">Create real products or digital rewards for kids to purchase.</p>
+              </div>
+
+              <form onSubmit={handleSaveInventoryItem} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <span className="text-3xl">{item.icon}</span>
-                    <h3 className="font-bold text-slate-900 text-base mt-2">{item.name}</h3>
-                    <p className="text-xs text-slate-500 mt-1">{item.desc}</p>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Item Name</label>
+                    <input
+                      type="text"
+                      value={shopItemForm.name}
+                      onChange={(e) => setShopItemForm({ ...shopItemForm, name: e.target.value })}
+                      placeholder="e.g. Science Lab Kit"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800"
+                      required
+                    />
                   </div>
 
-                  <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                    <span className="font-black text-amber-600 text-sm">{item.cost} Coins</span>
-                    <button
-                      onClick={() => handleRedeemReward(item)}
-                      disabled={coins < item.cost}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold ${coins >= item.cost ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-400'}`}
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Category</label>
+                    <select
+                      value={shopItemForm.category}
+                      onChange={(e) => setShopItemForm({ ...shopItemForm, category: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800"
                     >
-                      Redeem
-                    </button>
+                      <option value="School Supplies">School Supplies</option>
+                      <option value="Stationery">Stationery</option>
+                      <option value="Privileges">Privileges</option>
+                      <option value="Digital Perks">Digital Perks</option>
+                      <option value="Toys & Games">Toys & Games</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Emoji Icon</label>
+                    <input
+                      type="text"
+                      value={shopItemForm.icon}
+                      onChange={(e) => setShopItemForm({ ...shopItemForm, icon: e.target.value })}
+                      placeholder="e.g. 🎨"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800"
+                    />
                   </div>
                 </div>
-              ))}
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Cost in EduCoins</label>
+                    <input
+                      type="number"
+                      value={shopItemForm.cost}
+                      onChange={(e) => setShopItemForm({ ...shopItemForm, cost: e.target.value })}
+                      placeholder="200"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-amber-700"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Stock Quantity</label>
+                    <input
+                      type="number"
+                      value={shopItemForm.stock}
+                      onChange={(e) => setShopItemForm({ ...shopItemForm, stock: e.target.value })}
+                      placeholder="15"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex items-center pt-5">
+                    <label className="flex items-center space-x-2 text-xs font-bold text-slate-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={shopItemForm.is_real}
+                        onChange={(e) => setShopItemForm({ ...shopItemForm, is_real: e.target.checked })}
+                        className="rounded text-amber-500"
+                      />
+                      <span>Physical Store Item (Physical Fulfillment)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Item Description</label>
+                  <input
+                    type="text"
+                    value={shopItemForm.desc}
+                    onChange={(e) => setShopItemForm({ ...shopItemForm, desc: e.target.value })}
+                    placeholder="Short description for students..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800"
+                  />
+                </div>
+
+                <div className="flex space-x-2 pt-2">
+                  <button type="submit" className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md">
+                    {editingShopItem ? 'Save Product Changes' : 'Publish to Student Shop'}
+                  </button>
+                  {editingShopItem && (
+                    <button type="button" onClick={() => setEditingShopItem(null)} className="bg-slate-100 text-slate-600 font-bold px-4 py-2.5 rounded-xl text-xs">
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </form>
+
+              <div className="divide-y divide-slate-100 pt-4 border-t border-slate-100">
+                <h4 className="font-bold text-xs text-slate-400 uppercase mb-2">Current Shop Inventory ({shopItems.length})</h4>
+                {shopItems.map((i) => (
+                  <div key={i.id} className="py-3 flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl p-1.5 bg-slate-50 rounded-xl">{i.icon}</span>
+                      <div>
+                        <h5 className="font-bold text-xs text-slate-900">{i.name}</h5>
+                        <span className="text-[11px] text-slate-500">{i.category} • {i.cost} EduCoins • Stock: <strong>{i.stock}</strong></span>
+                      </div>
+                    </div>
+                    <div className="flex space-x-1">
+                      <button onClick={() => { setEditingShopItem(i); setShopItemForm(i); }} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl">
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDeleteInventoryItem(i.id)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {/* TAB 5: MY PROFILE & TOPIC ANALYTICS */}
+        {/* TAB 7: MY PROFILE & TOPIC ANALYTICS */}
         {activeTab === 'profile' && !activeQuiz && (
           <div className="space-y-6 max-w-5xl mx-auto">
             <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
@@ -2601,7 +3029,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 6: TEACHER STUDIO */}
+        {/* TAB 8: TEACHER STUDIO */}
         {activeTab === 'studio' && (role === 'teacher' || role === 'admin') && (
           <div className="max-w-5xl mx-auto space-y-6">
             <TeacherStudentTracker subjects={ALL_SUBJECTS} />
@@ -2713,7 +3141,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 7: COMPLETE ADMIN CRUD CENTER */}
+        {/* TAB 9: SYSTEM ADMIN CRUD */}
         {activeTab === 'settings' && (role === 'teacher' || role === 'admin') && (
           <div className="max-w-5xl mx-auto space-y-6">
             <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
@@ -2721,19 +3149,18 @@ export default function App() {
                 <Settings className="w-7 h-7 text-rose-600" />
                 <div>
                   <h2 className="text-xl font-black text-slate-900">Admin CRUD Management Center</h2>
-                  <p className="text-xs text-slate-500">Full Create, Read, Edit, and Delete access for Books, Shop Prizes, Badges, and Quizzes.</p>
+                  <p className="text-xs text-slate-500">Full Create, Read, Edit, and Delete access for Books, Badges, and Quizzes.</p>
                 </div>
               </div>
 
               <div className="flex items-center space-x-2 pt-2 border-t border-slate-100 overflow-x-auto scrollbar-none">
                 <button onClick={() => setAdminTab('books')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'books' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>📚 Manage Books ({books.length})</button>
-                <button onClick={() => setAdminTab('prizes')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'prizes' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'}`}>🎁 Shop Prizes ({shopItems.length})</button>
                 <button onClick={() => setAdminTab('badges')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'badges' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600'}`}>🏅 Badges ({badges.length})</button>
                 <button onClick={() => setAdminTab('quizzes')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'quizzes' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>📝 Quizzes ({quizzes.length})</button>
               </div>
             </div>
 
-            {/* 1. BOOKS CRUD WITH READING HOURS & CLAIM CODES */}
+            {/* BOOKS CRUD WITH READING HOURS & CLAIM CODES */}
             {adminTab === 'books' && (
               <div className="space-y-6">
                 <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
@@ -2815,54 +3242,7 @@ export default function App() {
               </div>
             )}
 
-            {/* 2. SHOP PRIZES CRUD */}
-            {adminTab === 'prizes' && (
-              <div className="space-y-6">
-                <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
-                  <h3 className="text-base font-black text-slate-900">{editingPrize ? '✏️ Edit Shop Prize' : '➕ Create New Shop Prize'}</h3>
-                  <form onSubmit={handleSavePrize} className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                      <input type="text" value={prizeForm.name} onChange={(e) => setPrizeForm({ ...prizeForm, name: e.target.value })} placeholder="Prize Name" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                      <input type="number" value={prizeForm.cost} onChange={(e) => setPrizeForm({ ...prizeForm, cost: e.target.value })} placeholder="EduCoins Cost" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                      <input type="text" value={prizeForm.icon} onChange={(e) => setPrizeForm({ ...prizeForm, icon: e.target.value })} placeholder="Emoji Icon (e.g. 🎟️)" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                      <select value={prizeForm.category} onChange={(e) => setPrizeForm({ ...prizeForm, category: e.target.value })} className="bg-slate-50 border rounded-xl p-2.5 text-xs font-bold text-slate-800">
-                        <option value="Privilege">Privilege</option>
-                        <option value="Digital Perk">Digital Perk</option>
-                        <option value="Booster">Booster</option>
-                      </select>
-                    </div>
-                    <input type="text" value={prizeForm.desc} onChange={(e) => setPrizeForm({ ...prizeForm, desc: e.target.value })} placeholder="Reward Description" className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                    <div className="flex space-x-2">
-                      <button type="submit" className="bg-amber-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs">{editingPrize ? 'Save Changes' : 'Create Prize'}</button>
-                      {editingPrize && <button type="button" onClick={() => setEditingPrize(null)} className="bg-slate-100 text-slate-600 font-bold px-4 py-2.5 rounded-xl text-xs">Cancel</button>}
-                    </div>
-                  </form>
-                </div>
-
-                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-3">
-                  <h3 className="text-base font-black text-slate-900">Shop Catalog</h3>
-                  <div className="divide-y divide-slate-100">
-                    {shopItems.map((item) => (
-                      <div key={item.id} className="py-3 flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-2xl">{item.icon}</span>
-                          <div>
-                            <h4 className="font-bold text-xs text-slate-900">{item.name}</h4>
-                            <span className="text-[11px] text-amber-600 font-bold">{item.cost} Coins • {item.category}</span>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button onClick={() => startEditPrize(item)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl"><Edit3 className="w-4 h-4" /></button>
-                          <button onClick={() => handleDeletePrize(item.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 3. BADGES CRUD */}
+            {/* BADGES CRUD */}
             {adminTab === 'badges' && (
               <div className="space-y-6">
                 <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
@@ -2927,7 +3307,7 @@ export default function App() {
               </div>
             )}
 
-            {/* 4. QUIZZES CRUD */}
+            {/* QUIZZES CRUD */}
             {adminTab === 'quizzes' && (
               <div className="space-y-6">
                 {editingQuiz && (
@@ -2993,7 +3373,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 8: LEADERBOARD */}
+        {/* TAB 10: LEADERBOARD */}
         {activeTab === 'leaderboard' && (
           <div className="max-w-xl mx-auto space-y-4">
             <div className="bg-white border border-slate-200 p-6 rounded-3xl text-center space-y-2 shadow-xs">
@@ -3009,7 +3389,7 @@ export default function App() {
                 leaderboardUsers.map((s, idx) => (
                   <div key={idx} className="p-4 flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <span className="text-base font-bold w-6">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`}</span>
+                      <span className="text-base font-bold w-6">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}</span>
                       <div>
                         <h4 className="font-bold text-xs sm:text-sm text-slate-900">{s.full_name || 'Student'}</h4>
                         <span className="text-[11px] text-slate-500 font-mono">ID: {s.index_number || 'N/A'} • Grade {s.grade}</span>
@@ -3028,27 +3408,9 @@ export default function App() {
           const isRTL = isRTLSubject(selectedBook.subject);
 
           const themeStyles = {
-            light: {
-              bg: 'bg-white',
-              cardBg: 'bg-slate-50 border-slate-200',
-              text: 'text-slate-900',
-              subText: 'text-slate-500',
-              border: 'border-slate-200'
-            },
-            sepia: {
-              bg: 'bg-[#f8f1e5]',
-              cardBg: 'bg-[#f0e6d2] border-[#e2d5bd]',
-              text: 'text-[#433422]',
-              subText: 'text-[#7c664d]',
-              border: 'border-[#e2d5bd]'
-            },
-            dark: {
-              bg: 'bg-slate-900',
-              cardBg: 'bg-slate-800 border-slate-700',
-              text: 'text-slate-100',
-              subText: 'text-slate-400',
-              border: 'border-slate-800'
-            }
+            light: { bg: 'bg-white', cardBg: 'bg-slate-50 border-slate-200', text: 'text-slate-900', subText: 'text-slate-500', border: 'border-slate-200' },
+            sepia: { bg: 'bg-[#f8f1e5]', cardBg: 'bg-[#f0e6d2] border-[#e2d5bd]', text: 'text-[#433422]', subText: 'text-[#7c664d]', border: 'border-[#e2d5bd]' },
+            dark: { bg: 'bg-slate-900', cardBg: 'bg-slate-800 border-slate-700', text: 'text-slate-100', subText: 'text-slate-400', border: 'border-slate-800' }
           };
 
           const currentTheme = themeStyles[readerTheme] || themeStyles.light;
@@ -3062,19 +3424,8 @@ export default function App() {
           };
 
           return (
-            <div
-              className={`fixed inset-0 z-50 flex items-center justify-center ${
-                isFullScreenReader ? 'p-0' : 'p-2 sm:p-4 bg-slate-900/70 backdrop-blur-xs'
-              }`}
-            >
-              <div
-                className={`${currentTheme.bg} ${currentTheme.text} transition-colors duration-200 ${
-                  isFullScreenReader
-                    ? 'w-full h-full rounded-none p-4 sm:p-8 flex flex-col justify-between overflow-y-auto'
-                    : 'rounded-3xl max-w-3xl w-full p-5 sm:p-8 space-y-5 max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col justify-between border ' + currentTheme.border
-                }`}
-              >
-                {/* TOOLBAR */}
+            <div className={`fixed inset-0 z-50 flex items-center justify-center ${isFullScreenReader ? 'p-0' : 'p-2 sm:p-4 bg-slate-900/70 backdrop-blur-xs'}`}>
+              <div className={`${currentTheme.bg} ${currentTheme.text} transition-colors duration-200 ${isFullScreenReader ? 'w-full h-full rounded-none p-4 sm:p-8 flex flex-col justify-between overflow-y-auto' : 'rounded-3xl max-w-3xl w-full p-5 sm:p-8 space-y-5 max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col justify-between border ' + currentTheme.border}`}>
                 <div className={`border-b ${currentTheme.border} pb-3 space-y-3`}>
                   <div className="flex items-center justify-between">
                     <div className={isRTL ? 'text-right font-faruma' : 'text-left'} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -3086,121 +3437,43 @@ export default function App() {
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setIsFullScreenReader(!isFullScreenReader)}
-                        className={`p-2 rounded-xl text-xs font-bold border transition ${
-                          isFullScreenReader ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
-                        }`}
-                        title={isFullScreenReader ? "Exit Full Screen" : "Read in Full Screen"}
-                      >
+                      <button onClick={() => setIsFullScreenReader(!isFullScreenReader)} className={`p-2 rounded-xl text-xs font-bold border transition ${isFullScreenReader ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'}`}>
                         {isFullScreenReader ? '📉 Exit Fullscreen' : '📺 Fullscreen'}
                       </button>
-
-                      <button
-                        onClick={() => {
-                          setSelectedBook(null);
-                          setIsFullScreenReader(false);
-                        }}
-                        className={`p-2 text-lg font-bold ${currentTheme.subText} hover:opacity-75`}
-                      >
-                        ✕
-                      </button>
+                      <button onClick={() => { setSelectedBook(null); setIsFullScreenReader(false); }} className={`p-2 text-lg font-bold ${currentTheme.subText} hover:opacity-75`}>✕</button>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                     <div className="flex items-center space-x-1 bg-slate-100/80 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold border border-slate-200/60 dark:border-slate-700">
                       <span className="text-[10px] text-slate-500 px-1 font-sans">Font Size:</span>
-                      <button
-                        disabled={readerFontSize === 'sm'}
-                        onClick={() => {
-                          const sizes = ['sm', 'base', 'lg', 'xl', '2xl'];
-                          const idx = sizes.indexOf(readerFontSize);
-                          if (idx > 0) setReaderFontSize(sizes[idx - 1]);
-                        }}
-                        className="px-2 py-1 rounded-lg bg-white dark:bg-slate-700 shadow-2xs font-mono font-black text-slate-800 dark:text-slate-100 disabled:opacity-40"
-                      >
-                        A-
-                      </button>
+                      <button disabled={readerFontSize === 'sm'} onClick={() => { const s = ['sm', 'base', 'lg', 'xl', '2xl']; setReaderFontSize(s[Math.max(0, s.indexOf(readerFontSize) - 1)]); }} className="px-2 py-1 rounded-lg bg-white dark:bg-slate-700 shadow-2xs font-mono font-black text-slate-800 dark:text-slate-100 disabled:opacity-40">A-</button>
                       <span className="text-xs font-mono px-1 font-bold uppercase">{readerFontSize}</span>
-                      <button
-                        disabled={readerFontSize === '2xl'}
-                        onClick={() => {
-                          const sizes = ['sm', 'base', 'lg', 'xl', '2xl'];
-                          const idx = sizes.indexOf(readerFontSize);
-                          if (idx < sizes.length - 1) setReaderFontSize(sizes[idx + 1]);
-                        }}
-                        className="px-2 py-1 rounded-lg bg-white dark:bg-slate-700 shadow-2xs font-mono font-black text-slate-800 dark:text-slate-100 disabled:opacity-40"
-                      >
-                        A+
-                      </button>
+                      <button disabled={readerFontSize === '2xl'} onClick={() => { const s = ['sm', 'base', 'lg', 'xl', '2xl']; setReaderFontSize(s[Math.min(s.length - 1, s.indexOf(readerFontSize) + 1)]); }} className="px-2 py-1 rounded-lg bg-white dark:bg-slate-700 shadow-2xs font-mono font-black text-slate-800 dark:text-slate-100 disabled:opacity-40">A+</button>
                     </div>
 
                     <div className="flex items-center space-x-1.5 bg-slate-100/80 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold border border-slate-200/60 dark:border-slate-700">
-                      <button
-                        onClick={() => setReaderTheme('light')}
-                        className={`px-2.5 py-1 rounded-lg text-xs transition ${
-                          readerTheme === 'light' ? 'bg-white text-slate-900 shadow-2xs font-black' : 'text-slate-500'
-                        }`}
-                      >
-                        ☀️ Light
-                      </button>
-                      <button
-                        onClick={() => setReaderTheme('sepia')}
-                        className={`px-2.5 py-1 rounded-lg text-xs transition ${
-                          readerTheme === 'sepia' ? 'bg-[#f0e6d2] text-[#433422] shadow-2xs font-black' : 'text-slate-500'
-                        }`}
-                      >
-                        📜 Sepia
-                      </button>
-                      <button
-                        onClick={() => setReaderTheme('dark')}
-                        className={`px-2.5 py-1 rounded-lg text-xs transition ${
-                          readerTheme === 'dark' ? 'bg-slate-900 text-white shadow-2xs font-black' : 'text-slate-500'
-                        }`}
-                      >
-                        🌙 Dark
-                      </button>
+                      <button onClick={() => setReaderTheme('light')} className={`px-2.5 py-1 rounded-lg text-xs transition ${readerTheme === 'light' ? 'bg-white text-slate-900 shadow-2xs font-black' : 'text-slate-500'}`}>☀️ Light</button>
+                      <button onClick={() => setReaderTheme('sepia')} className={`px-2.5 py-1 rounded-lg text-xs transition ${readerTheme === 'sepia' ? 'bg-[#f0e6d2] text-[#433422] shadow-2xs font-black' : 'text-slate-500'}`}>📜 Sepia</button>
+                      <button onClick={() => setReaderTheme('dark')} className={`px-2.5 py-1 rounded-lg text-xs transition ${readerTheme === 'dark' ? 'bg-slate-900 text-white shadow-2xs font-black' : 'text-slate-500'}`}>🌙 Dark</button>
                     </div>
                   </div>
                 </div>
 
-                {/* READING CONTENT */}
                 <div className="flex-1 my-4">
-                  <div
-                    dir={isRTL ? 'rtl' : 'ltr'}
-                    className={`${currentTheme.cardBg} p-5 sm:p-8 rounded-2xl border ${currentTheme.border} ${currentTheme.text} whitespace-pre-line min-h-[280px] ${
-                      fontSizeClasses[readerFontSize]
-                    } ${isRTL ? 'text-right font-faruma tracking-wide' : 'text-left font-serif'}`}
-                  >
-                    {Array.isArray(selectedBook.pages)
-                      ? selectedBook.pages[bookPageIndex] || selectedBook.pages[0]
-                      : selectedBook.pages}
+                  <div dir={isRTL ? 'rtl' : 'ltr'} className={`${currentTheme.cardBg} p-5 sm:p-8 rounded-2xl border ${currentTheme.border} ${currentTheme.text} whitespace-pre-line min-h-[280px] ${fontSizeClasses[readerFontSize]} ${isRTL ? 'text-right font-faruma tracking-wide' : 'text-left font-serif'}`}>
+                    {Array.isArray(selectedBook.pages) ? selectedBook.pages[bookPageIndex] || selectedBook.pages[0] : selectedBook.pages}
                   </div>
                 </div>
 
-                {/* FOOTER PAGINATION */}
                 <div className={`pt-3 border-t ${currentTheme.border} flex items-center justify-between`}>
                   <div className="flex items-center space-x-2">
-                    <button
-                      disabled={bookPageIndex === 0}
-                      onClick={() => setBookPageIndex(p => Math.max(0, p - 1))}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1 ${
-                        bookPageIndex === 0 ? 'opacity-40 cursor-not-allowed bg-slate-200/50 text-slate-400' : 'bg-emerald-600 text-white shadow-xs hover:bg-emerald-700'
-                      }`}
-                    >
+                    <button disabled={bookPageIndex === 0} onClick={() => setBookPageIndex(p => Math.max(0, p - 1))} className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1 ${bookPageIndex === 0 ? 'opacity-40 cursor-not-allowed bg-slate-200/50 text-slate-400' : 'bg-emerald-600 text-white shadow-xs hover:bg-emerald-700'}`}>
                       <ChevronLeft className="w-4 h-4" /> <span>Prev Page</span>
                     </button>
-
-                    <span className="text-xs font-bold px-2">
-                      Page {bookPageIndex + 1} of {Array.isArray(selectedBook.pages) ? selectedBook.pages.length : 1}
-                    </span>
-
+                    <span className="text-xs font-bold px-2">Page {bookPageIndex + 1} of {Array.isArray(selectedBook.pages) ? selectedBook.pages.length : 1}</span>
                     {Array.isArray(selectedBook.pages) && bookPageIndex < selectedBook.pages.length - 1 && (
-                      <button
-                        onClick={() => setBookPageIndex(p => p + 1)}
-                        className="px-3.5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center space-x-1 hover:bg-emerald-700"
-                      >
+                      <button onClick={() => setBookPageIndex(p => p + 1)} className="px-3.5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center space-x-1 hover:bg-emerald-700">
                         <span>Next Page</span> <ChevronRight className="w-4 h-4" />
                       </button>
                     )}
@@ -3210,7 +3483,9 @@ export default function App() {
                     <button
                       onClick={() => {
                         const newCompleted = Array.from(new Set([...completedBookIds, selectedBook.id]));
-                        const newCoins = coins + 15;
+                        const coinsGained = 15;
+                        const newCoins = coins + coinsGained;
+                        const newTotalEarned = totalEarned + coinsGained;
                         const newXp = xp + 30;
                         const newBooksCount = booksRead + 1;
 
@@ -3218,19 +3493,14 @@ export default function App() {
                         setIsFullScreenReader(false);
                         setCompletedBookIds(newCompleted);
                         setCoins(newCoins);
+                        setTotalEarned(newTotalEarned);
                         setXp(newXp);
                         setBooksRead(newBooksCount);
 
                         playSound('coin');
                         confetti({ particleCount: 90, spread: 70 });
 
-                        syncProfileToSupabase({
-                          coins: newCoins,
-                          xp: newXp,
-                          books_read: newBooksCount,
-                          completed_book_ids: newCompleted
-                        });
-
+                        syncProfileToSupabase({ coins: newCoins, total_earned: newTotalEarned, xp: newXp, books_read: newBooksCount, completed_book_ids: newCompleted });
                         alert("📖 Online Reading Completed! Earned +15 EduCoins and +30 XP!");
                       }}
                       className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-5 py-2 rounded-xl text-xs shadow-md transition flex items-center space-x-1"
@@ -3245,29 +3515,21 @@ export default function App() {
           );
         })()}
 
-        {/* Quiz Runner Overlay */}
+        {/* QUIZ RUNNER OVERLAY */}
         {activeQuiz && (
           <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-3xl p-5 sm:p-8 shadow-md">
             {gameOver ? (
               <div className="text-center py-6 space-y-5">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-3xl">
-                  💔
-                </div>
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-3xl">💔</div>
                 <h2 className="text-2xl font-black text-slate-900">Game Over!</h2>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
                   You ran out of hearts in Challenge Mode. Practice questions in Practice Mode to boost your confidence and try again!
                 </p>
                 <div className="flex justify-center space-x-3 pt-2">
-                  <button
-                    onClick={() => startQuiz(activeQuiz, 'practice')}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-6 py-2.5 rounded-xl text-xs transition"
-                  >
+                  <button onClick={() => startQuiz(activeQuiz, 'practice')} className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-6 py-2.5 rounded-xl text-xs transition">
                     Switch to Practice Mode
                   </button>
-                  <button
-                    onClick={() => setActiveQuiz(null)}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs transition"
-                  >
+                  <button onClick={() => setActiveQuiz(null)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs transition">
                     Back to Portal
                   </button>
                 </div>
@@ -3333,10 +3595,7 @@ export default function App() {
                 </div>
 
                 {showExplanation && (
-                  <button
-                    onClick={nextQuestion}
-                    className="w-full bg-indigo-600 text-white font-bold py-3 rounded-2xl transition flex items-center justify-center space-x-2"
-                  >
+                  <button onClick={nextQuestion} className="w-full bg-indigo-600 text-white font-bold py-3 rounded-2xl transition flex items-center justify-center space-x-2">
                     <span>{currentQuestionIdx + 1 < activeQuiz.questions.length ? 'Next Question' : 'Finish Test'}</span>
                     <ChevronRight className="w-4 h-4" />
                   </button>
