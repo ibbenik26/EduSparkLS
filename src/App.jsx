@@ -12,7 +12,7 @@ import {
   Settings, Edit3, Sliders, Layers, Save, X, TrendingUp, Languages,
   AlertTriangle, Printer, ArrowRight, Mail, HelpCircle, Eye, EyeOff,
   PackageCheck, ShoppingCart, Store, Crown, Calendar, Building2, CheckSquare,
-  ExternalLink, Layers3, PlusCircle
+  ExternalLink, Layers3, PlusCircle, Code
 } from 'lucide-react';
 
 // --- Standardized Core Subjects ---
@@ -101,7 +101,7 @@ const EDUCATIONAL_PARTNERS = [
 
 // --- Datasets: Real LS Physical Gifts & Digital Items ---
 const INITIAL_SHOP_ITEMS = [
-  { id: 'item_p1', name: 'LS Stainless Steel Water Bottle', category: 'Physical Store', is_physical: true, cost: 450, icon: '🥛', desc: 'Official insulated 500ml Lhohee School Water Bottle. Claim in physical store!' },
+  { id: 'item_p1', name: 'LS Stainless Steel Water Bottle', category: 'Physical Store', is_physical: true, cost: 450, icon: '🥛', desc: 'Official insulated 500ml Lhohee School Water Bottle. Claim at physical desk!' },
   { id: 'item_p2', name: 'LS Hardcover A5 Study Journal', category: 'Physical Store', is_physical: true, cost: 250, icon: '📓', desc: 'Embossed leatherette notebook for study notes and homework tracking.' },
   { id: 'item_p3', name: 'Faber-Castell Gel Pen 5-Pack', category: 'Physical Store', is_physical: true, cost: 180, icon: '✏️', desc: 'High quality smooth gel pens in blue, black, red, green, and purple.' },
   { id: 'item_p4', name: 'LS School Branded Hoodie', category: 'Physical Store', is_physical: true, cost: 850, icon: '🧥', desc: 'Cozy embroidered school hoodie. Pick up at LS store.' },
@@ -118,7 +118,6 @@ const INITIAL_BOOKS = [
     author: 'އަލްއުސްތާޛު މުޙައްމަދު ޖަމީލު',
     cover_url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80',
     summary: 'ދިވެހިބަހުގެ އަސާސީ ގަވާއިދުތަކާއި ތާނައަކުރުތަކުގެ ބޭނުންކުރާނެ ގޮތުގެ ތަފްޞީލު.',
-    extract: 'ފުރަތަމަ ބާބު: ތާނަ އަކުރު... ދިވެހިބަހުން ލިޔުމަށް ބޭނުންކުރަނީ ތާނައަކުރެވެ.',
     reading_hours: 2.5,
     claim_code: 'LIB-DHIV-01',
     pages: [
@@ -133,7 +132,6 @@ const INITIAL_BOOKS = [
     author: 'Dr. Marcus Vance',
     cover_url: 'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?auto=format&fit=crop&w=600&q=80',
     summary: 'Explore forces, energy, gravity, thermodynamics, and electromagnetism.',
-    extract: 'CHAPTER 1: THE LAWS OF MOTION — Physics is the fundamental science that seeks to understand how the universe behaves...',
     reading_hours: 4.0,
     claim_code: 'LIB-PHYS-101',
     pages: [
@@ -145,13 +143,11 @@ const INITIAL_BOOKS = [
 const INITIAL_QUIZZES = [
   {
     id: 'daily_quiz_1',
-    title: '🌟 Quiz of the Day: Physics Kinematics & Motion',
+    title: 'Kinematics & Acceleration Practice',
     subject: 'Physics',
     grade: 10,
-    topic: 'Kinematics & Acceleration',
-    subject_code: '0625',
+    topic: 'Kinematics & Motion',
     is_daily_quiz: true,
-    is_past_paper: false,
     questions: [
       {
         id: 'dq_1',
@@ -175,7 +171,7 @@ const INITIAL_QUIZZES = [
     subject: 'Maths',
     grade: 7,
     topic: 'Algebraic Simplification',
-    is_past_paper: false,
+    is_daily_quiz: false,
     questions: [
       {
         id: 'q7_1',
@@ -214,7 +210,7 @@ const INITIAL_SHOP_ORDERS = [
 ];
 
 export default function App() {
-  // --- Auth & State ---
+  // --- Auth & Profile State ---
   const [authView, setAuthView] = useState('landing');
   const [user, setUser] = useState(null);
   const [role, setRole] = useState('student');
@@ -223,36 +219,40 @@ export default function App() {
   const [authName, setAuthName] = useState('');
   const [indexNumber, setIndexNumber] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
-  // --- Student Stats ---
+  // --- Student Metrics ---
   const [studentGrade, setStudentGrade] = useState(7);
   const [coins, setCoins] = useState(250);
   const [xp, setXp] = useState(480);
-  const [streak, setStreak] = useState(3);
-  const [quizzesCompleted, setQuizzesCompleted] = useState(4);
-  const [booksRead, setBooksRead] = useState(2);
   const [readingHours, setReadingHours] = useState(6.5);
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // --- Dynamic Data ---
+  // --- Collections ---
   const [quizzes, setQuizzes] = useState(INITIAL_QUIZZES);
   const [books, setBooks] = useState(INITIAL_BOOKS);
   const [shopItems, setShopItems] = useState(INITIAL_SHOP_ITEMS);
   const [shopOrders, setShopOrders] = useState(INITIAL_SHOP_ORDERS);
+  
+  // Leaderboard state (Star of the Month is computed automatically from top rank)
   const [leaderboardUsers] = useState([
     { full_name: 'Aminath Raya', index_number: 'STU-1002', grade: 10, xp: 2850, streak: 12, coins: 890, reading_hours: 42.0 },
     { full_name: 'Hassan Zayan', index_number: 'STU-1045', grade: 9, xp: 2100, streak: 9, coins: 620, reading_hours: 31.5 },
     { full_name: 'Mariyam Yumna', index_number: 'STU-1088', grade: 8, xp: 1750, streak: 7, coins: 450, reading_hours: 24.0 },
   ]);
 
-  // --- Library & Modal Views ---
+  // Derived Top Student (Star of the Month) directly from Leaderboard #1
+  const starOfTheMonth = leaderboardUsers.reduce((top, current) => (current.xp > top.xp ? current : top), leaderboardUsers[0]);
+
+  // Dynamic Quiz of the Day (randomly picks or selects featured daily quiz from existing quiz array)
+  const quizOfTheDay = quizzes.find(q => q.is_daily_quiz) || quizzes[0];
+
+  // --- Library Reader & Claim Code Verification State ---
   const [selectedBook, setSelectedBook] = useState(null);
+  const [bookClaimInput, setBookClaimInput] = useState('');
   const [viewingVoucher, setViewingVoucher] = useState(null);
 
-  // --- Filters ---
+  // --- Filter Controls ---
   const [selectedSubject, setSelectedSubject] = useState('All');
-  const [selectedTopic, setSelectedTopic] = useState('All');
   const [orderStatusFilter, setOrderStatusFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -266,35 +266,29 @@ export default function App() {
   const [hearts, setHearts] = useState(5);
   const [timer, setTimer] = useState(60);
   const [quizFinished, setQuizFinished] = useState(false);
-  const [gameOver, setGameOver] = useState(false);
 
-  // --- ADMIN CREATOR FORMS (RESTORED) ---
+  // --- ADMIN CREATOR / JSON PASTE STATE ---
   const [adminTab, setAdminTab] = useState('shop_orders'); // 'shop_orders', 'shop_items', 'quiz_maker', 'book_maker'
-  
-  // Quiz Maker State
+  const [quizJsonInput, setQuizJsonInput] = useState('');
+  const [bookJsonInput, setBookJsonInput] = useState('');
+
+  // Form states
   const [newQuizTitle, setNewQuizTitle] = useState('');
   const [newQuizSubject, setNewQuizSubject] = useState('Physics');
   const [newQuizGrade, setNewQuizGrade] = useState(7);
   const [newQuizTopic, setNewQuizTopic] = useState('');
-  const [newQuizIsDaily, setNewQuizIsDaily] = useState(false);
-  const [quizQuestions, setQuizQuestions] = useState([
-    { question_text: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_option: 'A', explanation: '' }
-  ]);
 
-  // Book Creator State
   const [newBookTitle, setNewBookTitle] = useState('');
   const [newBookSubject, setNewBookSubject] = useState('English');
   const [newBookAuthor, setNewBookAuthor] = useState('');
-  const [newBookSummary, setNewBookSummary] = useState('');
   const [newBookHours, setNewBookHours] = useState(2.0);
+  const [newBookClaimCode, setNewBookClaimCode] = useState('');
   const [newBookContent, setNewBookContent] = useState('');
 
-  // Shop Item Form State
   const [newShopName, setNewShopName] = useState('');
   const [newShopCost, setNewShopCost] = useState(200);
   const [newShopIcon, setNewShopIcon] = useState('🎒');
   const [newShopDesc, setNewShopDesc] = useState('');
-  const [newShopIsPhysical, setNewShopIsPhysical] = useState(true);
 
   // --- Supabase Session Sync ---
   useEffect(() => {
@@ -322,14 +316,14 @@ export default function App() {
       const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
       if (data) {
         setAuthName(data.full_name || 'User');
-        setIndexNumber(data.index_number || 'STU-2026-0000');
+        setIndexNumber(data.index_number || 'STU-1002');
         setRole(data.role || 'student');
         setStudentGrade(data.grade || 7);
         setCoins(data.coins ?? 250);
         setXp(data.xp ?? 480);
         setReadingHours(data.reading_hours ?? 6.5);
       }
-    } catch (e) { console.warn("Profile fetch error:", e); }
+    } catch (e) { console.warn("Profile sync warning:", e); }
   };
 
   // --- Navigation & Quiz Handlers ---
@@ -339,11 +333,13 @@ export default function App() {
     setActiveTab(tabName);
   };
 
+  // Launch Quiz of the Day directly from existing quiz array
   const handleStartDailyQuiz = () => {
-    const dailyQuizObj = quizzes.find(q => q.is_daily_quiz) || quizzes[0];
-    if (dailyQuizObj) {
-      if (!user) setAuthView('login');
-      else startQuiz(dailyQuizObj, 'challenge');
+    if (!quizOfTheDay) return alert("No daily quiz available!");
+    if (!user) {
+      setAuthView('login');
+    } else {
+      startQuiz(quizOfTheDay, 'challenge');
     }
   };
 
@@ -358,7 +354,6 @@ export default function App() {
     setHearts(5);
     setTimer(duration);
     setQuizFinished(false);
-    setGameOver(false);
   };
 
   const handleAnswerSubmit = (option) => {
@@ -376,7 +371,6 @@ export default function App() {
       if (quizMode === 'challenge') {
         const remaining = hearts - 1;
         setHearts(remaining);
-        if (remaining <= 0) setGameOver(true);
       }
     }
   };
@@ -403,7 +397,6 @@ export default function App() {
     const xpEarned = score * 30 * multiplier;
     setCoins(c => c + coinsEarned);
     setXp(x => x + xpEarned);
-    setQuizzesCompleted(q => q + 1);
   };
 
   // --- Redeem LS Shop Gift ---
@@ -434,62 +427,56 @@ export default function App() {
     }
   };
 
-  // --- Store Admin Fulfillment Action ---
+  // --- Verify E-Library Book Claim Code ---
+  const handleVerifyBookClaimCode = (e) => {
+    e.preventDefault();
+    if (!selectedBook) return;
+
+    if (bookClaimInput.trim().toUpperCase() === selectedBook.claim_code.toUpperCase()) {
+      const addedHours = selectedBook.reading_hours || 2.0;
+      setReadingHours(r => r + addedHours);
+      setCoins(c => c + 50);
+      playSound('coin');
+      confetti({ particleCount: 120, spread: 80 });
+      alert(`✅ Claim Code Verified! Earned +${addedHours} Reading Hours and +50 EduCoins!`);
+      setSelectedBook(null);
+      setBookClaimInput('');
+    } else {
+      alert(`❌ Invalid Claim Code! Please enter the correct code shown for this book (e.g. ${selectedBook.claim_code}).`);
+    }
+  };
+
+  // --- Store Admin Order Fulfillment Action ---
   const handleFulfillOrder = (orderId) => {
     setShopOrders(shopOrders.map(o => o.id === orderId ? { ...o, status: 'Fulfilled / Given' } : o));
     alert("✅ Order marked as Fulfilled / Given to student!");
   };
 
-  // --- Admin Creator Handlers ---
-  const handleAddQuestionToQuiz = () => {
-    setQuizQuestions([...quizQuestions, { question_text: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_option: 'A', explanation: '' }]);
+  // --- JSON Paste Handlers for Quiz & Book Admin ---
+  const handleImportQuizJSON = (e) => {
+    e.preventDefault();
+    try {
+      const parsed = JSON.parse(quizJsonInput);
+      const newArray = Array.isArray(parsed) ? parsed : [parsed];
+      setQuizzes([...newArray, ...quizzes]);
+      alert(`🎉 Successfully imported ${newArray.length} quiz(zes) into the Topic Vault!`);
+      setQuizJsonInput('');
+    } catch (err) {
+      alert("Invalid JSON format! Please check your syntax.");
+    }
   };
 
-  const handleCreateQuizSubmit = (e) => {
+  const handleImportBookJSON = (e) => {
     e.preventDefault();
-    if (!newQuizTitle.trim()) return alert('Please enter a quiz title.');
-    
-    const newQuiz = {
-      id: `quiz_${Date.now()}`,
-      title: newQuizTitle,
-      subject: newQuizSubject,
-      grade: parseInt(newQuizGrade),
-      topic: newQuizTopic || 'General Revision',
-      is_daily_quiz: newQuizIsDaily,
-      is_past_paper: false,
-      questions: quizQuestions
-    };
-
-    setQuizzes([newQuiz, ...quizzes]);
-    alert('🎉 New Quiz created successfully and added to the Topic Vault!');
-    setNewQuizTitle('');
-    setNewQuizTopic('');
-    setQuizQuestions([{ question_text: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_option: 'A', explanation: '' }]);
-  };
-
-  const handleCreateBookSubmit = (e) => {
-    e.preventDefault();
-    if (!newBookTitle.trim()) return alert('Please enter book title.');
-
-    const newBook = {
-      id: `book_${Date.now()}`,
-      title: newBookTitle,
-      subject: newBookSubject,
-      author: newBookAuthor || 'School Library',
-      cover_url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80',
-      summary: newBookSummary,
-      extract: newBookContent.substring(0, 100) + '...',
-      reading_hours: parseFloat(newBookHours),
-      claim_code: `LIB-${Math.floor(100 + Math.random() * 900)}`,
-      pages: [newBookContent || "Chapter 1: Reading Content..."]
-    };
-
-    setBooks([newBook, ...books]);
-    alert('📚 New Book added to E-Library!');
-    setNewBookTitle('');
-    setNewBookAuthor('');
-    setNewBookSummary('');
-    setNewBookContent('');
+    try {
+      const parsed = JSON.parse(bookJsonInput);
+      const newArray = Array.isArray(parsed) ? parsed : [parsed];
+      setBooks([...newArray, ...books]);
+      alert(`📚 Successfully imported ${newArray.length} book(s) into the E-Library!`);
+      setBookJsonInput('');
+    } catch (err) {
+      alert("Invalid JSON format! Please check your syntax.");
+    }
   };
 
   const handleCreateShopItemSubmit = (e) => {
@@ -499,15 +486,15 @@ export default function App() {
     const newItem = {
       id: `item_${Date.now()}`,
       name: newShopName,
-      category: newShopIsPhysical ? 'Physical Store' : 'Digital Perk',
-      is_physical: newShopIsPhysical,
+      category: 'Physical Store',
+      is_physical: true,
       cost: parseInt(newShopCost),
       icon: newShopIcon || '🎒',
-      desc: newShopDesc
+      desc: newShopDesc || 'Available at physical gift store desk.'
     };
 
     setShopItems([newItem, ...shopItems]);
-    alert('🎒 New Item added to LS Gift Shop!');
+    alert('🎒 New Product added to LS Gift Shop!');
     setNewShopName('');
     setNewShopDesc('');
   };
@@ -515,7 +502,7 @@ export default function App() {
   const currentRank = getStudentRank(xp);
 
   // Filtered Quizzes & Orders
-  const gradePracticeQuizzes = quizzes.filter(q => {
+  const filteredQuizzes = quizzes.filter(q => {
     const isSubjectMatch = selectedSubject === 'All' || q.subject === selectedSubject;
     const matchesSearch = (q.title || '').toLowerCase().includes(searchQuery.toLowerCase());
     return isSubjectMatch && matchesSearch;
@@ -528,12 +515,12 @@ export default function App() {
   });
 
   // =========================================================================
-  // --- AUTHENTICATION & LANDING PAGE VIEWS (LIGHT LHOHEE SCHOOL THEME) ---
+  // --- LANDING PAGE & AUTHENTICATION VIEWS (LIGHT LHOHEE THEME) ---
   // =========================================================================
   if (!user) {
     return (
       <div className="min-h-screen bg-slate-100 text-slate-800 flex flex-col justify-between font-sans relative overflow-hidden">
-        {/* Soft Indigo / Amber Ambient Gradients */}
+        {/* Soft Ambient Glows */}
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-200/50 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-amber-200/40 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -567,7 +554,7 @@ export default function App() {
           </div>
         </header>
 
-        {/* ELEGANT LANDING PAGE */}
+        {/* ELEGANT LANDING PAGE WITH DIRECT QUIZ OF THE DAY LINK & AUTOMATIC STAR OF THE MONTH */}
         {authView === 'landing' && (
           <main className="max-w-7xl w-full mx-auto px-6 py-8 z-10 space-y-12 flex-1">
             {/* HERO BANNER */}
@@ -593,7 +580,7 @@ export default function App() {
                   onClick={() => setAuthView('register')}
                   className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-black px-8 py-4 rounded-2xl text-sm shadow-lg transition flex items-center justify-center space-x-2"
                 >
-                  <span>Student Portal Sign Up</span>
+                  <span>Student Portal Registration</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
@@ -602,14 +589,14 @@ export default function App() {
                   className="w-full sm:w-auto bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold px-8 py-4 rounded-2xl text-sm transition flex items-center justify-center space-x-2 shadow-xs"
                 >
                   <Flame className="w-4 h-4 text-amber-500" />
-                  <span>Launch Quiz of the Day</span>
+                  <span>Launch Quiz of the Day (2x Coins)</span>
                 </button>
               </div>
             </section>
 
             {/* FEATURE SHOWCASE CARDS */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* CARD 1: QUIZ OF THE DAY */}
+              {/* CARD 1: DIRECT LINK TO QUIZ OF THE DAY */}
               <div className="bg-white border border-indigo-100 p-6 rounded-3xl space-y-4 shadow-sm relative overflow-hidden">
                 <div className="flex justify-between items-start">
                   <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
@@ -621,9 +608,11 @@ export default function App() {
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[11px] font-bold text-indigo-600 uppercase block">Daily Feature</span>
+                  <span className="text-[11px] font-bold text-indigo-600 uppercase block">Featured Challenge</span>
                   <h3 className="text-lg font-black text-slate-900">Quiz of the Day</h3>
-                  <p className="text-xs text-slate-500">Test physics & math skills. Score high to double your daily EduCoins balance!</p>
+                  <p className="text-xs text-slate-500">
+                    Featured: {quizOfTheDay?.title || 'Daily Quiz'}. Score high to double your daily EduCoins balance!
+                  </p>
                 </div>
 
                 <button
@@ -631,30 +620,32 @@ export default function App() {
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition"
                 >
                   <Play className="w-3.5 h-3.5 fill-white" />
-                  <span>Start Quiz of the Day</span>
+                  <span>Launch Daily Quiz Now</span>
                 </button>
               </div>
 
-              {/* CARD 2: STUDENT SPOTLIGHT */}
+              {/* CARD 2: AUTOMATIC STAR OF THE MONTH (FROM LEADERBOARD) */}
               <div className="bg-white border border-amber-200 p-6 rounded-3xl space-y-4 shadow-sm relative overflow-hidden">
                 <div className="flex justify-between items-start">
                   <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl">
                     <Crown className="w-6 h-6" />
                   </div>
-                  <span className="text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300 px-2.5 py-1 rounded-full uppercase">
-                    🏆 Student Spotlight
+                  <span className="text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-1 rounded-full uppercase">
+                    🏆 Star of the Month
                   </span>
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[11px] font-bold text-amber-600 uppercase block">Top Achiever</span>
-                  <h3 className="text-lg font-black text-slate-900">Aminath Raya</h3>
-                  <p className="text-xs text-slate-500">Grade 10 • STU-1002 • 42.0 Library Hours Logged</p>
+                  <span className="text-[11px] font-bold text-amber-600 uppercase block">Leaderboard #1 Achiever</span>
+                  <h3 className="text-lg font-black text-slate-900">{starOfTheMonth.full_name}</h3>
+                  <p className="text-xs text-slate-500">
+                    Grade {starOfTheMonth.grade} • ID: {starOfTheMonth.index_number} • {starOfTheMonth.reading_hours} Reading Hrs Logged
+                  </p>
                 </div>
 
                 <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-xs font-bold text-slate-700">
-                  <span>Score: 2,850 XP</span>
-                  <span className="text-amber-600 font-black">Legend Rank 🔥</span>
+                  <span>Score: {starOfTheMonth.xp} XP</span>
+                  <span className="text-amber-600 font-black">Rank #1 Legend 🔥</span>
                 </div>
               </div>
 
@@ -679,6 +670,32 @@ export default function App() {
                   <span>In-School Desk Pickup</span>
                   <span className="text-purple-600 font-black">In-Stock 🎒</span>
                 </div>
+              </div>
+            </section>
+
+            {/* LEADERBOARD PREVIEW SECTION */}
+            <section className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">Academic Leaderboard</h3>
+                  <p className="text-xs text-slate-500">Top scoring students at Lhohee School</p>
+                </div>
+                <Trophy className="w-6 h-6 text-yellow-500" />
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {leaderboardUsers.map((s, idx) => (
+                  <div key={idx} className="py-3 flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-base font-bold w-6">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>
+                      <div>
+                        <h4 className="font-bold text-xs sm:text-sm text-slate-900">{s.full_name}</h4>
+                        <span className="text-[11px] text-slate-500 font-mono">ID: {s.index_number} • Grade {s.grade}</span>
+                      </div>
+                    </div>
+                    <span className="text-xs sm:text-sm font-black text-indigo-600">{s.xp} XP</span>
+                  </div>
+                ))}
               </div>
             </section>
 
@@ -850,7 +867,7 @@ export default function App() {
   }
 
   // =========================================================================
-  // --- AUTHENTICATED PORTAL APP INTERFACE (LIGHT SCHOOL DESIGN) ---
+  // --- AUTHENTICATED PORTAL APP INTERFACE ---
   // =========================================================================
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 flex flex-col font-sans">
@@ -876,7 +893,7 @@ export default function App() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto">
-            {/* QUIZ OF THE DAY HEADER LINK */}
+            {/* DIRECT QUIZ OF THE DAY HEADER LINK */}
             <button
               onClick={handleStartDailyQuiz}
               className="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 px-3 py-1.5 rounded-full text-xs font-bold flex items-center space-x-1 transition"
@@ -935,12 +952,12 @@ export default function App() {
             <Trophy className="w-3.5 h-3.5" /> <span>Leaderboard</span>
           </button>
 
-          {/* DEDICATED TEACHER & ADMIN CONTROL SECTIONS */}
+          {/* DEDICATED STORE & ADMIN CONTROL TABS */}
           {(role === 'teacher' || role === 'admin') && (
             <>
               <div className="h-4 w-px bg-slate-200 mx-1"></div>
               
-              {/* LS SHOP MANAGEMENT CARD BUTTON */}
+              {/* DEDICATED LS SHOP MANAGEMENT TAB */}
               <button
                 onClick={() => { navigateToTab('admin'); setAdminTab('shop_orders'); }}
                 className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition whitespace-nowrap ${activeTab === 'admin' && (adminTab === 'shop_orders' || adminTab === 'shop_items') ? 'bg-amber-600 text-white shadow-xs' : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'}`}
@@ -948,20 +965,20 @@ export default function App() {
                 <PackageCheck className="w-3.5 h-3.5 text-amber-600" /> <span>🛒 LS Shop Admin</span>
               </button>
 
-              {/* QUIZ & CURRICULUM MAKER */}
+              {/* QUIZ ADMIN & JSON IMPORT */}
               <button
                 onClick={() => { navigateToTab('admin'); setAdminTab('quiz_maker'); }}
                 className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition whitespace-nowrap ${activeTab === 'admin' && adminTab === 'quiz_maker' ? 'bg-purple-600 text-white shadow-xs' : 'bg-purple-50 text-purple-800 border border-purple-200 hover:bg-purple-100'}`}
               >
-                <PlusCircle className="w-3.5 h-3.5 text-purple-600" /> <span>📝 Quiz Creator</span>
+                <PlusCircle className="w-3.5 h-3.5 text-purple-600" /> <span>📝 Quiz Admin (JSON)</span>
               </button>
 
-              {/* LIBRARY BOOK MAKER */}
+              {/* LIBRARY ADMIN & JSON IMPORT */}
               <button
                 onClick={() => { navigateToTab('admin'); setAdminTab('book_maker'); }}
                 className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition whitespace-nowrap ${activeTab === 'admin' && adminTab === 'book_maker' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'}`}
               >
-                <Book className="w-3.5 h-3.5 text-emerald-600" /> <span>📚 Book Creator</span>
+                <Book className="w-3.5 h-3.5 text-emerald-600" /> <span>📚 Library Admin (JSON)</span>
               </button>
             </>
           )}
@@ -974,15 +991,15 @@ export default function App() {
         {/* TAB 1: TOPIC PRACTICE VAULT */}
         {activeTab === 'dashboard' && !activeQuiz && (
           <div className="space-y-6">
-            {/* BANNER WITH DIRECT QUIZ OF THE DAY LINK */}
+            {/* FEATURED BANNER */}
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-3xl shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <span className="text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2.5 py-1 rounded-full">
-                  Featured Daily Challenge
+                  Featured Challenge
                 </span>
                 <h2 className="text-2xl font-black mt-2">Quiz of the Day</h2>
                 <p className="text-xs text-indigo-100 mt-1">
-                  Complete today's featured quiz to earn double EduCoins!
+                  Topic: {quizOfTheDay?.title || 'Daily Quiz'}. Score high to earn double EduCoins!
                 </p>
               </div>
 
@@ -1016,7 +1033,7 @@ export default function App() {
 
             {/* Quiz Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {gradePracticeQuizzes.map((quiz) => (
+              {filteredQuizzes.map((quiz) => (
                 <div key={quiz.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col justify-between shadow-xs space-y-3 hover:border-indigo-300 transition">
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -1055,11 +1072,9 @@ export default function App() {
         {/* TAB 2: E-LIBRARY */}
         {activeTab === 'library' && !selectedBook && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-black text-slate-900">Lhohee School E-Library</h3>
-                <p className="text-xs text-slate-500">Read books to log study hours and earn EduCoins.</p>
-              </div>
+            <div>
+              <h3 className="text-xl font-black text-slate-900">Lhohee School E-Library</h3>
+              <p className="text-xs text-slate-500">Read books, verify claim codes, and log study hours to earn EduCoins.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1078,10 +1093,10 @@ export default function App() {
                   <p className="text-xs text-slate-600 line-clamp-2">{b.summary}</p>
 
                   <button
-                    onClick={() => setSelectedBook(b)}
+                    onClick={() => { setSelectedBook(b); setBookClaimInput(''); }}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs transition shadow-xs"
                   >
-                    Read Book Now
+                    Read & Claim Credit
                   </button>
                 </div>
               ))}
@@ -1089,7 +1104,7 @@ export default function App() {
           </div>
         )}
 
-        {/* READ BOOK READER OVERLAY */}
+        {/* READ BOOK READER OVERLAY WITH CLAIM CODE SUBMISSION */}
         {selectedBook && (
           <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-lg space-y-4 max-w-3xl mx-auto">
             <div className="flex justify-between items-center border-b pb-3">
@@ -1102,25 +1117,33 @@ export default function App() {
               </button>
             </div>
 
-            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 min-h-[250px] whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
+            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 min-h-[200px] whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
               {selectedBook.pages[0]}
             </div>
 
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-xs font-bold text-slate-500">Claim Code: {selectedBook.claim_code}</span>
-              <button
-                onClick={() => {
-                  setReadingHours(r => r + selectedBook.reading_hours);
-                  setCoins(c => c + 50);
-                  confetti({ particleCount: 100, spread: 70 });
-                  alert(`🎉 Completed reading! Logged +${selectedBook.reading_hours} Reading Hours & earned 50 EduCoins.`);
-                  setSelectedBook(null);
-                }}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-6 py-2.5 rounded-xl text-xs shadow-md"
-              >
-                Complete Reading Log
-              </button>
-            </div>
+            {/* CLAIM CODE SUBMISSION FORM */}
+            <form onSubmit={handleVerifyBookClaimCode} className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-emerald-900">Enter Book Claim Code to Record Reading:</span>
+                <span className="text-[11px] font-mono text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-200">
+                  Hint Code: {selectedBook.claim_code}
+                </span>
+              </div>
+
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={bookClaimInput}
+                  onChange={(e) => setBookClaimInput(e.target.value)}
+                  placeholder={`Type claim code e.g. ${selectedBook.claim_code}`}
+                  className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold uppercase"
+                  required
+                />
+                <button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-6 py-2 rounded-xl text-xs shadow-xs">
+                  Verify & Submit
+                </button>
+              </div>
+            </form>
           </div>
         )}
 
@@ -1195,10 +1218,10 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 5: TEACHER & ADMIN CONTROL CENTER (RESTORED SEPARATE VIEWS) */}
+        {/* TAB 5: TEACHER & ADMIN SEPARATED CONTROLS */}
         {activeTab === 'admin' && (role === 'teacher' || role === 'admin') && (
           <div className="max-w-5xl mx-auto space-y-6">
-            {/* ADMIN SUB-NAVIGATION CARDS */}
+            {/* SUB-NAVIGATION CARDS */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <button
                 onClick={() => setAdminTab('shop_orders')}
@@ -1207,7 +1230,7 @@ export default function App() {
                 <PackageCheck className="w-6 h-6 mb-2" />
                 <div>
                   <h4 className="font-black text-xs">Shop Orders Panel</h4>
-                  <p className="text-[10px] opacity-80">{shopOrders.length} Student Purchases</p>
+                  <p className="text-[10px] opacity-80">{shopOrders.length} Purchases</p>
                 </div>
               </button>
 
@@ -1217,8 +1240,8 @@ export default function App() {
               >
                 <Store className="w-6 h-6 mb-2" />
                 <div>
-                  <h4 className="font-black text-xs">Manage Shop Items</h4>
-                  <p className="text-[10px] opacity-80">{shopItems.length} Products Active</p>
+                  <h4 className="font-black text-xs">Manage Products</h4>
+                  <p className="text-[10px] opacity-80">{shopItems.length} Products</p>
                 </div>
               </button>
 
@@ -1226,10 +1249,10 @@ export default function App() {
                 onClick={() => setAdminTab('quiz_maker')}
                 className={`p-4 rounded-2xl border text-left flex flex-col justify-between transition ${adminTab === 'quiz_maker' ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
               >
-                <PlusCircle className="w-6 h-6 mb-2" />
+                <Code className="w-6 h-6 mb-2" />
                 <div>
-                  <h4 className="font-black text-xs">Quiz Creator</h4>
-                  <p className="text-[10px] opacity-80">{quizzes.length} Quizzes Created</p>
+                  <h4 className="font-black text-xs">Quiz Admin (JSON)</h4>
+                  <p className="text-[10px] opacity-80">Import or Paste Quizzes</p>
                 </div>
               </button>
 
@@ -1239,19 +1262,19 @@ export default function App() {
               >
                 <Book className="w-6 h-6 mb-2" />
                 <div>
-                  <h4 className="font-black text-xs">E-Library Creator</h4>
-                  <p className="text-[10px] opacity-80">{books.length} Books Uploaded</p>
+                  <h4 className="font-black text-xs">Library Admin (JSON)</h4>
+                  <p className="text-[10px] opacity-80">Import Books & Codes</p>
                 </div>
               </button>
             </div>
 
-            {/* VIEW 1: DEDICATED LS SHOP ORDER FULFILLMENT */}
+            {/* SEPARATED VIEW 1: DEDICATED LS SHOP ORDER FULFILLMENT */}
             {adminTab === 'shop_orders' && (
               <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4">
                   <div>
                     <h3 className="text-lg font-black text-slate-900">LS Shop Student Order Fulfillment</h3>
-                    <p className="text-xs text-slate-500">Teachers and Store Admins: verify student claim codes here to issue physical rewards.</p>
+                    <p className="text-xs text-slate-500">Teachers & Store Keepers: verify student claim codes to record physical gifts as given.</p>
                   </div>
 
                   <div className="flex items-center space-x-2">
@@ -1268,10 +1291,10 @@ export default function App() {
                         <th className="py-2.5 px-3">Date</th>
                         <th className="py-2.5 px-3">Student Name</th>
                         <th className="py-2.5 px-3">Index #</th>
-                        <th className="py-2.5 px-3">Item Name</th>
+                        <th className="py-2.5 px-3">Item Purchased</th>
                         <th className="py-2.5 px-3">Claim Voucher Code</th>
                         <th className="py-2.5 px-3 text-center">Status</th>
-                        <th className="py-2.5 px-3 text-right">Action</th>
+                        <th className="py-2.5 px-3 text-right">Shop Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1298,7 +1321,7 @@ export default function App() {
                                 Mark as Given
                               </button>
                             ) : (
-                              <span className="text-[11px] text-slate-400 font-bold">✓ Fulfilled</span>
+                              <span className="text-[11px] text-slate-400 font-bold">✓ Complete</span>
                             )}
                           </td>
                         </tr>
@@ -1309,14 +1332,14 @@ export default function App() {
               </div>
             )}
 
-            {/* VIEW 2: ADD NEW LS GIFT SHOP ITEM */}
+            {/* VIEW 2: ADD STORE PRODUCT */}
             {adminTab === 'shop_items' && (
               <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
-                <h3 className="text-lg font-black text-slate-900">Add New Item to LS Gift Store</h3>
+                <h3 className="text-lg font-black text-slate-900">Add New Physical Product to LS Gift Store</h3>
                 <form onSubmit={handleCreateShopItemSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Item Name</label>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Product Name</label>
                       <input
                         type="text"
                         value={newShopName}
@@ -1339,7 +1362,7 @@ export default function App() {
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Emoji Icon</label>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Icon Emoji</label>
                       <input
                         type="text"
                         value={newShopIcon}
@@ -1351,241 +1374,94 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Item Description</label>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Description</label>
                     <textarea
                       value={newShopDesc}
                       onChange={(e) => setNewShopDesc(e.target.value)}
-                      placeholder="High quality study supply available at physical shop desk."
+                      placeholder="Product details for store pick-up..."
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs h-20"
                     />
                   </div>
 
                   <button type="submit" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-6 py-2.5 rounded-xl text-xs transition shadow-sm">
-                    Publish Store Item
+                    Publish Product
                   </button>
                 </form>
               </div>
             )}
 
-            {/* VIEW 3: RESTORED FULL QUIZ MAKER */}
+            {/* VIEW 3: QUIZ ADMIN (JSON PASTE & CODE MANAGER) */}
             {adminTab === 'quiz_maker' && (
               <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-5">
                 <div className="border-b pb-3">
-                  <h3 className="text-lg font-black text-slate-900">Create New Topic Quiz</h3>
-                  <p className="text-xs text-slate-500">Design syllabus practice questions with options and explanations.</p>
+                  <h3 className="text-lg font-black text-slate-900">Quiz JSON Copy-Paste & Manager</h3>
+                  <p className="text-xs text-slate-500">Paste raw JSON quiz sets directly or edit topic questions.</p>
                 </div>
 
-                <form onSubmit={handleCreateQuizSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Quiz Title</label>
-                      <input
-                        type="text"
-                        value={newQuizTitle}
-                        onChange={(e) => setNewQuizTitle(e.target.value)}
-                        placeholder="Grade 10 Physics Motion"
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
-                        required
-                      />
-                    </div>
+                <form onSubmit={handleImportQuizJSON} className="space-y-3">
+                  <label className="text-xs font-bold text-slate-700 block">Copy-Paste Quiz JSON Array</label>
+                  <textarea
+                    value={quizJsonInput}
+                    onChange={(e) => setQuizJsonInput(e.target.value)}
+                    placeholder={`[
+  {
+    "id": "quiz_physics_01",
+    "title": "Grade 10 Kinematics",
+    "subject": "Physics",
+    "grade": 10,
+    "topic": "Kinematics & Motion",
+    "questions": [
+      {
+        "question_text": "What is acceleration?",
+        "option_a": "Rate of change of velocity",
+        "option_b": "Speed multiplied by time",
+        "correct_option": "A",
+        "explanation": "Acceleration is a = dv/dt."
+      }
+    ]
+  }
+]`}
+                    className="w-full font-mono text-xs bg-slate-900 text-emerald-400 p-4 rounded-2xl border border-slate-800 h-60"
+                    required
+                  />
 
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Subject</label>
-                      <select
-                        value={newQuizSubject}
-                        onChange={(e) => setNewQuizSubject(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold"
-                      >
-                        {ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Grade Level</label>
-                      <select
-                        value={newQuizGrade}
-                        onChange={(e) => setNewQuizGrade(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold"
-                      >
-                        {[1,2,3,4,5,6,7,8,9,10].map(g => <option key={g} value={g}>Grade {g}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Specific Syllabus Topic</label>
-                    <input
-                      type="text"
-                      value={newQuizTopic}
-                      onChange={(e) => setNewQuizTopic(e.target.value)}
-                      placeholder="Kinematics & Velocity"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
-                    />
-                  </div>
-
-                  {/* QUESTION BUILDER */}
-                  <div className="space-y-4 pt-3 border-t">
-                    <h4 className="font-bold text-xs text-slate-900">Quiz Questions ({quizQuestions.length})</h4>
-
-                    {quizQuestions.map((q, idx) => (
-                      <div key={idx} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3">
-                        <span className="text-xs font-black text-indigo-600">Question #{idx + 1}</span>
-                        <input
-                          type="text"
-                          value={q.question_text}
-                          onChange={(e) => {
-                            const updated = [...quizQuestions];
-                            updated[idx].question_text = e.target.value;
-                            setQuizQuestions(updated);
-                          }}
-                          placeholder="Enter question text here..."
-                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs"
-                          required
-                        />
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            type="text"
-                            value={q.option_a}
-                            onChange={(e) => { const u = [...quizQuestions]; u[idx].option_a = e.target.value; setQuizQuestions(u); }}
-                            placeholder="Option A"
-                            className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs"
-                          />
-                          <input
-                            type="text"
-                            value={q.option_b}
-                            onChange={(e) => { const u = [...quizQuestions]; u[idx].option_b = e.target.value; setQuizQuestions(u); }}
-                            placeholder="Option B"
-                            className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs"
-                          />
-                          <input
-                            type="text"
-                            value={q.option_c}
-                            onChange={(e) => { const u = [...quizQuestions]; u[idx].option_c = e.target.value; setQuizQuestions(u); }}
-                            placeholder="Option C"
-                            className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs"
-                          />
-                          <input
-                            type="text"
-                            value={q.option_d}
-                            onChange={(e) => { const u = [...quizQuestions]; u[idx].option_d = e.target.value; setQuizQuestions(u); }}
-                            placeholder="Option D"
-                            className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs"
-                          />
-                        </div>
-
-                        <div className="flex items-center space-x-3">
-                          <span className="text-xs font-bold text-slate-700">Correct Answer:</span>
-                          {['A', 'B', 'C', 'D'].map(opt => (
-                            <label key={opt} className="text-xs font-bold space-x-1">
-                              <input
-                                type="radio"
-                                name={`correct_${idx}`}
-                                checked={q.correct_option === opt}
-                                onChange={() => { const u = [...quizQuestions]; u[idx].correct_option = opt; setQuizQuestions(u); }}
-                              />
-                              <span>{opt}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-
-                    <button
-                      type="button"
-                      onClick={handleAddQuestionToQuiz}
-                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-2 rounded-xl text-xs transition"
-                    >
-                      + Add Another Question
-                    </button>
-                  </div>
-
-                  <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-3 rounded-xl text-xs transition shadow-md">
-                    Publish Quiz to Student Portal
+                  <button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-2.5 rounded-xl text-xs transition shadow-md">
+                    Import Quiz JSON to Topic Vault
                   </button>
                 </form>
               </div>
             )}
 
-            {/* VIEW 4: RESTORED FULL E-LIBRARY BOOK MAKER */}
+            {/* VIEW 4: LIBRARY ADMIN (JSON PASTE & CODE MANAGER) */}
             {adminTab === 'book_maker' && (
               <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
                 <div className="border-b pb-3">
-                  <h3 className="text-lg font-black text-slate-900">Upload Book to E-Library</h3>
-                  <p className="text-xs text-slate-500">Add digital reading materials and credit reading hours to student profiles.</p>
+                  <h3 className="text-lg font-black text-slate-900">E-Library Book JSON Copy-Paste</h3>
+                  <p className="text-xs text-slate-500">Paste book JSON structures with claim codes to credit reading hours.</p>
                 </div>
 
-                <form onSubmit={handleCreateBookSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Book Title</label>
-                      <input
-                        type="text"
-                        value={newBookTitle}
-                        onChange={(e) => setNewBookTitle(e.target.value)}
-                        placeholder="Cambridge Physics Guide"
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
-                        required
-                      />
-                    </div>
+                <form onSubmit={handleImportBookJSON} className="space-y-3">
+                  <label className="text-xs font-bold text-slate-700 block">Copy-Paste Book JSON Array</label>
+                  <textarea
+                    value={bookJsonInput}
+                    onChange={(e) => setBookJsonInput(e.target.value)}
+                    placeholder={`[
+  {
+    "id": "book_dhivehi_02",
+    "title": "ދިވެހި ވާހަކަތައް",
+    "subject": "Dhivehi",
+    "author": "އަލްއުސްތާޛު ޖަމީލު",
+    "reading_hours": 3.0,
+    "claim_code": "LIB-DHIV-02",
+    "pages": ["ފުރަތަމަ ޞަފްޙާ..."]
+  }
+]`}
+                    className="w-full font-mono text-xs bg-slate-900 text-emerald-400 p-4 rounded-2xl border border-slate-800 h-60"
+                    required
+                  />
 
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Subject</label>
-                      <select
-                        value={newBookSubject}
-                        onChange={(e) => setNewBookSubject(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold"
-                      >
-                        {ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Reading Hours Credit</label>
-                      <input
-                        type="number"
-                        step="0.5"
-                        value={newBookHours}
-                        onChange={(e) => setNewBookHours(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-emerald-700"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Author / Publisher</label>
-                    <input
-                      type="text"
-                      value={newBookAuthor}
-                      onChange={(e) => setNewBookAuthor(e.target.value)}
-                      placeholder="Dr. Marcus Vance"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Book Summary</label>
-                    <textarea
-                      value={newBookSummary}
-                      onChange={(e) => setNewBookSummary(e.target.value)}
-                      placeholder="Brief overview of the book..."
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs h-16"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Book Content / First Chapter Text</label>
-                    <textarea
-                      value={newBookContent}
-                      onChange={(e) => setNewBookContent(e.target.value)}
-                      placeholder="Paste the chapter text or lesson contents..."
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs h-32"
-                    />
-                  </div>
-
-                  <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl text-xs transition shadow-md">
-                    Publish Book to E-Library
+                  <button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-6 py-2.5 rounded-xl text-xs transition shadow-md">
+                    Import Book JSON to E-Library
                   </button>
                 </form>
               </div>
@@ -1664,7 +1540,7 @@ export default function App() {
                 <Gift className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-black text-slate-900">Physical Pickup Voucher</h3>
-              <p className="text-xs text-slate-500">Show this code at the school shop desk to collect your item.</p>
+              <p className="text-xs text-slate-500">Show this voucher code at the school shop desk to collect your item.</p>
 
               <div className="bg-slate-100 p-4 rounded-2xl border border-dashed border-slate-300">
                 <span className="text-xs font-bold text-slate-500 block">CLAIM VOUCHER CODE</span>
