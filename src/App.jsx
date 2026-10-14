@@ -10,7 +10,8 @@ import {
   Book, BookOpenCheck, Library, Plus, ShieldCheck, Tag,
   Play, Pause, RotateCcw, FileText, KeyRound, ShieldAlert,
   Settings, Edit3, Sliders, Layers, Save, X, TrendingUp, Languages,
-  AlertTriangle, Printer, ArrowRight, Mail, HelpCircle, Eye, EyeOff
+  AlertTriangle, Printer, ArrowRight, Mail, HelpCircle, Eye, EyeOff,
+  PackageCheck, ShoppingCart, Store, Sparkle, Crown, Calendar
 } from 'lucide-react';
 
 // --- Standardized Core Subjects ---
@@ -247,6 +248,53 @@ function PrintableCertificateModal({ student, subject, onClose }) {
               <p className="text-[10px] text-slate-400">School Portal Verification</p>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Physical LS Gift Claim Voucher Modal ---
+function PhysicalGiftVoucherModal({ redemption, onClose }) {
+  if (!redemption) return null;
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-amber-200 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 -mx-6 -mt-6 p-6 text-white text-center space-y-1">
+          <Store className="w-10 h-10 mx-auto text-amber-100" />
+          <h3 className="text-xl font-black">LS Gift Store Claim Voucher</h3>
+          <p className="text-xs text-amber-100">Official Physical Item Pickup Receipt</p>
+        </div>
+
+        <div className="space-y-4 text-center">
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl space-y-1">
+            <span className="text-[10px] font-bold uppercase text-amber-800 block">Item Purchased</span>
+            <span className="text-lg font-black text-slate-900">{redemption.name}</span>
+            <span className="text-xs text-amber-700 block font-medium">Cost: {redemption.cost} EduCoins</span>
+          </div>
+
+          <div className="space-y-1 bg-slate-50 border p-4 rounded-2xl">
+            <span className="text-[10px] font-bold text-slate-400 uppercase block">Pickup Claim Code</span>
+            <span className="text-2xl font-mono font-black text-indigo-700 tracking-wider">{redemption.code}</span>
+            <p className="text-[10px] text-slate-500 pt-1">Show this claim code to the librarian or school shop manager to claim your real physical item!</p>
+          </div>
+        </div>
+
+        <div className="flex space-x-2 pt-2">
+          <button
+            onClick={() => window.print()}
+            className="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1"
+          >
+            <Printer className="w-4 h-4" />
+            <span>Print Voucher</span>
+          </button>
+          <button
+            onClick={onClose}
+            className="w-1/2 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-xs"
+          >
+            Done
+          </button>
         </div>
       </div>
     </div>
@@ -699,11 +747,15 @@ function SubjectAnalyticsCard({ subject, attempts }) {
   );
 }
 
-// --- Initial Datasets ---
+// --- Datasets: Real LS Physical Gifts & Digital Items ---
 const INITIAL_SHOP_ITEMS = [
-  { id: 'item_1', name: 'Homework Waiver Pass', category: 'Privilege', cost: 300, icon: '🎟️', desc: '1 homework waiver card approved by your class teacher.' },
-  { id: 'item_2', name: 'Golden Profile Border', category: 'Digital Perk', cost: 150, icon: '👑', desc: 'Custom shiny gold frame around your avatar on the leaderboard.' },
-  { id: 'item_3', name: '24h Double XP Booster', category: 'Booster', cost: 200, icon: '⚡', desc: 'Earn 2x XP for all quizzes and library reading completed today.' }
+  { id: 'item_p1', name: 'LS Stainless Steel Water Bottle', category: 'Physical Store', is_physical: true, cost: 450, icon: '🥛', desc: 'Official insulated 500ml LS School Water Bottle. Claim in physical library store!' },
+  { id: 'item_p2', name: 'LS Hardcover A5 Study Journal', category: 'Physical Store', is_physical: true, cost: 250, icon: '📓', desc: 'Embossed leatherette notebook for study notes and homework tracking.' },
+  { id: 'item_p3', name: 'Faber-Castell Gel Pen 5-Pack', category: 'Physical Store', is_physical: true, cost: 180, icon: '✏️', desc: 'High quality smooth gel pens in blue, black, red, green, and purple.' },
+  { id: 'item_p4', name: 'LS School Branded Hoodie', category: 'Physical Store', is_physical: true, cost: 850, icon: '🧥', desc: 'Cozy embroidered school hoodie. Choose size when picking up at LS store.' },
+  { id: 'item_1', name: 'Homework Waiver Pass', category: 'Privilege', is_physical: false, cost: 300, icon: '🎟️', desc: '1 homework waiver card approved by your class teacher.' },
+  { id: 'item_2', name: 'Golden Profile Border', category: 'Digital Perk', is_physical: false, cost: 150, icon: '👑', desc: 'Custom shiny gold frame around your avatar on the leaderboard.' },
+  { id: 'item_3', name: '24h Double XP Booster', category: 'Booster', is_physical: false, cost: 200, icon: '⚡', desc: 'Earn 2x XP for all quizzes and library reading completed today.' }
 ];
 
 const INITIAL_BOOKS = [
@@ -764,6 +816,7 @@ const INITIAL_QUIZZES = [
     title: 'Cambridge O-Level Physics 0625 - Mechanics & Motion',
     subject: 'Physics',
     grade: 10,
+    topic: 'Kinematics & Acceleration',
     subject_code: '0625',
     exam_year: 2024,
     variant: 'Paper 12',
@@ -771,7 +824,7 @@ const INITIAL_QUIZZES = [
     questions: [
       {
         id: 'q1_1',
-        topic: 'Kinematics & Motion',
+        topic: 'Kinematics & Acceleration',
         question_text: 'A car accelerates uniformly from rest to a velocity of 20 m/s in 5 seconds. What is its acceleration?',
         option_a: '2 m/s²', option_b: '4 m/s²', option_c: '5 m/s²', option_d: '100 m/s²',
         correct_option: 'B', explanation: 'Acceleration a = (v - u) / t = (20 - 0) / 5 = 4 m/s².'
@@ -790,6 +843,7 @@ const INITIAL_QUIZZES = [
     title: 'Cambridge O-Level Computer Science 2210 - Algorithms',
     subject: 'Computer Science',
     grade: 10,
+    topic: 'Data Structures & FIFO',
     subject_code: '2210',
     exam_year: 2024,
     variant: 'Paper 21',
@@ -797,7 +851,7 @@ const INITIAL_QUIZZES = [
     questions: [
       {
         id: 'q2_1',
-        topic: 'Data Structures',
+        topic: 'Data Structures & FIFO',
         question_text: 'Which data structure operates on a First-In, First-Out (FIFO) basis?',
         option_a: 'Stack', option_b: 'Queue', option_c: 'Array', option_d: 'Tree',
         correct_option: 'B', explanation: 'Queues process items in the order they arrive (FIFO).'
@@ -809,14 +863,32 @@ const INITIAL_QUIZZES = [
     title: 'Grade 7 Mathematics - Algebraic Expressions',
     subject: 'Maths',
     grade: 7,
+    topic: 'Algebraic Simplification',
     is_past_paper: false,
     questions: [
       {
         id: 'q7_1',
-        topic: 'Algebraic Expressions',
+        topic: 'Algebraic Simplification',
         question_text: 'Simplify: 3x + 5x - 2x',
         option_a: '6x', option_b: '10x', option_c: '8x', option_d: '4x',
         correct_option: 'A', explanation: '(3 + 5 - 2)x = 6x.'
+      }
+    ]
+  },
+  {
+    id: 'g7_dhivehi_1',
+    title: 'Grade 7 Dhivehi - ތާނަ އަކުރު އަދި ފިލި',
+    subject: 'Dhivehi',
+    grade: 7,
+    topic: 'ތާނަ އަކުރުތައް',
+    is_past_paper: false,
+    questions: [
+      {
+        id: 'q7_dh_1',
+        topic: 'ތާނަ އަކުރުތައް',
+        question_text: 'ދިވެހި ތާނައަކުރުގައި ހިމެނެނީ ކިތައް އަކުރު؟',
+        option_a: '20 އަކުރު', option_b: '24 އަކުރު', option_c: '28 އަކުރު', option_d: '30 އަކުރު',
+        correct_option: 'B', explanation: 'ތާނަ އަކުރުގައި ހިމެނެނީ 24 އަކުރެވެ.'
       }
     ]
   }
@@ -840,12 +912,12 @@ export default function App() {
 
   // --- Student Stats ---
   const [studentGrade, setStudentGrade] = useState(7);
-  const [coins, setCoins] = useState(150);
-  const [xp, setXp] = useState(240);
-  const [streak, setStreak] = useState(1);
-  const [quizzesCompleted, setQuizzesCompleted] = useState(0);
-  const [booksRead, setBooksRead] = useState(0);
-  const [readingHours, setReadingHours] = useState(5.5);
+  const [coins, setCoins] = useState(250);
+  const [xp, setXp] = useState(480);
+  const [streak, setStreak] = useState(3);
+  const [quizzesCompleted, setQuizzesCompleted] = useState(4);
+  const [booksRead, setBooksRead] = useState(2);
+  const [readingHours, setReadingHours] = useState(6.5);
   const [claimedRewards, setClaimedRewards] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -860,12 +932,16 @@ export default function App() {
   const [books, setBooks] = useState(INITIAL_BOOKS);
   const [shopItems, setShopItems] = useState(INITIAL_SHOP_ITEMS);
   const [badges, setBadges] = useState(INITIAL_BADGES);
-  const [leaderboardUsers, setLeaderboardUsers] = useState([]);
+  const [leaderboardUsers, setLeaderboardUsers] = useState([
+    { full_name: 'Aminath Raya', index_number: 'STU-1002', grade: 10, xp: 2850, streak: 12, coins: 890, reading_hours: 42.0 },
+    { full_name: 'Hassan Zayan', index_number: 'STU-1045', grade: 9, xp: 2100, streak: 9, coins: 620, reading_hours: 31.5 },
+    { full_name: 'Mariyam Yumna', index_number: 'STU-1088', grade: 8, xp: 1750, streak: 7, coins: 450, reading_hours: 24.0 },
+  ]);
 
-  // --- E-Library State & Mobile Easy Reader Controls ---
-  const [bookBatchIndex, setBookBatchIndex] = useState(0);
+  // --- E-Library State & Physical Voucher State ---
   const [selectedBook, setSelectedBook] = useState(null);
   const [claimingBook, setClaimingBook] = useState(null);
+  const [viewingVoucher, setViewingVoucher] = useState(null);
   const [bookPageIndex, setBookPageIndex] = useState(0);
   const [readerFontSize, setReaderFontSize] = useState('base');
   const [readerTheme, setReaderTheme] = useState('light');
@@ -873,6 +949,8 @@ export default function App() {
 
   // --- Global Filter State ---
   const [selectedSubject, setSelectedSubject] = useState('All');
+  const [selectedTopic, setSelectedTopic] = useState('All');
+  const [shopFilter, setShopFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
   // --- Quiz Runner State ---
@@ -888,27 +966,6 @@ export default function App() {
   const [gameOver, setGameOver] = useState(false);
   const [userAnswers, setUserAnswers] = useState({});
 
-  // --- Admin / Studio State ---
-  const [targetArena, setTargetArena] = useState('olevel');
-  const [studioGrade, setStudioGrade] = useState(7);
-  const [studioSubject, setStudioSubject] = useState('Maths');
-  const [studioSubjectCode, setStudioSubjectCode] = useState('0580');
-  const [studioYear, setStudioYear] = useState('2024');
-  const [studioVariant, setStudioVariant] = useState('Paper 22');
-  const [jsonInputText, setJsonInputText] = useState(`[
-  {
-    "topic": "Kinematics & Motion",
-    "question_text": "What does the gradient of a distance-time graph represent?",
-    "option_a": "Acceleration",
-    "option_b": "Speed",
-    "option_c": "Displacement",
-    "option_d": "Force",
-    "correct_option": "B",
-    "explanation": "Speed is given by the gradient (change in distance over time)."
-  }
-]`);
-  const [studioMsg, setStudioMsg] = useState({ type: '', text: '' });
-
   // --- Admin CRUD Center State ---
   const [adminTab, setAdminTab] = useState('books');
   const [editingBook, setEditingBook] = useState(null);
@@ -918,13 +975,13 @@ export default function App() {
   });
 
   const [editingPrize, setEditingPrize] = useState(null);
-  const [prizeForm, setPrizeForm] = useState({ name: '', category: 'Privilege', cost: 200, icon: '🎁', desc: '' });
+  const [prizeForm, setPrizeForm] = useState({ name: '', category: 'Physical Store', is_physical: true, cost: 200, icon: '🎒', desc: '' });
 
   const [editingBadge, setEditingBadge] = useState(null);
   const [badgeForm, setBadgeForm] = useState({ title: '', desc: '', icon: '🏅', minQuizzes: 0, minBooks: 0, minXp: 0, minCoins: 0, minStreak: 0 });
 
   const [editingQuiz, setEditingQuiz] = useState(null);
-  const [quizForm, setQuizForm] = useState({ title: '', subject: 'Maths', grade: 7, subject_code: '', exam_year: 2024, variant: 'Paper 12', is_past_paper: false });
+  const [quizForm, setQuizForm] = useState({ title: '', subject: 'Maths', topic: 'General Topic', grade: 7, subject_code: '', exam_year: 2024, variant: 'Paper 12', is_past_paper: false });
 
   // --- Navigation Controls ---
   const navigateToTab = (tabName) => {
@@ -934,6 +991,7 @@ export default function App() {
     setIsFullScreenReader(false);
     setActiveTab(tabName);
     setSelectedSubject('All');
+    setSelectedTopic('All');
     window.history.pushState({ tab: tabName }, '', `#${tabName}`);
   };
 
@@ -1047,12 +1105,12 @@ export default function App() {
         setIndexNumber(data.index_number || 'STU-2026-0000');
         setRole(data.role || 'student');
         setStudentGrade(data.grade || 7);
-        setCoins(data.coins ?? 150);
-        setXp(data.xp ?? 240);
-        setStreak(data.streak ?? 1);
-        setQuizzesCompleted(data.quizzes_completed ?? 0);
-        setBooksRead(data.books_read ?? 0);
-        setReadingHours(data.reading_hours ?? 5.5);
+        setCoins(data.coins ?? 250);
+        setXp(data.xp ?? 480);
+        setStreak(data.streak ?? 3);
+        setQuizzesCompleted(data.quizzes_completed ?? 4);
+        setBooksRead(data.books_read ?? 2);
+        setReadingHours(data.reading_hours ?? 6.5);
         setClaimedRewards(data.claimed_rewards || []);
         setActivityLog(data.activity_log || []);
         setCompletedChallenges(data.completed_challenges || []);
@@ -1093,17 +1151,17 @@ export default function App() {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('full_name, index_number, grade, xp, streak, coins, books_read, quizzes_completed')
+        .select('full_name, index_number, grade, xp, streak, coins, books_read, reading_hours')
         .order('xp', { ascending: false })
         .limit(10);
-      if (data) setLeaderboardUsers(data);
+      if (data && data.length > 0) setLeaderboardUsers(data);
     } catch (e) { console.warn("Leaderboard error:", e); }
   };
 
   // --- Auth Handlers ---
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!authEmail || !authPassword) return alert('Please enter your email or user ID and password.');
+    if (!authEmail || !authPassword) return alert('Please enter your email and password.');
     setAuthLoading(true);
 
     try {
@@ -1159,12 +1217,12 @@ export default function App() {
           index_number: assignedIndex,
           role,
           grade: studentGrade,
-          coins: 150,
-          xp: 240,
+          coins: 250,
+          xp: 480,
           streak: 1,
           quizzes_completed: 0,
           books_read: 0,
-          reading_hours: 5.5,
+          reading_hours: 0.0,
           claimed_rewards: [],
           activity_log: [{ id: 'init_1', title: `Registered as ${role.toUpperCase()}`, date: 'Just now' }],
           completed_challenges: [],
@@ -1321,7 +1379,7 @@ export default function App() {
           const chosen = userAnswers[qKey] || null;
           return {
             id: qKey,
-            topic: q.topic || 'General Concept',
+            topic: q.topic || activeQuiz.topic || 'General Concept',
             question_text: q.question_text,
             correct_option: q.correct_option,
             user_option: chosen,
@@ -1407,22 +1465,46 @@ export default function App() {
     alert(`🎉 Verified! Logged +${hoursToCredit} Reading Hours, +${Math.round(hoursToCredit * 15)} EduCoins, and +${Math.round(hoursToCredit * 30)} XP!`);
   };
 
-  // --- Redeem Reward ---
+  // --- Redeem Physical & Digital Gift Store Rewards ---
   const handleRedeemReward = (item) => {
     if (coins < item.cost) return alert(`Insufficient EduCoins! You need ${item.cost - coins} more coins.`);
-    if (confirm(`Redeem "${item.name}" for ${item.cost} EduCoins?`)) {
-      const newCoins = coins - item.cost;
-      const redemption = { id: `claimed_${Date.now()}`, name: item.name, date: new Date().toISOString().split('T')[0], code: `ES-${Math.floor(1000 + Math.random() * 9000)}` };
-      const newClaimed = [redemption, ...claimedRewards];
-      const newLog = [{ id: `act_${Date.now()}`, title: `Redeemed Reward: ${item.name}`, cost: item.cost, date: 'Just now' }, ...activityLog];
+    
+    const confirmMsg = item.is_physical
+      ? `Redeem real physical item "${item.name}" for ${item.cost} EduCoins?\n\nYou will receive an official LS Store pickup code to collect it at the school library/store desk!`
+      : `Redeem "${item.name}" for ${item.cost} EduCoins?`;
 
-      setCoins(newCoins); setClaimedRewards(newClaimed); setActivityLog(newLog);
-      playSound('coin'); confetti({ particleCount: 100, spread: 70 });
+    if (confirm(confirmMsg)) {
+      const newCoins = coins - item.cost;
+      const redemption = {
+        id: `claimed_${Date.now()}`,
+        name: item.name,
+        cost: item.cost,
+        is_physical: item.is_physical || item.category === 'Physical Store',
+        date: new Date().toISOString().split('T')[0],
+        code: `LS-GIFT-${Math.floor(1000 + Math.random() * 9000)}`
+      };
+      
+      const newClaimed = [redemption, ...claimedRewards];
+      const newLog = [{ id: `act_${Date.now()}`, title: `LS Gift Shop: ${item.name}`, cost: item.cost, date: 'Just now' }, ...activityLog];
+
+      setCoins(newCoins);
+      setClaimedRewards(newClaimed);
+      setActivityLog(newLog);
+
+      playSound('coin');
+      confetti({ particleCount: 120, spread: 80 });
+
       syncProfileToSupabase({ coins: newCoins, claimed_rewards: newClaimed, activity_log: newLog });
+
+      if (redemption.is_physical) {
+        setViewingVoucher(redemption);
+      } else {
+        alert(`🎉 Purchased ${item.name}! Your reward is now active.`);
+      }
     }
   };
 
-  // --- Admin CRUD Operations ---
+  // --- Admin CRUD Handlers ---
   const handleSaveBook = async (e) => {
     e.preventDefault();
     if (!bookForm.title || !bookForm.author || !bookForm.pageText) return alert("Please fill title, author, and chapter page text.");
@@ -1488,187 +1570,70 @@ export default function App() {
     e.preventDefault();
     if (!prizeForm.name || !prizeForm.cost) return alert("Please fill prize name and cost.");
 
+    const prizeData = {
+      name: prizeForm.name,
+      category: prizeForm.category,
+      is_physical: prizeForm.is_physical || prizeForm.category === 'Physical Store',
+      cost: parseInt(prizeForm.cost),
+      icon: prizeForm.icon || '🎒',
+      desc: prizeForm.desc
+    };
+
     if (editingPrize) {
-      const updatedPrize = { ...editingPrize, name: prizeForm.name, category: prizeForm.category, cost: parseInt(prizeForm.cost), icon: prizeForm.icon, desc: prizeForm.desc };
+      const updatedPrize = { ...editingPrize, ...prizeData };
       try {
         await supabase.from('shop_items').update(updatedPrize).eq('id', editingPrize.id);
         setShopItems(shopItems.map(i => i.id === editingPrize.id ? updatedPrize : i));
         setEditingPrize(null);
-        alert("✅ Shop prize updated!");
+        alert("✅ LS Shop item updated!");
       } catch (err) { alert("Update failed: " + err.message); }
     } else {
-      const newPrize = { id: `item_${Date.now()}`, name: prizeForm.name, category: prizeForm.category, cost: parseInt(prizeForm.cost), icon: prizeForm.icon, desc: prizeForm.desc };
+      const newPrize = { id: `item_${Date.now()}`, ...prizeData };
       try {
         await supabase.from('shop_items').insert([newPrize]);
         setShopItems([newPrize, ...shopItems]);
-        alert("✅ Shop prize created!");
+        alert("✅ LS Shop item published!");
       } catch (err) { alert("Create failed: " + err.message); }
     }
-    setPrizeForm({ name: '', category: 'Privilege', cost: 200, icon: '🎁', desc: '' });
+    setPrizeForm({ name: '', category: 'Physical Store', is_physical: true, cost: 200, icon: '🎒', desc: '' });
   };
 
   const startEditPrize = (item) => {
     setEditingPrize(item);
-    setPrizeForm({ name: item.name, category: item.category, cost: item.cost, icon: item.icon, desc: item.desc || '' });
+    setPrizeForm({
+      name: item.name,
+      category: item.category || 'Physical Store',
+      is_physical: item.is_physical ?? true,
+      cost: item.cost,
+      icon: item.icon,
+      desc: item.desc || ''
+    });
   };
 
   const handleDeletePrize = async (id) => {
-    if (confirm("Delete this shop prize?")) {
+    if (confirm("Delete this shop item?")) {
       try { await supabase.from('shop_items').delete().eq('id', id); } catch (e) { console.warn(e); }
       setShopItems(shopItems.filter(i => i.id !== id));
     }
   };
 
-  const handleSaveBadge = async (e) => {
-    e.preventDefault();
-    if (!badgeForm.title || !badgeForm.desc) return alert("Please fill badge title and description.");
+  // --- Dynamic Topic Extractor for Filter Selector ---
+  const availableTopics = Array.from(new Set(
+    quizzes
+      .filter(q => selectedSubject === 'All' || q.subject === selectedSubject)
+      .map(q => q.topic || (q.questions && q.questions[0]?.topic) || 'General Topic')
+      .filter(Boolean)
+  ));
 
-    const formattedBadge = {
-      title: badgeForm.title,
-      desc: badgeForm.desc,
-      icon: badgeForm.icon || '🏅',
-      min_quizzes: parseInt(badgeForm.minQuizzes) || 0,
-      min_books: parseInt(badgeForm.minBooks) || 0,
-      min_xp: parseInt(badgeForm.minXp) || 0,
-      min_coins: parseInt(badgeForm.minCoins) || 0,
-      min_streak: parseInt(badgeForm.minStreak) || 0
-    };
-
-    if (editingBadge) {
-      const updated = { ...editingBadge, ...formattedBadge };
-      try {
-        await supabase.from('badges').update(updated).eq('id', editingBadge.id);
-        setBadges(badges.map(b => b.id === editingBadge.id ? updated : b));
-        setEditingBadge(null);
-        alert("✅ Badge updated!");
-      } catch (err) { alert("Update failed: " + err.message); }
-    } else {
-      const newBadge = { id: `b_${Date.now()}`, ...formattedBadge };
-      try {
-        await supabase.from('badges').insert([newBadge]);
-        setBadges([newBadge, ...badges]);
-        alert("✅ Badge created!");
-      } catch (err) { alert("Create failed: " + err.message); }
-    }
-    setBadgeForm({ title: '', desc: '', icon: '🏅', minQuizzes: 0, minBooks: 0, minXp: 0, minCoins: 0, minStreak: 0 });
-  };
-
-  const startEditBadge = (badge) => {
-    setEditingBadge(badge);
-    setBadgeForm({
-      title: badge.title,
-      desc: badge.desc,
-      icon: badge.icon || '🏅',
-      minQuizzes: badge.min_quizzes || badge.minQuizzes || 0,
-      minBooks: badge.min_books || badge.minBooks || 0,
-      minXp: badge.min_xp || badge.minXp || 0,
-      minCoins: badge.min_coins || badge.minCoins || 0,
-      minStreak: badge.min_streak || badge.minStreak || 0
-    });
-  };
-
-  const handleDeleteBadge = async (id) => {
-    if (confirm("Delete this badge?")) {
-      try { await supabase.from('badges').delete().eq('id', id); } catch (e) { console.warn(e); }
-      setBadges(badges.filter(b => b.id !== id));
-    }
-  };
-
-  const handleSaveQuizMetadata = async (e) => {
-    e.preventDefault();
-    if (!quizForm.title) return alert("Please enter a quiz title.");
-
-    if (editingQuiz) {
-      const updatedQuiz = {
-        ...editingQuiz,
-        title: quizForm.title,
-        subject: quizForm.subject,
-        grade: parseInt(quizForm.grade),
-        subject_code: quizForm.subject_code,
-        exam_year: parseInt(quizForm.exam_year),
-        variant: quizForm.variant,
-        is_past_paper: quizForm.is_past_paper
-      };
-      try {
-        await supabase.from('quizzes').update(updatedQuiz).eq('id', editingQuiz.id);
-        setQuizzes(quizzes.map(q => q.id === editingQuiz.id ? updatedQuiz : q));
-        setEditingQuiz(null);
-        alert("✅ Quiz updated!");
-      } catch (err) { alert("Update failed: " + err.message); }
-    }
-  };
-
-  const startEditQuiz = (quiz) => {
-    setEditingQuiz(quiz);
-    setQuizForm({
-      title: quiz.title,
-      subject: quiz.subject || 'Maths',
-      grade: quiz.grade || 7,
-      subject_code: quiz.subject_code || '',
-      exam_year: quiz.exam_year || 2024,
-      variant: quiz.variant || 'Paper 12',
-      is_past_paper: quiz.is_past_paper === true || quiz.is_past_paper === 'true'
-    });
-  };
-
-  const deleteQuiz = async (quizId) => {
-    if (confirm('Delete this quiz?')) {
-      try { await supabase.from('quizzes').delete().eq('id', quizId); } catch (e) { console.warn(e); }
-      setQuizzes((prev) => prev.filter(q => q.id !== quizId));
-    }
-  };
-
-  // --- Teacher Studio JSON Import ---
-  const handleJsonImport = async () => {
-    setStudioMsg({ type: '', text: '' });
-    try {
-      const parsed = JSON.parse(jsonInputText);
-      if (!Array.isArray(parsed)) throw new Error("JSON must be an array of question objects [...]");
-
-      const formattedQuestions = parsed.map((q, idx) => ({
-        id: `q_json_${Date.now()}_${idx}`,
-        topic: q.topic || 'General Concept',
-        question_text: q.question_text || q.question || 'Question Text',
-        option_a: q.option_a || (q.options ? q.options[0] : 'Option A'),
-        option_b: q.option_b || (q.options ? q.options[1] : 'Option B'),
-        option_c: q.option_c || (q.options ? q.options[2] : 'Option C'),
-        option_d: q.option_d || (q.options ? q.options[3] : 'Option D'),
-        correct_option: (q.correct_option || q.answer || 'A').toUpperCase().charAt(0),
-        explanation: q.explanation || 'No step-by-step explanation provided.'
-      }));
-
-      const isOLevel = targetArena === 'olevel';
-      const newQuiz = {
-        id: `quiz_${Date.now()}`,
-        title: isOLevel
-          ? `Cambridge O-Level ${studioSubject} (${studioSubjectCode}) - ${studioYear} ${studioVariant}`
-          : `Grade ${studioGrade} ${studioSubject} Practice Test (${studioYear})`,
-        subject: studioSubject,
-        grade: isOLevel ? 10 : parseInt(studioGrade),
-        subject_code: isOLevel ? studioSubjectCode : null,
-        exam_year: parseInt(studioYear),
-        variant: isOLevel ? studioVariant : null,
-        is_past_paper: isOLevel,
-        questions: formattedQuestions
-      };
-
-      const { error } = await supabase.from('quizzes').insert([newQuiz]);
-      if (error) throw error;
-
-      setQuizzes((prev) => [newQuiz, ...prev]);
-      setStudioMsg({ type: 'success', text: `✅ Saved quiz with ${formattedQuestions.length} questions and topic tags to database!` });
-    } catch (err) {
-      setStudioMsg({ type: 'error', text: `Failed to save quiz: ${err.message}` });
-    }
-  };
-
-  // --- Filtered Datasets ---
+  // --- Filtered Quiz Datasets ---
   const gradePracticeQuizzes = quizzes.filter(q => {
     const isGradeMatch = q.grade === parseInt(studentGrade);
     const isNotPastPaper = !q.is_past_paper;
     const isSubjectMatch = selectedSubject === 'All' || q.subject === selectedSubject;
+    const quizTopic = q.topic || (q.questions && q.questions[0]?.topic) || 'General Topic';
+    const isTopicMatch = selectedTopic === 'All' || quizTopic.toLowerCase() === selectedTopic.toLowerCase();
     const matchesSearch = (q.title || '').toLowerCase().includes(searchQuery.toLowerCase());
-    return isGradeMatch && isNotPastPaper && isSubjectMatch && matchesSearch;
+    return isGradeMatch && isNotPastPaper && isSubjectMatch && isTopicMatch && matchesSearch;
   });
 
   const oLevelQuizzes = quizzes.filter(q => {
@@ -1679,34 +1644,36 @@ export default function App() {
   });
 
   const filteredLibraryBooks = books.filter(b => selectedSubject === 'All' || b.subject === selectedSubject);
-  const currentBookBatch = filteredLibraryBooks.slice(bookBatchIndex * 3, (bookBatchIndex * 3) + 3);
 
-  const rotateBookBatch = () => {
-    const totalBatches = Math.ceil(filteredLibraryBooks.length / 3) || 1;
-    setBookBatchIndex((prev) => (prev + 1) % totalBatches);
-  };
+  const filteredShopItems = shopItems.filter(i => {
+    if (shopFilter === 'Physical') return i.is_physical || i.category === 'Physical Store';
+    if (shopFilter === 'Digital') return !i.is_physical && i.category !== 'Physical Store';
+    return true;
+  });
 
   const currentRank = getStudentRank(xp);
 
   // =========================================================================
-  // --- AUTHENTICATION & LANDING PAGE VIEWS (UNAUTHENTICATED) ---
+  // --- AUTHENTICATION & ENHANCED LANDING PAGE VIEWS ---
   // =========================================================================
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-between font-sans relative overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between font-sans relative overflow-hidden">
+        {/* Glowing Background Orbs */}
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-amber-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
+        {/* HEADER NAV */}
         <header className="max-w-7xl w-full mx-auto px-6 py-6 flex items-center justify-between z-10">
           <div onClick={() => setAuthView('landing')} className="flex items-center space-x-3 cursor-pointer">
-            <div className="bg-gradient-to-tr from-indigo-500 to-purple-600 p-2.5 rounded-2xl shadow-lg">
+            <div className="bg-gradient-to-tr from-indigo-500 via-purple-500 to-amber-500 p-2.5 rounded-2xl shadow-xl">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-xl font-black tracking-tight text-white">
-                EduSpark <span className="text-indigo-400">IQ</span>
+                EduSpark <span className="text-amber-400">IQ</span>
               </h1>
-              <p className="text-[10px] text-slate-400 font-medium font-mono">School Portal & E-Library</p>
+              <p className="text-[10px] text-slate-400 font-medium font-mono">School Portal & LS Gift Store</p>
             </div>
           </div>
 
@@ -1719,86 +1686,188 @@ export default function App() {
             </button>
             <button
               onClick={() => setAuthView('register')}
-              className="bg-white hover:bg-slate-100 text-slate-900 px-5 py-2 rounded-xl text-xs font-bold shadow-md transition"
+              className="bg-amber-500 hover:bg-amber-600 text-slate-950 px-5 py-2 rounded-xl text-xs font-black shadow-lg transition"
             >
               Register Now
             </button>
           </div>
         </header>
 
-        {/* HERO LANDING VIEW */}
+        {/* HIGH-ENERGY ELEGANT LANDING PAGE */}
         {authView === 'landing' && (
-          <main className="max-w-6xl w-full mx-auto px-6 py-12 z-10 flex-1 flex flex-col justify-center items-center text-center space-y-10">
-            <div className="inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/30 px-4 py-1.5 rounded-full text-indigo-300 text-xs font-bold">
-              <Sparkles className="w-4 h-4 text-indigo-400" />
-              <span>Next-Generation School Portal for Students & Teachers</span>
-            </div>
+          <main className="max-w-7xl w-full mx-auto px-6 py-8 z-10 space-y-16 flex-1">
+            {/* HERO BANNER */}
+            <section className="text-center space-y-6 max-w-4xl mx-auto pt-4">
+              <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-500/20 via-indigo-500/20 to-purple-500/20 border border-amber-500/30 px-4 py-1.5 rounded-full text-amber-300 text-xs font-bold shadow-xs">
+                <Store className="w-4 h-4 text-amber-400" />
+                <span>LS Physical Gift Shop & Topic-Wise Vault Now Live!</span>
+              </div>
 
-            <div className="space-y-4 max-w-3xl">
               <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight">
-                Empowering Students with <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">Smart Topic Diagnostics</span>
+                Master Topics. Read Books.{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-amber-200">
+                  Buy Real Gifts.
+                </span>
               </h1>
+
               <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
-                Access Cambridge O-Level past papers, grade practice vaults, bilingual Dhivehi and Islam library e-books, physical library reading hour logging, and real-time teacher topic analytics.
+                EduSpark IQ empowers students with topic-wise practice, O-Level past paper drills, Dhivehi and Islam reading logs, and real physical prizes at the LS Gift Shop!
               </p>
-            </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
-              <button
-                onClick={() => setAuthView('register')}
-                className="w-full sm:w-auto bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold px-8 py-3.5 rounded-2xl text-sm shadow-xl transition flex items-center justify-center space-x-2"
-              >
-                <span>Get Started — Student / Teacher</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setAuthView('login')}
-                className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-8 py-3.5 rounded-2xl text-sm transition"
-              >
-                Existing User Sign In
-              </button>
-            </div>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+                <button
+                  onClick={() => setAuthView('register')}
+                  className="w-full sm:w-auto bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-black px-8 py-4 rounded-2xl text-sm shadow-2xl transition flex items-center justify-center space-x-2"
+                >
+                  <span>Student Portal Registration</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setAuthView('login')}
+                  className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold px-8 py-4 rounded-2xl text-sm transition"
+                >
+                  Existing User Sign In
+                </button>
+              </div>
+            </section>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full pt-8 text-left">
-              <div className="bg-slate-800/60 border border-slate-700/60 p-5 rounded-3xl space-y-2">
-                <div className="w-10 h-10 bg-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400">
-                  <GraduationCap className="w-5 h-5" />
+            {/* HIGH-IMPACT FEATURE SHOWCASE CARDS */}
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* FEATURE 1: QUIZ OF THE DAY */}
+              <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/30 p-6 rounded-3xl space-y-4 shadow-xl relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div className="p-3 bg-indigo-500/20 text-indigo-400 rounded-2xl">
+                    <Calendar className="w-6 h-6" />
+                  </div>
+                  <span className="text-[10px] font-black bg-amber-500 text-slate-950 px-2.5 py-1 rounded-full uppercase">
+                    2x Coins Bonus
+                  </span>
                 </div>
-                <h3 className="text-sm font-bold text-white">Cambridge O-Level Arena</h3>
-                <p className="text-xs text-slate-400">Interactive timed practice for Grades 8–10 with instant explanations.</p>
+                <div className="space-y-1">
+                  <span className="text-[11px] font-bold text-indigo-300 uppercase block">Quiz of the Day</span>
+                  <h3 className="text-lg font-black text-white">Physics — Kinematics & Motion</h3>
+                  <p className="text-xs text-slate-400">Complete today's featured topic test to earn double EduCoins!</p>
+                </div>
+                <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-xs font-bold text-indigo-300">
+                  <span>Grade 10 Syllabus</span>
+                  <span>10 Questions • 120s</span>
+                </div>
               </div>
 
-              <div className="bg-slate-800/60 border border-slate-700/60 p-5 rounded-3xl space-y-2">
-                <div className="w-10 h-10 bg-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-400">
-                  <Library className="w-5 h-5" />
+              {/* FEATURE 2: STUDENT OF THE MONTH */}
+              <div className="bg-gradient-to-br from-slate-900 via-amber-950/40 to-slate-900 border border-amber-500/30 p-6 rounded-3xl space-y-4 shadow-xl relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div className="p-3 bg-amber-500/20 text-amber-400 rounded-2xl">
+                    <Crown className="w-6 h-6" />
+                  </div>
+                  <span className="text-[10px] font-black bg-amber-400/20 border border-amber-400/30 text-amber-300 px-2.5 py-1 rounded-full uppercase">
+                    🏆 Spotlight Award
+                  </span>
                 </div>
-                <h3 className="text-sm font-bold text-white">E-Library & Reading Hours</h3>
-                <p className="text-xs text-slate-400">Dhivehi, Islam, and English books with online reader & library claim codes.</p>
+                <div className="space-y-1">
+                  <span className="text-[11px] font-bold text-amber-400 uppercase block">Student of the Month</span>
+                  <h3 className="text-lg font-black text-white">Aminath Raya</h3>
+                  <p className="text-xs text-slate-400">Grade 10 • Index: STU-1002 • 42.0 Logged Reading Hours</p>
+                </div>
+                <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-xs font-bold text-amber-300">
+                  <span>XP Score: 2,850 XP</span>
+                  <span>Master Rank 🔥</span>
+                </div>
               </div>
 
-              <div className="bg-slate-800/60 border border-slate-700/60 p-5 rounded-3xl space-y-2">
-                <div className="w-10 h-10 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-400">
-                  <BarChart2 className="w-5 h-5" />
+              {/* FEATURE 3: LS GIFT SHOP SHOWCASE */}
+              <div className="bg-gradient-to-br from-slate-900 via-purple-950/40 to-slate-900 border border-purple-500/30 p-6 rounded-3xl space-y-4 shadow-xl relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div className="p-3 bg-purple-500/20 text-purple-400 rounded-2xl">
+                    <ShoppingBag className="w-6 h-6" />
+                  </div>
+                  <span className="text-[10px] font-black bg-emerald-500 text-slate-950 px-2.5 py-1 rounded-full uppercase">
+                    Real Physical Goods
+                  </span>
                 </div>
-                <h3 className="text-sm font-bold text-white">Teacher Topic Inspector</h3>
-                <p className="text-xs text-slate-400">Topic-by-topic weakness matrix showing teachers exact areas to re-teach.</p>
+                <div className="space-y-1">
+                  <span className="text-[11px] font-bold text-purple-300 uppercase block">LS Gift Store</span>
+                  <h3 className="text-lg font-black text-white">Real Rewards for Learning</h3>
+                  <p className="text-xs text-slate-400">Buy LS Water Bottles, Hoodies, Faber-Castell pens, and journals with EduCoins!</p>
+                </div>
+                <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-xs font-bold text-purple-300">
+                  <span>Physical Pickup Vouchers</span>
+                  <span>In-Stock 🎒</span>
+                </div>
+              </div>
+            </section>
+
+            {/* REAL PHYSICAL GIFTS PREVIEW GRID */}
+            <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-black text-white flex items-center space-x-2">
+                    <span>🎒 LS Gift Shop Highlights</span>
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">Students earn EduCoins by attempting quizzes and logging physical reading hours.</p>
+                </div>
+                <button
+                  onClick={() => setAuthView('register')}
+                  className="text-xs font-bold text-amber-400 hover:underline flex items-center space-x-1"
+                >
+                  <span>View All Shop Rewards</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
 
-              <div className="bg-slate-800/60 border border-slate-700/60 p-5 rounded-3xl space-y-2">
-                <div className="w-10 h-10 bg-purple-500/20 rounded-2xl flex items-center justify-center text-purple-400">
-                  <Coins className="w-5 h-5" />
-                </div>
-                <h3 className="text-sm font-bold text-white">Gamified Rewards</h3>
-                <p className="text-xs text-slate-400">Earn EduCoins for reading and testing to redeem shop privileges.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {INITIAL_SHOP_ITEMS.filter(i => i.is_physical).map((item) => (
+                  <div key={item.id} className="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-4 flex flex-col justify-between space-y-3">
+                    <div className="space-y-2">
+                      <span className="text-3xl block">{item.icon}</span>
+                      <h4 className="font-bold text-white text-sm">{item.name}</h4>
+                      <p className="text-[11px] text-slate-400 line-clamp-2">{item.desc}</p>
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t border-slate-700/60">
+                      <span className="text-xs font-black text-amber-400">{item.cost} EduCoins</span>
+                      <span className="text-[10px] font-bold bg-amber-500/10 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">
+                        Physical
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
+            </section>
+
+            {/* LIVE LEADERBOARD SHOWCASE */}
+            <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6">
+              <div className="text-center space-y-2 max-w-md mx-auto">
+                <Trophy className="w-10 h-10 text-amber-400 mx-auto" />
+                <h2 className="text-2xl font-black text-white">Top Student Leaderboard</h2>
+                <p className="text-xs text-slate-400">Live school rankings based on quiz accuracy and library reading logs.</p>
+              </div>
+
+              <div className="max-w-2xl mx-auto space-y-2">
+                {leaderboardUsers.slice(0, 3).map((student, idx) => (
+                  <div key={idx} className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-2xl flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-xl font-black w-8">
+                        {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
+                      </span>
+                      <div>
+                        <h4 className="font-black text-white text-sm">{student.full_name}</h4>
+                        <span className="text-[11px] text-slate-400 font-mono">
+                          {student.index_number} • Grade {student.grade} • {student.reading_hours} Reading Hrs
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-sm font-black text-amber-400">{student.xp} XP</span>
+                  </div>
+                ))}
+              </div>
+            </section>
           </main>
         )}
 
         {/* LOGIN MODAL */}
         {authView === 'login' && (
           <main className="max-w-md w-full mx-auto px-6 py-12 z-10 flex-1 flex flex-col justify-center">
-            <div className="bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-2xl space-y-6">
+            <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl space-y-6">
               <div className="text-center space-y-2">
                 <h2 className="text-2xl font-black text-white">Welcome Back</h2>
                 <p className="text-xs text-slate-400">Sign in to your EduSpark IQ account</p>
@@ -1806,15 +1875,15 @@ export default function App() {
 
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1.5">User ID / Email Address</label>
+                  <label className="text-xs font-bold text-slate-300 block mb-1.5">User Email Address</label>
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
                     <input
-                      type="text"
+                      type="email"
                       value={authEmail}
                       onChange={(e) => setAuthEmail(e.target.value)}
                       placeholder="student@school.edu"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-amber-500"
                       required
                     />
                   </div>
@@ -1826,7 +1895,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setAuthView('forgot_password')}
-                      className="text-[11px] font-bold text-indigo-400 hover:underline"
+                      className="text-[11px] font-bold text-amber-400 hover:underline"
                     >
                       Forgot password?
                     </button>
@@ -1838,7 +1907,7 @@ export default function App() {
                       value={authPassword}
                       onChange={(e) => setAuthPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-amber-500"
                       required
                     />
                     <button
@@ -1854,16 +1923,16 @@ export default function App() {
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-xs transition shadow-md"
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-3 rounded-xl text-xs transition shadow-md"
                 >
                   {authLoading ? 'Signing In...' : 'Sign In'}
                 </button>
               </form>
 
-              <div className="text-center pt-2 border-t border-slate-700/60">
+              <div className="text-center pt-2 border-t border-slate-800">
                 <p className="text-xs text-slate-400">
                   Don't have an account?{' '}
-                  <button onClick={() => setAuthView('register')} className="text-indigo-400 font-bold hover:underline">
+                  <button onClick={() => setAuthView('register')} className="text-amber-400 font-bold hover:underline">
                     Register Now
                   </button>
                 </p>
@@ -1875,7 +1944,7 @@ export default function App() {
         {/* REGISTER MODAL */}
         {authView === 'register' && (
           <main className="max-w-md w-full mx-auto px-6 py-8 z-10 flex-1 flex flex-col justify-center">
-            <div className="bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-2xl space-y-5">
+            <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl space-y-5">
               <div className="text-center space-y-1">
                 <h2 className="text-2xl font-black text-white">Create Account</h2>
                 <p className="text-xs text-slate-400">Register as a Student or Teacher</p>
@@ -1888,14 +1957,14 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setRole('student')}
-                      className={`py-2 text-xs font-bold rounded-xl border transition ${role === 'student' ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
+                      className={`py-2 text-xs font-bold rounded-xl border transition ${role === 'student' ? 'bg-amber-500 border-amber-500 text-slate-950' : 'bg-slate-950 border-slate-800 text-slate-400'}`}
                     >
                       🎓 Student
                     </button>
                     <button
                       type="button"
                       onClick={() => setRole('teacher')}
-                      className={`py-2 text-xs font-bold rounded-xl border transition ${role === 'teacher' ? 'bg-purple-600 border-purple-600 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
+                      className={`py-2 text-xs font-bold rounded-xl border transition ${role === 'teacher' ? 'bg-purple-600 border-purple-600 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'}`}
                     >
                       👨‍🏫 Teacher
                     </button>
@@ -1909,7 +1978,7 @@ export default function App() {
                     value={authName}
                     onChange={(e) => setAuthName(e.target.value)}
                     placeholder="Full Name"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
                     required
                   />
                 </div>
@@ -1921,7 +1990,7 @@ export default function App() {
                     value={authEmail}
                     onChange={(e) => setAuthEmail(e.target.value)}
                     placeholder="email@school.edu"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
                     required
                   />
                 </div>
@@ -1933,7 +2002,7 @@ export default function App() {
                     value={authPassword}
                     onChange={(e) => setAuthPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
                     required
                   />
                 </div>
@@ -1945,7 +2014,7 @@ export default function App() {
                       <select
                         value={studentGrade}
                         onChange={(e) => setStudentGrade(parseInt(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-white"
                       >
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => (
                           <option key={g} value={g}>Grade {g}</option>
@@ -1960,7 +2029,7 @@ export default function App() {
                         value={indexNumber}
                         onChange={(e) => setIndexNumber(e.target.value)}
                         placeholder="STU-2026-104"
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
                         required
                       />
                     </div>
@@ -1973,7 +2042,7 @@ export default function App() {
                       value={teacherPasscode}
                       onChange={(e) => setTeacherPasscode(e.target.value)}
                       placeholder="SCH-TEACHER-2026"
-                      className="w-full bg-slate-900 border border-purple-500/40 rounded-xl px-3 py-2 text-xs font-mono text-purple-200"
+                      className="w-full bg-slate-950 border border-purple-500/40 rounded-xl px-3 py-2 text-xs font-mono text-purple-200"
                       required
                     />
                   </div>
@@ -1982,16 +2051,16 @@ export default function App() {
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md mt-2"
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-2.5 rounded-xl text-xs transition shadow-md mt-2"
                 >
                   {authLoading ? 'Creating Account...' : 'Complete Registration'}
                 </button>
               </form>
 
-              <div className="text-center pt-2 border-t border-slate-700/60">
+              <div className="text-center pt-2 border-t border-slate-800">
                 <p className="text-xs text-slate-400">
                   Already registered?{' '}
-                  <button onClick={() => setAuthView('login')} className="text-indigo-400 font-bold hover:underline">
+                  <button onClick={() => setAuthView('login')} className="text-amber-400 font-bold hover:underline">
                     Sign In
                   </button>
                 </p>
@@ -2003,9 +2072,9 @@ export default function App() {
         {/* FORGOT PASSWORD MODAL */}
         {authView === 'forgot_password' && (
           <main className="max-w-md w-full mx-auto px-6 py-12 z-10 flex-1 flex flex-col justify-center">
-            <div className="bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-2xl space-y-6">
+            <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl space-y-6">
               <div className="text-center space-y-2">
-                <div className="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto">
+                <div className="w-12 h-12 bg-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center mx-auto">
                   <HelpCircle className="w-6 h-6" />
                 </div>
                 <h2 className="text-2xl font-black text-white">Reset Password</h2>
@@ -2019,7 +2088,7 @@ export default function App() {
                   <p className="text-[11px] text-slate-400">Please check your email inbox to set a new password.</p>
                   <button
                     onClick={() => { setResetSent(false); setAuthView('login'); }}
-                    className="mt-2 bg-indigo-600 text-white font-bold px-4 py-2 rounded-xl text-xs"
+                    className="mt-2 bg-amber-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs"
                   >
                     Return to Sign In
                   </button>
@@ -2035,7 +2104,7 @@ export default function App() {
                         value={authEmail}
                         onChange={(e) => setAuthEmail(e.target.value)}
                         placeholder="email@school.edu"
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-3 py-2.5 text-xs text-white placeholder-slate-500"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-3 py-2.5 text-xs text-white placeholder-slate-500"
                         required
                       />
                     </div>
@@ -2044,14 +2113,14 @@ export default function App() {
                   <button
                     type="submit"
                     disabled={authLoading}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-xs transition shadow-md"
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3 rounded-xl text-xs transition shadow-md"
                   >
                     {authLoading ? 'Sending Reset Email...' : 'Send Reset Link'}
                   </button>
                 </form>
               )}
 
-              <div className="text-center pt-2 border-t border-slate-700/60">
+              <div className="text-center pt-2 border-t border-slate-800">
                 <button onClick={() => setAuthView('login')} className="text-xs text-slate-400 hover:text-white font-bold">
                   ← Back to Sign In
                 </button>
@@ -2060,8 +2129,8 @@ export default function App() {
           </main>
         )}
 
-        <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-800">
-          EduSpark IQ © 2026 • School Student Portal & E-Library
+        <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-900">
+          EduSpark IQ © 2026 • School Student Portal & LS Gift Store
         </footer>
       </div>
     );
@@ -2079,14 +2148,14 @@ export default function App() {
               onClick={() => navigateToTab('dashboard')} 
               className="flex items-center space-x-3 cursor-pointer hover:opacity-85 transition"
             >
-              <div className="bg-gradient-to-tr from-indigo-600 to-purple-600 p-2 rounded-xl shadow-md">
+              <div className="bg-gradient-to-tr from-indigo-600 via-purple-600 to-amber-500 p-2 rounded-xl shadow-md">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
                 <h1 className="text-lg font-black tracking-tight text-slate-900">
                   EduSpark <span className="text-indigo-600">IQ</span>
                 </h1>
-                <p className="text-[11px] text-slate-500 font-medium">School Student Portal & E-Library</p>
+                <p className="text-[11px] text-slate-500 font-medium">School Portal & LS Gift Store</p>
               </div>
             </div>
 
@@ -2106,7 +2175,7 @@ export default function App() {
               </div>
               <div className="flex items-center space-x-1 text-amber-600">
                 <Coins className="w-3.5 h-3.5" />
-                <span>{coins}</span>
+                <span>{coins} Coins</span>
               </div>
               <div className="flex items-center space-x-1 text-indigo-600">
                 <Zap className="w-3.5 h-3.5" />
@@ -2134,7 +2203,7 @@ export default function App() {
             onClick={() => navigateToTab('dashboard')}
             className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-slate-600 hover:bg-slate-100'}`}
           >
-            <BookOpen className="w-3.5 h-3.5 text-indigo-600" /> <span>Grade {studentGrade} Vault</span>
+            <BookOpen className="w-3.5 h-3.5 text-indigo-600" /> <span>Topic-Wise Vault</span>
           </button>
 
           <button
@@ -2155,9 +2224,9 @@ export default function App() {
 
           <button
             onClick={() => navigateToTab('shop')}
-            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'shop' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'text-slate-600 hover:bg-slate-100'}`}
+            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'shop' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-600 hover:bg-slate-100'}`}
           >
-            <ShoppingBag className="w-3.5 h-3.5 text-amber-600" /> <span>Reward Shop</span>
+            <Store className="w-3.5 h-3.5" /> <span>🎒 LS Physical Gift Shop</span>
           </button>
 
           <button
@@ -2197,13 +2266,13 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
 
-        {/* TAB 1: GRADE PRACTICE VAULT */}
+        {/* TAB 1: TOPIC-WISE GRADE PRACTICE VAULT */}
         {activeTab === 'dashboard' && !activeQuiz && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-xl font-black text-slate-900">Grade {studentGrade} Practice Vault</h3>
-                <p className="text-xs text-slate-500">Practice questions curated for your current grade syllabus.</p>
+                <h3 className="text-xl font-black text-slate-900">Grade {studentGrade} Topic Practice Vault</h3>
+                <p className="text-xs text-slate-500">Practice questions organized topic-by-topic for your syllabus.</p>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -2211,7 +2280,7 @@ export default function App() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search quizzes..."
+                  placeholder="Search quizzes or topics..."
                   className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800"
                 />
 
@@ -2229,9 +2298,10 @@ export default function App() {
               </div>
             </div>
 
+            {/* Subject Filters */}
             <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none py-1 w-full">
               <button
-                onClick={() => setSelectedSubject('All')}
+                onClick={() => { setSelectedSubject('All'); setSelectedTopic('All'); }}
                 className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${selectedSubject === 'All' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
               >
                 All Subjects
@@ -2239,7 +2309,7 @@ export default function App() {
               {ALL_SUBJECTS.map((subj) => (
                 <button
                   key={subj}
-                  onClick={() => setSelectedSubject(subj)}
+                  onClick={() => { setSelectedSubject(subj); setSelectedTopic('All'); }}
                   className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${subj === 'Dhivehi' || subj === 'Islam' ? 'font-faruma' : ''} ${selectedSubject === subj ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {subj === 'Dhivehi' ? '🇲🇻 ދިވެހި' : subj === 'Islam' ? '☪️ އިސްލާމް' : subj}
@@ -2247,13 +2317,40 @@ export default function App() {
               ))}
             </div>
 
+            {/* TOPIC SELECTOR FILTER BAR */}
+            {availableTopics.length > 0 && (
+              <div className="bg-indigo-50/60 border border-indigo-100 p-3 rounded-2xl flex items-center space-x-2 overflow-x-auto">
+                <span className="text-[11px] font-bold text-indigo-900 shrink-0 flex items-center space-x-1">
+                  <Tag className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Topic Filter:</span>
+                </span>
+                <button
+                  onClick={() => setSelectedTopic('All')}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold shrink-0 transition ${selectedTopic === 'All' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-800 hover:bg-indigo-100'}`}
+                >
+                  All Topics
+                </button>
+                {availableTopics.map((top) => (
+                  <button
+                    key={top}
+                    onClick={() => setSelectedTopic(top)}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold shrink-0 transition ${selectedTopic === top ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-800 hover:bg-indigo-100'}`}
+                  >
+                    {top}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {gradePracticeQuizzes.map((quiz) => {
                 const isChallengeDone = completedChallenges.includes(quiz.id);
+                const quizTopic = quiz.topic || (quiz.questions && quiz.questions[0]?.topic) || 'General Topic';
+
                 return (
-                  <div key={quiz.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col justify-between hover:border-indigo-300 transition shadow-xs">
+                  <div key={quiz.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col justify-between hover:border-indigo-300 transition shadow-xs space-y-3">
                     <div>
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center justify-between mb-2">
                         <span className="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg font-bold">
                           {quiz.subject}
                         </span>
@@ -2263,13 +2360,20 @@ export default function App() {
                           </button>
                         )}
                       </div>
-                      <h3 className="text-base font-bold text-slate-900 mb-2">{quiz.title}</h3>
-                      <p className="text-xs text-slate-500 mb-4">{quiz.questions.length} Questions</p>
+
+                      <h3 className="text-base font-bold text-slate-900">{quiz.title}</h3>
+
+                      <div className="mt-2 inline-flex items-center space-x-1 bg-purple-50 text-purple-700 border border-purple-100 px-2.5 py-1 rounded-lg text-[11px] font-bold">
+                        <Tag className="w-3 h-3 text-purple-600" />
+                        <span>Syllabus Topic: {quizTopic}</span>
+                      </div>
+
+                      <p className="text-xs text-slate-500 mt-2">{quiz.questions.length} Practice Questions</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100">
                       <button onClick={() => startQuiz(quiz, 'practice')} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-bold transition">
-                        Practice
+                        Practice Mode
                       </button>
                       
                       <button
@@ -2320,7 +2424,7 @@ export default function App() {
             {/* Subject Filter Bar */}
             <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none py-1 w-full">
               <button
-                onClick={() => { setSelectedSubject('All'); setBookBatchIndex(0); }}
+                onClick={() => setSelectedSubject('All')}
                 className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${selectedSubject === 'All' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
               >
                 All Subjects
@@ -2328,7 +2432,7 @@ export default function App() {
               {ALL_SUBJECTS.map((subj) => (
                 <button
                   key={subj}
-                  onClick={() => { setSelectedSubject(subj); setBookBatchIndex(0); }}
+                  onClick={() => setSelectedSubject(subj)}
                   className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${subj === 'Dhivehi' || subj === 'Islam' ? 'font-faruma' : ''} ${selectedSubject === subj ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 >
                   {subj === 'Dhivehi' ? '🇲🇻 ދިވެހި' : subj === 'Islam' ? '☪️ އިސްލާމް' : subj}
@@ -2507,34 +2611,85 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 4: REWARD SHOP */}
+        {/* TAB 4: LS PHYSICAL GIFT SHOP */}
         {activeTab === 'shop' && !activeQuiz && (
           <div className="space-y-6">
-            <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex justify-between items-center">
+            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-slate-950 p-6 sm:p-8 rounded-3xl shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h2 className="text-2xl font-black">EduCoins Reward Shop</h2>
-                <p className="text-xs text-amber-100">Redeem rewards earned from quizzes and library reading!</p>
+                <div className="flex items-center space-x-2">
+                  <Store className="w-7 h-7 text-slate-950" />
+                  <h2 className="text-2xl sm:text-3xl font-black">LS Physical Gift Store</h2>
+                </div>
+                <p className="text-xs text-slate-900 font-medium mt-1">
+                  Buy real school water bottles, study journals, pen sets, and hoodies with your earned EduCoins!
+                </p>
               </div>
-              <div className="bg-white text-amber-600 px-4 py-2 rounded-2xl font-black text-sm">{coins} Coins</div>
+
+              <div className="bg-slate-950 text-amber-400 px-5 py-3 rounded-2xl font-black text-base flex items-center space-x-2 shadow-lg">
+                <Coins className="w-5 h-5 text-amber-400" />
+                <span>{coins} EduCoins</span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {shopItems.map((item) => (
-                <div key={item.id} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
-                  <div>
-                    <span className="text-3xl">{item.icon}</span>
-                    <h3 className="font-bold text-slate-900 text-base mt-2">{item.name}</h3>
-                    <p className="text-xs text-slate-500 mt-1">{item.desc}</p>
+            {/* Shop Category Filter */}
+            <div className="flex items-center space-x-2 border-b border-slate-200 pb-3">
+              <button
+                onClick={() => setShopFilter('All')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition ${shopFilter === 'All' ? 'bg-amber-500 text-slate-950' : 'bg-white border text-slate-600 hover:bg-slate-50'}`}
+              >
+                All Items ({shopItems.length})
+              </button>
+              <button
+                onClick={() => setShopFilter('Physical')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition ${shopFilter === 'Physical' ? 'bg-amber-500 text-slate-950' : 'bg-white border text-slate-600 hover:bg-slate-50'}`}
+              >
+                🎒 Real Physical Goods
+              </button>
+              <button
+                onClick={() => setShopFilter('Digital')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition ${shopFilter === 'Digital' ? 'bg-amber-500 text-slate-950' : 'bg-white border text-slate-600 hover:bg-slate-50'}`}
+              >
+                🎟️ Digital Perks & Passes
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {filteredShopItems.map((item) => (
+                <div key={item.id} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:shadow-md transition flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-start">
+                      <span className="text-4xl p-3 bg-amber-50 rounded-2xl border border-amber-100 block">{item.icon}</span>
+                      {item.is_physical || item.category === 'Physical Store' ? (
+                        <span className="text-[10px] font-black bg-amber-500 text-slate-950 px-2.5 py-1 rounded-full uppercase">
+                          Physical Store Item
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full uppercase">
+                          {item.category}
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="font-black text-slate-900 text-base">{item.name}</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed">{item.desc}</p>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                    <span className="font-black text-amber-600 text-sm">{item.cost} Coins</span>
+                  <div className="pt-5 mt-4 border-t border-slate-100 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">Price</span>
+                      <span className="font-black text-amber-600 text-base">{item.cost} Coins</span>
+                    </div>
+
                     <button
                       onClick={() => handleRedeemReward(item)}
                       disabled={coins < item.cost}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold ${coins >= item.cost ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-400'}`}
+                      className={`px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-xs ${
+                        coins >= item.cost
+                          ? 'bg-amber-500 hover:bg-amber-600 text-slate-950'
+                          : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                      }`}
                     >
-                      Redeem
+                      {item.is_physical ? 'Buy Real Item' : 'Redeem Perk'}
                     </button>
                   </div>
                 </div>
@@ -2605,111 +2760,6 @@ export default function App() {
         {activeTab === 'studio' && (role === 'teacher' || role === 'admin') && (
           <div className="max-w-5xl mx-auto space-y-6">
             <TeacherStudentTracker subjects={ALL_SUBJECTS} />
-
-            <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
-              <div className="flex items-center space-x-3">
-                <BrainCircuit className="w-7 h-7 text-purple-600" />
-                <div>
-                  <h2 className="text-xl font-black text-slate-900">Teacher Quiz Publishing Studio</h2>
-                  <p className="text-xs text-slate-500">Import structured JSON past papers with pre-tagged syllabus topics.</p>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-600 block mb-1">Select Target Arena</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setTargetArena('olevel')}
-                    className={`py-2.5 rounded-2xl text-xs font-bold border transition ${targetArena === 'olevel' ? 'bg-amber-500 border-amber-500 text-white' : 'bg-slate-50 border-slate-200 text-slate-600'}`}
-                  >
-                    🎓 O-Level Past Paper Arena
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTargetArena('vault')}
-                    className={`py-2.5 rounded-2xl text-xs font-bold border transition ${targetArena === 'vault' ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-50 border-slate-200 text-slate-600'}`}
-                  >
-                    📖 Grade Practice Vault
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                {targetArena === 'vault' ? (
-                  <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Grade Level</label>
-                    <select
-                      value={studioGrade}
-                      onChange={(e) => setStudioGrade(parseInt(e.target.value))}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800"
-                    >
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => (
-                        <option key={g} value={g}>Grade {g}</option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Subject Code</label>
-                    <input
-                      type="text"
-                      value={studioSubjectCode}
-                      onChange={(e) => setStudioSubjectCode(e.target.value)}
-                      placeholder="e.g. 0625"
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Subject Name</label>
-                  <select
-                    value={studioSubject}
-                    onChange={(e) => setStudioSubject(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800"
-                  >
-                    {ALL_SUBJECTS.map((subj) => (
-                      <option key={subj} value={subj}>{subj}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Exam Year</label>
-                  <input
-                    type="number"
-                    value={studioYear}
-                    onChange={(e) => setStudioYear(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Paper / Variant</label>
-                  <input
-                    type="text"
-                    value={studioVariant}
-                    onChange={(e) => setStudioVariant(e.target.value)}
-                    placeholder="Paper 12"
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <textarea rows={8} value={jsonInputText} onChange={(e) => setJsonInputText(e.target.value)} className="w-full bg-slate-50 border rounded-xl p-3 text-xs font-mono" />
-                <button onClick={handleJsonImport} className="w-full bg-purple-600 text-white font-bold py-3 rounded-2xl text-xs shadow-md hover:bg-purple-700 transition">
-                  Save Topic-Tagged JSON Quiz to Supabase
-                </button>
-              </div>
-
-              {studioMsg.text && (
-                <div className={`p-3 rounded-xl text-xs ${studioMsg.type === 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>
-                  {studioMsg.text}
-                </div>
-              )}
-            </div>
           </div>
         )}
 
@@ -2721,19 +2771,19 @@ export default function App() {
                 <Settings className="w-7 h-7 text-rose-600" />
                 <div>
                   <h2 className="text-xl font-black text-slate-900">Admin CRUD Management Center</h2>
-                  <p className="text-xs text-slate-500">Full Create, Read, Edit, and Delete access for Books, Shop Prizes, Badges, and Quizzes.</p>
+                  <p className="text-xs text-slate-500">Full Create, Read, Edit, and Delete access for Books, LS Shop Gifts, Badges, and Quizzes.</p>
                 </div>
               </div>
 
               <div className="flex items-center space-x-2 pt-2 border-t border-slate-100 overflow-x-auto scrollbar-none">
                 <button onClick={() => setAdminTab('books')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'books' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>📚 Manage Books ({books.length})</button>
-                <button onClick={() => setAdminTab('prizes')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'prizes' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'}`}>🎁 Shop Prizes ({shopItems.length})</button>
+                <button onClick={() => setAdminTab('prizes')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'prizes' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'}`}>🎒 LS Shop Gifts ({shopItems.length})</button>
                 <button onClick={() => setAdminTab('badges')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'badges' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600'}`}>🏅 Badges ({badges.length})</button>
                 <button onClick={() => setAdminTab('quizzes')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'quizzes' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>📝 Quizzes ({quizzes.length})</button>
               </div>
             </div>
 
-            {/* 1. BOOKS CRUD WITH READING HOURS & CLAIM CODES */}
+            {/* BOOKS CRUD */}
             {adminTab === 'books' && (
               <div className="space-y-6">
                 <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
@@ -2776,12 +2826,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <input type="url" value={bookForm.cover_url} onChange={(e) => setBookForm({ ...bookForm, cover_url: e.target.value })} placeholder="Cover Image URL (https://...)" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                      <input type="text" value={bookForm.extract} onChange={(e) => setBookForm({ ...bookForm, extract: e.target.value })} placeholder="Short Extract / Teaser" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                    </div>
-
-                    <textarea rows={5} value={bookForm.pageText} onChange={(e) => setBookForm({ ...bookForm, pageText: e.target.value })} placeholder="Page text... Use ---PAGE--- for chapter splits." className="w-full bg-slate-50 border rounded-xl p-3 text-xs" required />
+                    <textarea rows={4} value={bookForm.pageText} onChange={(e) => setBookForm({ ...bookForm, pageText: e.target.value })} placeholder="Page text... Use ---PAGE--- for chapter splits." className="w-full bg-slate-50 border rounded-xl p-3 text-xs" required />
                     
                     <div className="flex space-x-2">
                       <button type="submit" className="bg-emerald-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs">{editingBook ? 'Save Changes' : 'Publish Book'}</button>
@@ -2789,204 +2834,46 @@ export default function App() {
                     </div>
                   </form>
                 </div>
-
-                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-3">
-                  <h3 className="text-base font-black text-slate-900">Book Catalog & Claim Codes</h3>
-                  <div className="divide-y divide-slate-100">
-                    {books.map((b) => (
-                      <div key={b.id} className="py-3 flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <img src={b.cover_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80'} alt="" className="w-10 h-10 object-cover rounded-lg" />
-                          <div>
-                            <h4 className="font-bold text-xs text-slate-900">{b.title}</h4>
-                            <span className="text-[11px] text-slate-500">
-                              {b.subject} • {b.reading_hours || 2.0} hrs • Claim Code: <strong className="font-mono text-purple-700">{b.claim_code || 'N/A'}</strong>
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button onClick={() => startEditBook(b)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl"><Edit3 className="w-4 h-4" /></button>
-                          <button onClick={() => handleDeleteBook(b.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
             )}
 
-            {/* 2. SHOP PRIZES CRUD */}
+            {/* SHOP CRUD WITH PHYSICAL ITEM TOGGLE */}
             {adminTab === 'prizes' && (
               <div className="space-y-6">
                 <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
-                  <h3 className="text-base font-black text-slate-900">{editingPrize ? '✏️ Edit Shop Prize' : '➕ Create New Shop Prize'}</h3>
+                  <h3 className="text-base font-black text-slate-900">{editingPrize ? '✏️ Edit LS Shop Gift' : '➕ Create New LS Shop Gift'}</h3>
                   <form onSubmit={handleSavePrize} className="space-y-3">
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                      <input type="text" value={prizeForm.name} onChange={(e) => setPrizeForm({ ...prizeForm, name: e.target.value })} placeholder="Prize Name" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
+                      <input type="text" value={prizeForm.name} onChange={(e) => setPrizeForm({ ...prizeForm, name: e.target.value })} placeholder="Item Name" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
                       <input type="number" value={prizeForm.cost} onChange={(e) => setPrizeForm({ ...prizeForm, cost: e.target.value })} placeholder="EduCoins Cost" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                      <input type="text" value={prizeForm.icon} onChange={(e) => setPrizeForm({ ...prizeForm, icon: e.target.value })} placeholder="Emoji Icon (e.g. 🎟️)" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
+                      <input type="text" value={prizeForm.icon} onChange={(e) => setPrizeForm({ ...prizeForm, icon: e.target.value })} placeholder="Emoji Icon (e.g. 🎒)" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
                       <select value={prizeForm.category} onChange={(e) => setPrizeForm({ ...prizeForm, category: e.target.value })} className="bg-slate-50 border rounded-xl p-2.5 text-xs font-bold text-slate-800">
-                        <option value="Privilege">Privilege</option>
+                        <option value="Physical Store">Physical Store Item</option>
+                        <option value="Privilege">School Privilege</option>
                         <option value="Digital Perk">Digital Perk</option>
                         <option value="Booster">Booster</option>
                       </select>
                     </div>
-                    <input type="text" value={prizeForm.desc} onChange={(e) => setPrizeForm({ ...prizeForm, desc: e.target.value })} placeholder="Reward Description" className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
+
+                    <div className="flex items-center space-x-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id="phys_item_chk"
+                        checked={prizeForm.is_physical}
+                        onChange={(e) => setPrizeForm({ ...prizeForm, is_physical: e.target.checked })}
+                      />
+                      <label htmlFor="phys_item_chk" className="text-xs font-bold text-slate-700">
+                        Real Physical Goods (Requires Physical Store Claim Voucher)
+                      </label>
+                    </div>
+
+                    <input type="text" value={prizeForm.desc} onChange={(e) => setPrizeForm({ ...prizeForm, desc: e.target.value })} placeholder="Item Description" className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
+
                     <div className="flex space-x-2">
-                      <button type="submit" className="bg-amber-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs">{editingPrize ? 'Save Changes' : 'Create Prize'}</button>
+                      <button type="submit" className="bg-amber-500 text-slate-950 font-black px-6 py-2.5 rounded-xl text-xs">{editingPrize ? 'Save Changes' : 'Publish Item'}</button>
                       {editingPrize && <button type="button" onClick={() => setEditingPrize(null)} className="bg-slate-100 text-slate-600 font-bold px-4 py-2.5 rounded-xl text-xs">Cancel</button>}
                     </div>
                   </form>
-                </div>
-
-                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-3">
-                  <h3 className="text-base font-black text-slate-900">Shop Catalog</h3>
-                  <div className="divide-y divide-slate-100">
-                    {shopItems.map((item) => (
-                      <div key={item.id} className="py-3 flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-2xl">{item.icon}</span>
-                          <div>
-                            <h4 className="font-bold text-xs text-slate-900">{item.name}</h4>
-                            <span className="text-[11px] text-amber-600 font-bold">{item.cost} Coins • {item.category}</span>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button onClick={() => startEditPrize(item)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl"><Edit3 className="w-4 h-4" /></button>
-                          <button onClick={() => handleDeletePrize(item.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 3. BADGES CRUD */}
-            {adminTab === 'badges' && (
-              <div className="space-y-6">
-                <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
-                  <h3 className="text-base font-black text-slate-900">{editingBadge ? '✏️ Edit Badge' : '➕ Create New Badge'}</h3>
-                  <form onSubmit={handleSaveBadge} className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <input type="text" value={badgeForm.title} onChange={(e) => setBadgeForm({ ...badgeForm, title: e.target.value })} placeholder="Badge Title" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                      <input type="text" value={badgeForm.desc} onChange={(e) => setBadgeForm({ ...badgeForm, desc: e.target.value })} placeholder="Description" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                      <input type="text" value={badgeForm.icon} onChange={(e) => setBadgeForm({ ...badgeForm, icon: e.target.value })} placeholder="Icon (e.g. 🏅)" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 block">Min Quizzes</label>
-                        <input type="number" value={badgeForm.minQuizzes} onChange={(e) => setBadgeForm({ ...badgeForm, minQuizzes: e.target.value })} className="w-full bg-white border rounded-lg p-1.5 text-xs" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 block">Min Books</label>
-                        <input type="number" value={badgeForm.minBooks} onChange={(e) => setBadgeForm({ ...badgeForm, minBooks: e.target.value })} className="w-full bg-white border rounded-lg p-1.5 text-xs" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 block">Min XP</label>
-                        <input type="number" value={badgeForm.minXp} onChange={(e) => setBadgeForm({ ...badgeForm, minXp: e.target.value })} className="w-full bg-white border rounded-lg p-1.5 text-xs" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 block">Min Coins</label>
-                        <input type="number" value={badgeForm.minCoins} onChange={(e) => setBadgeForm({ ...badgeForm, minCoins: e.target.value })} className="w-full bg-white border rounded-lg p-1.5 text-xs" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 block">Min Streak</label>
-                        <input type="number" value={badgeForm.minStreak} onChange={(e) => setBadgeForm({ ...badgeForm, minStreak: e.target.value })} className="w-full bg-white border rounded-lg p-1.5 text-xs" />
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-2">
-                      <button type="submit" className="bg-purple-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs">{editingBadge ? 'Save Changes' : 'Create Badge'}</button>
-                      {editingBadge && <button type="button" onClick={() => setEditingBadge(null)} className="bg-slate-100 text-slate-600 font-bold px-4 py-2.5 rounded-xl text-xs">Cancel</button>}
-                    </div>
-                  </form>
-                </div>
-
-                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-3">
-                  <h3 className="text-base font-black text-slate-900">Badges Collection</h3>
-                  <div className="divide-y divide-slate-100">
-                    {badges.map((b) => (
-                      <div key={b.id} className="py-3 flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-2xl">{b.icon || '🏅'}</span>
-                          <div>
-                            <h4 className="font-bold text-xs text-slate-900">{b.title}</h4>
-                            <span className="text-[11px] text-slate-500">{b.desc}</span>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button onClick={() => startEditBadge(b)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl"><Edit3 className="w-4 h-4" /></button>
-                          <button onClick={() => handleDeleteBadge(b.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 4. QUIZZES CRUD */}
-            {adminTab === 'quizzes' && (
-              <div className="space-y-6">
-                {editingQuiz && (
-                  <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
-                    <h3 className="text-base font-black text-slate-900">✏️ Edit Quiz Metadata</h3>
-                    <form onSubmit={handleSaveQuizMetadata} className="space-y-3">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <input type="text" value={quizForm.title} onChange={(e) => setQuizForm({ ...quizForm, title: e.target.value })} placeholder="Quiz Title" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                        <select value={quizForm.subject} onChange={(e) => setQuizForm({ ...quizForm, subject: e.target.value })} className="bg-slate-50 border rounded-xl p-2.5 text-xs font-bold text-slate-800">
-                          {ALL_SUBJECTS.map((s) => (
-                            <option key={s} value={s}>{s}</option>
-                          ))}
-                        </select>
-                        <select value={quizForm.grade} onChange={(e) => setQuizForm({ ...quizForm, grade: parseInt(e.target.value) })} className="bg-slate-50 border rounded-xl p-2.5 text-xs font-bold text-slate-800">
-                          {[1,2,3,4,5,6,7,8,9,10].map(g => (
-                            <option key={g} value={g}>Grade {g}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <input type="text" value={quizForm.subject_code} onChange={(e) => setQuizForm({ ...quizForm, subject_code: e.target.value })} placeholder="Subject Code (e.g. 0625)" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                        <input type="number" value={quizForm.exam_year} onChange={(e) => setQuizForm({ ...quizForm, exam_year: e.target.value })} placeholder="Exam Year" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                        <input type="text" value={quizForm.variant} onChange={(e) => setQuizForm({ ...quizForm, variant: e.target.value })} placeholder="Variant (Paper 12)" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                      </div>
-
-                      <div className="flex items-center space-x-2 pt-1">
-                        <input type="checkbox" id="past_paper_chk" checked={quizForm.is_past_paper} onChange={(e) => setQuizForm({ ...quizForm, is_past_paper: e.target.checked })} />
-                        <label htmlFor="past_paper_chk" className="text-xs font-bold text-slate-700">Set as O-Level Past Paper</label>
-                      </div>
-
-                      <div className="flex space-x-2">
-                        <button type="submit" className="bg-indigo-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs">Save Quiz Changes</button>
-                        <button type="button" onClick={() => setEditingQuiz(null)} className="bg-slate-100 text-slate-600 font-bold px-4 py-2.5 rounded-xl text-xs">Cancel</button>
-                      </div>
-                    </form>
-                  </div>
-                )}
-
-                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-3">
-                  <h3 className="text-base font-black text-slate-900">Published Quizzes Database ({quizzes.length})</h3>
-                  <div className="divide-y divide-slate-100">
-                    {quizzes.map((q) => (
-                      <div key={q.id} className="py-3 flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700">{q.subject}</span>
-                            {q.is_past_paper && <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800">O-Level</span>}
-                          </div>
-                          <h4 className="font-bold text-xs text-slate-900 mt-1">{q.title}</h4>
-                          <span className="text-[11px] text-slate-400">{q.questions ? q.questions.length : 0} Questions • Grade {q.grade}</span>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button onClick={() => startEditQuiz(q)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl"><Edit3 className="w-4 h-4" /></button>
-                          <button onClick={() => deleteQuiz(q.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </div>
             )}
@@ -3003,300 +2890,38 @@ export default function App() {
             </div>
 
             <div className="bg-white border border-slate-200 rounded-3xl divide-y divide-slate-100 shadow-xs">
-              {leaderboardUsers.length === 0 ? (
-                <div className="p-6 text-center text-xs text-slate-400">Loading student rankings from Supabase...</div>
-              ) : (
-                leaderboardUsers.map((s, idx) => (
-                  <div key={idx} className="p-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-base font-bold w-6">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`}</span>
-                      <div>
-                        <h4 className="font-bold text-xs sm:text-sm text-slate-900">{s.full_name || 'Student'}</h4>
-                        <span className="text-[11px] text-slate-500 font-mono">ID: {s.index_number || 'N/A'} • Grade {s.grade}</span>
-                      </div>
+              {leaderboardUsers.map((s, idx) => (
+                <div key={idx} className="p-4 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-base font-bold w-6">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`}</span>
+                    <div>
+                      <h4 className="font-bold text-xs sm:text-sm text-slate-900">{s.full_name || 'Student'}</h4>
+                      <span className="text-[11px] text-slate-500 font-mono">ID: {s.index_number || 'N/A'} • Grade {s.grade} • {s.reading_hours || 0} Reading Hrs</span>
                     </div>
-                    <span className="text-xs sm:text-sm font-black text-indigo-600">{s.xp} XP</span>
                   </div>
-                ))
-              )}
+                  <span className="text-xs sm:text-sm font-black text-indigo-600">{s.xp} XP</span>
+                </div>
+              ))}
             </div>
           </div>
         )}
-
-        {/* E-BOOK READER MODAL */}
-        {selectedBook && (() => {
-          const isRTL = isRTLSubject(selectedBook.subject);
-
-          const themeStyles = {
-            light: {
-              bg: 'bg-white',
-              cardBg: 'bg-slate-50 border-slate-200',
-              text: 'text-slate-900',
-              subText: 'text-slate-500',
-              border: 'border-slate-200'
-            },
-            sepia: {
-              bg: 'bg-[#f8f1e5]',
-              cardBg: 'bg-[#f0e6d2] border-[#e2d5bd]',
-              text: 'text-[#433422]',
-              subText: 'text-[#7c664d]',
-              border: 'border-[#e2d5bd]'
-            },
-            dark: {
-              bg: 'bg-slate-900',
-              cardBg: 'bg-slate-800 border-slate-700',
-              text: 'text-slate-100',
-              subText: 'text-slate-400',
-              border: 'border-slate-800'
-            }
-          };
-
-          const currentTheme = themeStyles[readerTheme] || themeStyles.light;
-
-          const fontSizeClasses = {
-            sm: isRTL ? 'text-sm leading-relaxed' : 'text-xs sm:text-sm leading-relaxed',
-            base: isRTL ? 'text-base sm:text-lg leading-loose' : 'text-sm sm:text-base leading-relaxed',
-            lg: isRTL ? 'text-lg sm:text-xl leading-loose' : 'text-base sm:text-lg leading-relaxed',
-            xl: isRTL ? 'text-xl sm:text-2xl leading-loose' : 'text-lg sm:text-xl leading-relaxed',
-            '2xl': isRTL ? 'text-2xl sm:text-3xl leading-loose' : 'text-xl sm:text-2xl leading-relaxed'
-          };
-
-          return (
-            <div
-              className={`fixed inset-0 z-50 flex items-center justify-center ${
-                isFullScreenReader ? 'p-0' : 'p-2 sm:p-4 bg-slate-900/70 backdrop-blur-xs'
-              }`}
-            >
-              <div
-                className={`${currentTheme.bg} ${currentTheme.text} transition-colors duration-200 ${
-                  isFullScreenReader
-                    ? 'w-full h-full rounded-none p-4 sm:p-8 flex flex-col justify-between overflow-y-auto'
-                    : 'rounded-3xl max-w-3xl w-full p-5 sm:p-8 space-y-5 max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col justify-between border ' + currentTheme.border
-                }`}
-              >
-                {/* TOOLBAR */}
-                <div className={`border-b ${currentTheme.border} pb-3 space-y-3`}>
-                  <div className="flex items-center justify-between">
-                    <div className={isRTL ? 'text-right font-faruma' : 'text-left'} dir={isRTL ? 'rtl' : 'ltr'}>
-                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md ${isRTL ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                        {selectedBook.subject}
-                      </span>
-                      <h3 className="text-base sm:text-xl font-black mt-1 leading-snug">{selectedBook.title}</h3>
-                      <p className={`text-xs ${currentTheme.subText}`}>By {selectedBook.author}</p>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setIsFullScreenReader(!isFullScreenReader)}
-                        className={`p-2 rounded-xl text-xs font-bold border transition ${
-                          isFullScreenReader ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
-                        }`}
-                        title={isFullScreenReader ? "Exit Full Screen" : "Read in Full Screen"}
-                      >
-                        {isFullScreenReader ? '📉 Exit Fullscreen' : '📺 Fullscreen'}
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setSelectedBook(null);
-                          setIsFullScreenReader(false);
-                        }}
-                        className={`p-2 text-lg font-bold ${currentTheme.subText} hover:opacity-75`}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                    <div className="flex items-center space-x-1 bg-slate-100/80 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold border border-slate-200/60 dark:border-slate-700">
-                      <span className="text-[10px] text-slate-500 px-1 font-sans">Font Size:</span>
-                      <button
-                        disabled={readerFontSize === 'sm'}
-                        onClick={() => {
-                          const sizes = ['sm', 'base', 'lg', 'xl', '2xl'];
-                          const idx = sizes.indexOf(readerFontSize);
-                          if (idx > 0) setReaderFontSize(sizes[idx - 1]);
-                        }}
-                        className="px-2 py-1 rounded-lg bg-white dark:bg-slate-700 shadow-2xs font-mono font-black text-slate-800 dark:text-slate-100 disabled:opacity-40"
-                      >
-                        A-
-                      </button>
-                      <span className="text-xs font-mono px-1 font-bold uppercase">{readerFontSize}</span>
-                      <button
-                        disabled={readerFontSize === '2xl'}
-                        onClick={() => {
-                          const sizes = ['sm', 'base', 'lg', 'xl', '2xl'];
-                          const idx = sizes.indexOf(readerFontSize);
-                          if (idx < sizes.length - 1) setReaderFontSize(sizes[idx + 1]);
-                        }}
-                        className="px-2 py-1 rounded-lg bg-white dark:bg-slate-700 shadow-2xs font-mono font-black text-slate-800 dark:text-slate-100 disabled:opacity-40"
-                      >
-                        A+
-                      </button>
-                    </div>
-
-                    <div className="flex items-center space-x-1.5 bg-slate-100/80 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold border border-slate-200/60 dark:border-slate-700">
-                      <button
-                        onClick={() => setReaderTheme('light')}
-                        className={`px-2.5 py-1 rounded-lg text-xs transition ${
-                          readerTheme === 'light' ? 'bg-white text-slate-900 shadow-2xs font-black' : 'text-slate-500'
-                        }`}
-                      >
-                        ☀️ Light
-                      </button>
-                      <button
-                        onClick={() => setReaderTheme('sepia')}
-                        className={`px-2.5 py-1 rounded-lg text-xs transition ${
-                          readerTheme === 'sepia' ? 'bg-[#f0e6d2] text-[#433422] shadow-2xs font-black' : 'text-slate-500'
-                        }`}
-                      >
-                        📜 Sepia
-                      </button>
-                      <button
-                        onClick={() => setReaderTheme('dark')}
-                        className={`px-2.5 py-1 rounded-lg text-xs transition ${
-                          readerTheme === 'dark' ? 'bg-slate-900 text-white shadow-2xs font-black' : 'text-slate-500'
-                        }`}
-                      >
-                        🌙 Dark
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* READING CONTENT */}
-                <div className="flex-1 my-4">
-                  <div
-                    dir={isRTL ? 'rtl' : 'ltr'}
-                    className={`${currentTheme.cardBg} p-5 sm:p-8 rounded-2xl border ${currentTheme.border} ${currentTheme.text} whitespace-pre-line min-h-[280px] ${
-                      fontSizeClasses[readerFontSize]
-                    } ${isRTL ? 'text-right font-faruma tracking-wide' : 'text-left font-serif'}`}
-                  >
-                    {Array.isArray(selectedBook.pages)
-                      ? selectedBook.pages[bookPageIndex] || selectedBook.pages[0]
-                      : selectedBook.pages}
-                  </div>
-                </div>
-
-                {/* FOOTER PAGINATION */}
-                <div className={`pt-3 border-t ${currentTheme.border} flex items-center justify-between`}>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      disabled={bookPageIndex === 0}
-                      onClick={() => setBookPageIndex(p => Math.max(0, p - 1))}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1 ${
-                        bookPageIndex === 0 ? 'opacity-40 cursor-not-allowed bg-slate-200/50 text-slate-400' : 'bg-emerald-600 text-white shadow-xs hover:bg-emerald-700'
-                      }`}
-                    >
-                      <ChevronLeft className="w-4 h-4" /> <span>Prev Page</span>
-                    </button>
-
-                    <span className="text-xs font-bold px-2">
-                      Page {bookPageIndex + 1} of {Array.isArray(selectedBook.pages) ? selectedBook.pages.length : 1}
-                    </span>
-
-                    {Array.isArray(selectedBook.pages) && bookPageIndex < selectedBook.pages.length - 1 && (
-                      <button
-                        onClick={() => setBookPageIndex(p => p + 1)}
-                        className="px-3.5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center space-x-1 hover:bg-emerald-700"
-                      >
-                        <span>Next Page</span> <ChevronRight className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  {(!Array.isArray(selectedBook.pages) || bookPageIndex === selectedBook.pages.length - 1) && (
-                    <button
-                      onClick={() => {
-                        const newCompleted = Array.from(new Set([...completedBookIds, selectedBook.id]));
-                        const newCoins = coins + 15;
-                        const newXp = xp + 30;
-                        const newBooksCount = booksRead + 1;
-
-                        setSelectedBook(null);
-                        setIsFullScreenReader(false);
-                        setCompletedBookIds(newCompleted);
-                        setCoins(newCoins);
-                        setXp(newXp);
-                        setBooksRead(newBooksCount);
-
-                        playSound('coin');
-                        confetti({ particleCount: 90, spread: 70 });
-
-                        syncProfileToSupabase({
-                          coins: newCoins,
-                          xp: newXp,
-                          books_read: newBooksCount,
-                          completed_book_ids: newCompleted
-                        });
-
-                        alert("📖 Online Reading Completed! Earned +15 EduCoins and +30 XP!");
-                      }}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-5 py-2 rounded-xl text-xs shadow-md transition flex items-center space-x-1"
-                    >
-                      <span>Finish Reading</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
 
         {/* Quiz Runner Overlay */}
         {activeQuiz && (
           <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-3xl p-5 sm:p-8 shadow-md">
             {gameOver ? (
               <div className="text-center py-6 space-y-5">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-3xl">
-                  💔
-                </div>
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-3xl">💔</div>
                 <h2 className="text-2xl font-black text-slate-900">Game Over!</h2>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  You ran out of hearts in Challenge Mode. Practice questions in Practice Mode to boost your confidence and try again!
-                </p>
                 <div className="flex justify-center space-x-3 pt-2">
-                  <button
-                    onClick={() => startQuiz(activeQuiz, 'practice')}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-6 py-2.5 rounded-xl text-xs transition"
-                  >
-                    Switch to Practice Mode
-                  </button>
-                  <button
-                    onClick={() => setActiveQuiz(null)}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs transition"
-                  >
-                    Back to Portal
-                  </button>
+                  <button onClick={() => setActiveQuiz(null)} className="bg-indigo-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs">Back to Portal</button>
                 </div>
               </div>
             ) : !quizFinished ? (
               <>
                 <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
                   <span className="text-xs font-semibold text-slate-500">Question {currentQuestionIdx + 1} of {activeQuiz.questions.length}</span>
-                  {quizMode === 'challenge' && (
-                    <div className="flex items-center space-x-3">
-                      <div className="flex items-center space-x-1">
-                        {[...Array(hearts)].map((_, i) => (
-                          <Heart key={i} className="w-4 h-4 text-red-500 fill-red-500" />
-                        ))}
-                      </div>
-                      <div className="flex items-center space-x-1 text-amber-700 font-mono font-bold text-xs bg-amber-50 px-2.5 py-1 rounded-full">
-                        <Clock className="w-3.5 h-3.5" /> <span>{timer}s</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
-
-                {activeQuiz.questions[currentQuestionIdx].topic && (
-                  <div className="mb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg border border-indigo-100">
-                      Topic: {activeQuiz.questions[currentQuestionIdx].topic}
-                    </span>
-                  </div>
-                )}
 
                 <h2 className="text-base sm:text-lg font-extrabold text-slate-900 mb-6 leading-relaxed">
                   {activeQuiz.questions[currentQuestionIdx].question_text}
@@ -3346,7 +2971,6 @@ export default function App() {
               <div className="text-center py-4 space-y-6">
                 <Trophy className="w-12 h-12 text-amber-600 mx-auto" />
                 <h2 className="text-2xl font-black text-slate-900">Quiz Complete!</h2>
-                <p className="text-xs text-slate-500">Score: {score} / {activeQuiz.questions.length} • +{score * 15} EduCoins</p>
                 <button onClick={() => setActiveQuiz(null)} className="bg-indigo-600 text-white font-bold px-8 py-3 rounded-2xl text-xs">Return to Portal</button>
               </div>
             )}
@@ -3360,6 +2984,14 @@ export default function App() {
           book={claimingBook}
           onVerified={() => handleClaimVerifiedReadingHours(claimingBook)}
           onClose={() => setClaimingBook(null)}
+        />
+      )}
+
+      {/* PHYSICAL GIFT CLAIM VOUCHER MODAL */}
+      {viewingVoucher && (
+        <PhysicalGiftVoucherModal
+          redemption={viewingVoucher}
+          onClose={() => setViewingVoucher(null)}
         />
       )}
     </div>
