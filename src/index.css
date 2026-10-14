@@ -12,3 +12,21 @@
 .font-faruma {
   font-family: 'Faruma', 'MV Faruma', 'Ameeru', sans-serif;
 }
+
+.portal-nav-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.portal-nav-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.portal-nav-scroll::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.portal-nav-scroll::-webkit-scrollbar-track {
+  background-color: transparent;
+}

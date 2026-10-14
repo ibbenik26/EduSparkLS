@@ -2227,7 +2227,7 @@ export default function App() {
         </div>
 
         {/* Navigation Tabs Bar */}
-        <div className="max-w-7xl mx-auto px-4 flex items-center space-x-1 sm:space-x-2 overflow-x-auto text-xs border-t border-slate-100 py-1.5 scrollbar-none">
+        <div className="max-w-7xl mx-auto w-full px-4 flex flex-nowrap md:flex-wrap items-center gap-x-1 sm:gap-x-2 gap-y-1 overflow-x-auto md:overflow-visible text-xs border-t border-slate-100 py-1.5 portal-nav-scroll">
           <button
             onClick={() => navigateToTab('dashboard')}
             className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-slate-600 hover:bg-slate-100'}`}
