@@ -11,7 +11,7 @@ import {
   Play, Pause, RotateCcw, FileText, KeyRound, ShieldAlert,
   Settings, Edit3, Sliders, Layers, Save, X, TrendingUp, Languages,
   AlertTriangle, Printer, ArrowRight, Mail, HelpCircle, Eye, EyeOff,
-  PackageCheck, ShoppingCart, Store, Sparkle, Crown, Calendar
+  PackageCheck, ShoppingCart, Store, Crown, Calendar, Building2, CheckSquare
 } from 'lucide-react';
 
 // --- Standardized Core Subjects ---
@@ -94,658 +94,14 @@ const getStudentRank = (xp) => {
   return { title: 'Novice', level: 1, text: 'text-slate-600', bg: 'bg-slate-100' };
 };
 
-// --- Syllabus Topic Analytics Engine ---
-const generateSubjectAnalytics = (subject, attempts = []) => {
-  const subjectAttempts = attempts.filter(a => (a.subject || '').toLowerCase() === subject.toLowerCase());
-  const completedCount = subjectAttempts.length;
-
-  if (completedCount === 0) return null;
-
-  let totalScore = 0;
-  let totalQuestions = 0;
-  let totalTimeSeconds = 0;
-
-  const topicStats = {};
-
-  subjectAttempts.forEach(a => {
-    totalScore += a.score || 0;
-    totalQuestions += a.total || 0;
-    totalTimeSeconds += a.timeSpentSeconds || (a.total * 30);
-
-    if (a.questionDetails && Array.isArray(a.questionDetails)) {
-      a.questionDetails.forEach(qd => {
-        const topicName = qd.topic || qd.question_text || 'General Concept';
-        if (!topicStats[topicName]) {
-          topicStats[topicName] = { correct: 0, total: 0, explanations: [] };
-        }
-        topicStats[topicName].total += 1;
-        if (qd.is_correct) {
-          topicStats[topicName].correct += 1;
-        } else if (qd.explanation && !topicStats[topicName].explanations.includes(qd.explanation)) {
-          topicStats[topicName].explanations.push(qd.explanation);
-        }
-      });
-    }
-  });
-
-  const accuracy = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
-  const avgSecondsPerQ = totalQuestions > 0 ? Math.round(totalTimeSeconds / totalQuestions) : 0;
-
-  let predictedGrade = 'F';
-  let gradeColor = 'text-rose-600';
-  let gradeBg = 'bg-rose-50 border-rose-200';
-
-  if (accuracy >= 85) { predictedGrade = 'A*'; gradeColor = 'text-purple-600'; gradeBg = 'bg-purple-50 border-purple-200'; }
-  else if (accuracy >= 75) { predictedGrade = 'A'; gradeColor = 'text-indigo-600'; gradeBg = 'bg-indigo-50 border-indigo-200'; }
-  else if (accuracy >= 65) { predictedGrade = 'B'; gradeColor = 'text-emerald-600'; gradeBg = 'bg-emerald-50 border-emerald-200'; }
-  else if (accuracy >= 50) { predictedGrade = 'C'; gradeColor = 'text-amber-600'; gradeBg = 'bg-amber-50 border-amber-200'; }
-  else if (accuracy >= 40) { predictedGrade = 'D'; gradeColor = 'text-orange-600'; gradeBg = 'bg-orange-50 border-orange-200'; }
-
-  const strongTopics = [];
-  const weakTopics = [];
-
-  Object.entries(topicStats).forEach(([topic, stat]) => {
-    const topicAcc = Math.round((stat.correct / stat.total) * 100);
-    if (topicAcc >= 70) {
-      strongTopics.push({ topic, accuracy: topicAcc, totalAttempted: stat.total });
-    } else {
-      weakTopics.push({
-        topic,
-        accuracy: topicAcc,
-        totalAttempted: stat.total,
-        explanation: stat.explanations.join(' • ') || 'Needs foundational review.'
-      });
-    }
-  });
-
-  return {
-    subject,
-    completedCount,
-    totalScore,
-    totalQuestions,
-    accuracy,
-    avgSecondsPerQ,
-    predictedGrade,
-    gradeColor,
-    gradeBg,
-    strongTopics,
-    weakTopics,
-    isCompleteReportUnlocked: completedCount >= 10
-  };
-};
-
-// --- Printable Certificate Modal ---
-function PrintableCertificateModal({ student, subject, onClose }) {
-  const handlePrint = () => { window.print(); };
-
-  return (
-    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-3xl w-full p-2 space-y-4 shadow-2xl overflow-hidden">
-        <div className="flex justify-between items-center px-6 pt-4 print:hidden">
-          <span className="text-xs font-bold text-slate-500">Certificate Preview (Press Print for Hard Copy)</span>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={handlePrint}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shadow-md"
-            >
-              <Printer className="w-4 h-4" />
-              <span>Print Hard-Copy Certificate</span>
-            </button>
-            <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
-          </div>
-        </div>
-
-        <div className="p-8 sm:p-12 border-8 border-double border-amber-500 rounded-2xl bg-gradient-to-b from-amber-50/40 via-white to-amber-50/20 text-center space-y-6 relative print:p-8 print:border-4">
-          <div className="absolute top-3 left-3 text-2xl text-amber-500">🎓</div>
-          <div className="absolute top-3 right-3 text-2xl text-amber-500">🏆</div>
-
-          <div className="space-y-1">
-            <p className="text-xs font-black tracking-widest uppercase text-amber-800">EduSpark IQ Academic Excellence Award</p>
-            <h1 className="text-3xl sm:text-4xl font-serif font-black text-slate-900 tracking-tight">Certificate of Achievement</h1>
-            <div className="w-24 h-1 bg-amber-500 mx-auto rounded-full mt-2"></div>
-          </div>
-
-          <div className="space-y-2 py-2">
-            <p className="text-xs text-slate-500 font-medium italic">This certificate is proudly awarded to</p>
-            <h2 className="text-2xl sm:text-3xl font-black text-indigo-900 underline decoration-amber-400 decoration-2 underline-offset-8">
-              {student.full_name}
-            </h2>
-            <p className="text-xs font-mono text-slate-500 pt-1">
-              Student Index No: <span className="font-bold text-slate-700">{student.index_number || 'STU-2026-N/A'}</span> • Grade {student.grade}
-            </p>
-          </div>
-
-          <div className="max-w-lg mx-auto bg-white/80 border border-amber-200 p-4 rounded-2xl text-xs text-slate-700 leading-relaxed shadow-xs">
-            For outstanding academic dedication, conceptual mastery, and exceptional performance in <span className="font-bold text-amber-900">{subject}</span> tests and diagnostic quizzes.
-          </div>
-
-          <div className="grid grid-cols-3 gap-3 max-w-md mx-auto pt-2">
-            <div className="bg-amber-100/50 p-2.5 rounded-xl border border-amber-200">
-              <span className="text-[10px] text-amber-800 block font-bold">Accuracy</span>
-              <span className="text-base font-black text-amber-900">{student.subjectAccuracy}%</span>
-            </div>
-            <div className="bg-indigo-100/50 p-2.5 rounded-xl border border-indigo-200">
-              <span className="text-[10px] text-indigo-800 block font-bold">Tests Completed</span>
-              <span className="text-base font-black text-indigo-900">{student.subjectQuizzesDone}</span>
-            </div>
-            <div className="bg-emerald-100/50 p-2.5 rounded-xl border border-emerald-200">
-              <span className="text-[10px] text-emerald-800 block font-bold">Predicted Grade</span>
-              <span className="text-base font-black text-emerald-900">{student.subjectGrade}</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-8 pt-8 border-t border-slate-200 max-w-lg mx-auto text-xs">
-            <div className="text-center space-y-1">
-              <div className="h-8 border-b border-slate-400 max-w-[140px] mx-auto"></div>
-              <p className="font-bold text-slate-800 pt-1">{subject} Subject Lead</p>
-              <p className="text-[10px] text-slate-400">Teacher Signature</p>
-            </div>
-            <div className="text-center space-y-1">
-              <div className="h-8 flex items-end justify-center font-mono font-bold text-slate-700 border-b border-slate-400 max-w-[140px] mx-auto">
-                {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-              </div>
-              <p className="font-bold text-slate-800 pt-1">Date of Award</p>
-              <p className="text-[10px] text-slate-400">School Portal Verification</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// --- Physical LS Gift Claim Voucher Modal ---
-function PhysicalGiftVoucherModal({ redemption, onClose }) {
-  if (!redemption) return null;
-
-  return (
-    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-amber-200 relative overflow-hidden">
-        <div className="bg-gradient-to-r from-amber-500 to-orange-500 -mx-6 -mt-6 p-6 text-white text-center space-y-1">
-          <Store className="w-10 h-10 mx-auto text-amber-100" />
-          <h3 className="text-xl font-black">LS Gift Store Claim Voucher</h3>
-          <p className="text-xs text-amber-100">Official Physical Item Pickup Receipt</p>
-        </div>
-
-        <div className="space-y-4 text-center">
-          <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl space-y-1">
-            <span className="text-[10px] font-bold uppercase text-amber-800 block">Item Purchased</span>
-            <span className="text-lg font-black text-slate-900">{redemption.name}</span>
-            <span className="text-xs text-amber-700 block font-medium">Cost: {redemption.cost} EduCoins</span>
-          </div>
-
-          <div className="space-y-1 bg-slate-50 border p-4 rounded-2xl">
-            <span className="text-[10px] font-bold text-slate-400 uppercase block">Pickup Claim Code</span>
-            <span className="text-2xl font-mono font-black text-indigo-700 tracking-wider">{redemption.code}</span>
-            <p className="text-[10px] text-slate-500 pt-1">Show this claim code to the librarian or school shop manager to claim your real physical item!</p>
-          </div>
-        </div>
-
-        <div className="flex space-x-2 pt-2">
-          <button
-            onClick={() => window.print()}
-            className="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Print Voucher</span>
-          </button>
-          <button
-            onClick={onClose}
-            className="w-1/2 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-xs"
-          >
-            Done
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// --- Book-Specific Library Code Verification Modal ---
-function ClaimReadingHoursModal({ book, onVerified, onClose }) {
-  const [passcodeInput, setPasscodeInput] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setErrorMsg('');
-
-    const targetCode = (book.claim_code || 'LIB-2026').trim().toUpperCase();
-    const enteredCode = passcodeInput.trim().toUpperCase();
-
-    if (enteredCode !== targetCode) {
-      setErrorMsg(`Invalid Code for "${book.title}". Please ask your librarian for this book's specific code.`);
-      return;
-    }
-
-    onVerified();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-slate-100">
-        <div className="flex justify-between items-center border-b pb-3">
-          <div className="flex items-center space-x-2">
-            <div className="p-2 bg-emerald-100 text-emerald-800 rounded-xl">
-              <BookOpenCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-black text-slate-900 text-base">Claim Library Reading Hours</h3>
-              <p className="text-[11px] text-slate-500 font-medium">{book.title}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 font-bold">✕</button>
-        </div>
-
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs text-emerald-900 flex justify-between items-center">
-          <div>
-            <span className="block font-bold text-[10px] uppercase text-emerald-700">Reading Credit Value</span>
-            <span className="text-lg font-black">{book.reading_hours || 2.0} School Reading Hours</span>
-          </div>
-          <span className="text-3xl">📚</span>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-800 block flex items-center justify-between">
-              <span>🔑 Enter Book Claim Code:</span>
-              <span className="text-[10px] text-slate-400 font-normal">(Provided by school librarian)</span>
-            </label>
-            <div className="relative">
-              <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-              <input
-                type="text"
-                value={passcodeInput}
-                onChange={(e) => setPasscodeInput(e.target.value)}
-                placeholder="e.g. LIB-DHIV-01"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-xs font-mono font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 uppercase tracking-wide"
-                required
-              />
-            </div>
-          </div>
-
-          {errorMsg && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-semibold flex items-start space-x-2">
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{errorMsg}</span>
-            </div>
-          )}
-
-          <div className="flex space-x-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition flex items-center justify-center space-x-1"
-            >
-              <span>Submit Code & Claim</span>
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// --- Teacher Student Topic Diagnostics Inspector Modal ---
-function StudentTopicDiagnosticModal({ student, subjects = ALL_SUBJECTS, onClose }) {
-  if (!student) return null;
-
-  const attempts = student.challenge_attempts || [];
-
-  return (
-    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-3xl w-full p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between border-b pb-4">
-          <div>
-            <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Teacher Topic Diagnostic Inspector</span>
-            <h2 className="text-xl font-black text-slate-900 mt-0.5">{student.full_name} — Syllabus Topic Breakdown</h2>
-            <p className="text-xs text-slate-500 font-mono">Index No: {student.index_number || 'N/A'} • Grade {student.grade}</p>
-          </div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
-        </div>
-
-        {attempts.length === 0 ? (
-          <div className="text-center py-12 text-slate-400 text-xs">
-            This student has not submitted any quiz challenges yet.
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {subjects.map(subj => {
-              const stats = generateSubjectAnalytics(subj, attempts);
-              if (!stats) return null;
-
-              return (
-                <div key={subj} className="border border-slate-200 rounded-2xl p-4 bg-slate-50 space-y-3">
-                  <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
-                    <h3 className="font-bold text-sm text-slate-900">{subj} Topic Report</h3>
-                    <span className={`px-3 py-1 rounded-full text-xs font-black ${stats.gradeBg} ${stats.gradeColor}`}>
-                      Grade: {stats.predictedGrade} ({stats.accuracy}%)
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-1">
-                      <h4 className="text-xs font-black text-emerald-800">👍 Syllabus Topics Mastered ({stats.strongTopics.length})</h4>
-                      {stats.strongTopics.length === 0 ? (
-                        <p className="text-[11px] text-emerald-700 italic">No mastered topics recorded yet.</p>
-                      ) : (
-                        <ul className="text-xs text-emerald-900 space-y-1">
-                          {stats.strongTopics.map((st, i) => (
-                            <li key={i} className="flex justify-between items-center bg-white/70 px-2 py-1 rounded-lg">
-                              <span className="font-medium truncate max-w-[180px]">{st.topic}</span>
-                              <span className="font-bold text-emerald-700">{st.accuracy}%</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-
-                    <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 space-y-1">
-                      <h4 className="text-xs font-black text-rose-800">🎯 Weak Topics Needing Re-teaching ({stats.weakTopics.length})</h4>
-                      {stats.weakTopics.length === 0 ? (
-                        <p className="text-[11px] text-rose-700 italic">No weak topics! Excellent overall performance.</p>
-                      ) : (
-                        <ul className="text-xs text-rose-900 space-y-1">
-                          {stats.weakTopics.map((wt, i) => (
-                            <li key={i} className="bg-white/70 p-2 rounded-lg space-y-0.5">
-                              <div className="flex justify-between font-bold">
-                                <span className="truncate max-w-[180px]">{wt.topic}</span>
-                                <span className="text-rose-700">{wt.accuracy}%</span>
-                              </div>
-                              {wt.explanation && (
-                                <p className="text-[10px] text-slate-600 italic">Syllabus Focus: {wt.explanation}</p>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// --- Live Teacher Student Quiz Tracker Component ---
-function TeacherStudentTracker({ subjects = ALL_SUBJECTS }) {
-  const [selectedSubj, setSelectedSubj] = useState('Physics');
-  const [selectedGradeFilter, setSelectedGradeFilter] = useState('All');
-  const [studentProfiles, setStudentProfiles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [certStudent, setCertStudent] = useState(null);
-  const [inspectStudent, setInspectStudent] = useState(null);
-
-  useEffect(() => {
-    fetchStudentQuizStatus();
-  }, []);
-
-  const fetchStudentQuizStatus = async () => {
-    setLoading(true);
-    try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'student');
-
-      if (data) setStudentProfiles(data);
-    } catch (e) {
-      console.warn("Error fetching student profiles:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const processedStudents = studentProfiles.map(s => {
-    const attempts = s.challenge_attempts || [];
-    const subjAttempts = attempts.filter(a => (a.subject || '').toLowerCase() === selectedSubj.toLowerCase());
-
-    let totalScore = 0;
-    let totalQuestions = 0;
-    subjAttempts.forEach(a => {
-      totalScore += a.score || 0;
-      totalQuestions += a.total || 0;
-    });
-
-    const accuracy = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
-    
-    let grade = 'N/A';
-    if (subjAttempts.length > 0) {
-      if (accuracy >= 85) grade = 'A*';
-      else if (accuracy >= 75) grade = 'A';
-      else if (accuracy >= 65) grade = 'B';
-      else if (accuracy >= 50) grade = 'C';
-      else grade = 'D';
-    }
-
-    return {
-      ...s,
-      subjectQuizzesDone: subjAttempts.length,
-      subjectAccuracy: accuracy,
-      subjectMarks: `${totalScore}/${totalQuestions}`,
-      subjectGrade: grade
-    };
-  })
-  .filter(s => selectedGradeFilter === 'All' || s.grade === parseInt(selectedGradeFilter))
-  .sort((a, b) => b.subjectAccuracy - a.subjectAccuracy || b.subjectQuizzesDone - a.subjectQuizzesDone);
-
-  return (
-    <div className="space-y-5 bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-        <div>
-          <h3 className="text-lg font-black text-slate-900">Class Topic Diagnostics & Award Panel</h3>
-          <p className="text-xs text-slate-500">Teachers can inspect individual student weak topics and issue certificates.</p>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <select
-            value={selectedSubj}
-            onChange={(e) => setSelectedSubj(e.target.value)}
-            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-indigo-700"
-          >
-            {subjects.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-
-          <select
-            value={selectedGradeFilter}
-            onChange={(e) => setSelectedGradeFilter(e.target.value)}
-            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700"
-          >
-            <option value="All">All Grades</option>
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => (
-              <option key={g} value={g}>Grade {g}</option>
-            ))}
-          </select>
-
-          <button onClick={fetchStudentQuizStatus} className="p-2 text-slate-500 hover:text-indigo-600 rounded-xl bg-slate-100">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="text-center py-8 text-xs text-slate-400">Loading student records...</div>
-      ) : processedStudents.length === 0 ? (
-        <div className="text-center py-8 text-xs text-slate-400">No students found matching current filters.</div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">
-                <th className="py-2.5 px-3">Rank</th>
-                <th className="py-2.5 px-3">Student Name</th>
-                <th className="py-2.5 px-3">Index #</th>
-                <th className="py-2.5 px-3">Grade</th>
-                <th className="py-2.5 px-3 text-center">Quizzes Done</th>
-                <th className="py-2.5 px-3 text-center">Accuracy</th>
-                <th className="py-2.5 px-3 text-center">Predicted Grade</th>
-                <th className="py-2.5 px-3 text-right">Teacher Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {processedStudents.map((s, idx) => (
-                <tr key={s.id || idx} className="hover:bg-slate-50 transition">
-                  <td className="py-3 px-3 font-bold text-slate-500">
-                    {idx === 0 ? '🥇 1st' : idx === 1 ? '🥈 2nd' : idx === 2 ? '🥉 3rd' : `#${idx + 1}`}
-                  </td>
-                  <td className="py-3 px-3 font-bold text-slate-900">{s.full_name || 'Student'}</td>
-                  <td className="py-3 px-3 font-mono text-slate-500">{s.index_number || 'N/A'}</td>
-                  <td className="py-3 px-3 font-medium text-slate-700">Grade {s.grade}</td>
-                  <td className="py-3 px-3 text-center font-bold text-indigo-600">{s.subjectQuizzesDone}</td>
-                  <td className="py-3 px-3 text-center font-bold text-emerald-600">{s.subjectAccuracy}%</td>
-                  <td className="py-3 px-3 text-center">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-800">
-                      {s.subjectGrade}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 text-right flex items-center justify-end space-x-1.5">
-                    <button
-                      onClick={() => setInspectStudent(s)}
-                      className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition flex items-center space-x-1"
-                    >
-                      <BarChart2 className="w-3.5 h-3.5" />
-                      <span>Inspect Weak Topics</span>
-                    </button>
-
-                    <button
-                      onClick={() => setCertStudent(s)}
-                      disabled={s.subjectQuizzesDone === 0}
-                      className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition flex items-center space-x-1 ${
-                        s.subjectQuizzesDone > 0
-                          ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-xs'
-                          : 'bg-slate-100 text-slate-300 cursor-not-allowed'
-                      }`}
-                    >
-                      <Award className="w-3.5 h-3.5" />
-                      <span>Certificate</span>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {certStudent && (
-        <PrintableCertificateModal
-          student={certStudent}
-          subject={selectedSubj}
-          onClose={() => setCertStudent(null)}
-        />
-      )}
-
-      {inspectStudent && (
-        <StudentTopicDiagnosticModal
-          student={inspectStudent}
-          subjects={subjects}
-          onClose={() => setInspectStudent(null)}
-        />
-      )}
-    </div>
-  );
-}
-
-// --- Subject Analytics Diagnostic Card Component ---
-function SubjectAnalyticsCard({ subject, attempts }) {
-  const stats = generateSubjectAnalytics(subject, attempts);
-  if (!stats) return null;
-
-  return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-3">
-        <div>
-          <div className="flex items-center space-x-2">
-            <h3 className="text-lg font-black text-slate-900">{stats.subject} Syllabus Diagnostics</h3>
-            {stats.isCompleteReportUnlocked ? (
-              <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">
-                ✓ Diagnostic Report Complete
-              </span>
-            ) : (
-              <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full">
-                Progress: {stats.completedCount}/10 Quizzes
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">Topic mastery breakdown aggregated across attempted quizzes.</p>
-        </div>
-
-        <div className={`px-4 py-2 rounded-2xl border text-center font-black ${stats.gradeBg}`}>
-          <span className="text-[10px] block text-slate-400 font-bold uppercase">Predicted Grade</span>
-          <span className={`text-2xl ${stats.gradeColor}`}>{stats.predictedGrade}</span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-slate-50 p-3 rounded-2xl border text-center">
-          <span className="text-[10px] font-bold text-slate-400 block">Overall Accuracy</span>
-          <span className="text-xl font-black text-slate-900">{stats.accuracy}%</span>
-        </div>
-        <div className="bg-slate-50 p-3 rounded-2xl border text-center">
-          <span className="text-[10px] font-bold text-slate-400 block">Avg Time / Question</span>
-          <span className="text-xl font-black text-indigo-600">{stats.avgSecondsPerQ}s</span>
-        </div>
-        <div className="bg-slate-50 p-3 rounded-2xl border text-center">
-          <span className="text-[10px] font-bold text-slate-400 block">Total Marks</span>
-          <span className="text-xl font-black text-emerald-600">{stats.totalScore}/{stats.totalQuestions}</span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-2xl p-4 space-y-2">
-          <h4 className="text-xs font-black text-emerald-800 flex items-center space-x-1">
-            <span>👍 Topics Mastered ({stats.strongTopics.length})</span>
-          </h4>
-          {stats.strongTopics.length === 0 ? (
-            <p className="text-xs text-emerald-700 italic">No mastered topics recorded yet.</p>
-          ) : (
-            <ul className="text-xs text-emerald-900 space-y-1">
-              {stats.strongTopics.map((st, i) => (
-                <li key={i} className="flex justify-between items-center bg-white/80 px-2.5 py-1.5 rounded-xl border border-emerald-100">
-                  <span className="font-semibold text-slate-800">{st.topic}</span>
-                  <span className="font-bold text-emerald-700">{st.accuracy}%</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="bg-rose-50/60 border border-rose-200/80 rounded-2xl p-4 space-y-2">
-          <h4 className="text-xs font-black text-rose-800 flex items-center space-x-1">
-            <span>🎯 Weak Topics Needing Revision ({stats.weakTopics.length})</span>
-          </h4>
-          {stats.weakTopics.length === 0 ? (
-            <p className="text-xs text-rose-700 italic">No weak topics found! Excellent work.</p>
-          ) : (
-            <ul className="text-xs text-rose-900 space-y-1.5">
-              {stats.weakTopics.map((wt, i) => (
-                <li key={i} className="bg-white/80 p-2 rounded-xl border border-rose-100 space-y-0.5">
-                  <div className="flex justify-between font-bold text-slate-800">
-                    <span>{wt.topic}</span>
-                    <span className="text-rose-600">{wt.accuracy}%</span>
-                  </div>
-                  {wt.explanation && (
-                    <p className="text-[10px] text-slate-500 italic">Focus: {wt.explanation}</p>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+// --- Educational Partners & Corporate Sponsors List ---
+const EDUCATIONAL_PARTNERS = [
+  { name: 'Cambridge Assessment International', category: 'Exam Board Partner', logo: '🎓' },
+  { name: 'Ministry of Education Maldives', category: 'National Curriculum Sponsor', logo: '🇲🇻' },
+  { name: 'Oxford University Press', category: 'Academic Library Partner', logo: '📚' },
+  { name: 'Faber-Castell Maldives', category: 'LS Gift Shop Sponsor', logo: '✏️' },
+  { name: 'Dhivehi Bahuge Academy', category: 'Language & Culture Sponsor', logo: '🖊️' }
+];
 
 // --- Datasets: Real LS Physical Gifts & Digital Items ---
 const INITIAL_SHOP_ITEMS = [
@@ -804,13 +160,33 @@ const INITIAL_BOOKS = [
   }
 ];
 
-const INITIAL_BADGES = [
-  { id: 'b1', title: 'First Step', desc: 'Completed your first quiz or reading log.', icon: '🎯', minQuizzes: 1, minBooks: 0, minXp: 0, minCoins: 0, minStreak: 0 },
-  { id: 'b2', title: 'Bookworm', desc: 'Read at least 3 books or logged 10+ reading hours.', icon: '📚', minQuizzes: 0, minBooks: 3, minXp: 0, minCoins: 0, minStreak: 0 },
-  { id: 'b3', title: 'Academic Master', desc: 'Reached Master rank (1,200+ XP).', icon: '🏆', minQuizzes: 0, minBooks: 0, minXp: 1200, minCoins: 0, minStreak: 0 }
-];
-
 const INITIAL_QUIZZES = [
+  {
+    id: 'daily_quiz_1',
+    title: '🌟 Quiz of the Day: Physics Kinematics & Velocity',
+    subject: 'Physics',
+    grade: 10,
+    topic: 'Kinematics & Motion',
+    subject_code: '0625',
+    is_daily_quiz: true,
+    is_past_paper: false,
+    questions: [
+      {
+        id: 'dq_1',
+        topic: 'Kinematics & Acceleration',
+        question_text: 'A train accelerates uniformly from rest to 30 m/s in 10 seconds. Calculate its acceleration.',
+        option_a: '2 m/s²', option_b: '3 m/s²', option_c: '5 m/s²', option_d: '300 m/s²',
+        correct_option: 'B', explanation: 'Acceleration a = (v - u) / t = (30 - 0) / 10 = 3 m/s².'
+      },
+      {
+        id: 'dq_2',
+        topic: 'Velocity & Speed',
+        question_text: 'What does the area under a velocity-time graph represent?',
+        option_a: 'Acceleration', option_b: 'Displacement', option_c: 'Force', option_d: 'Speed',
+        correct_option: 'B', explanation: 'The area under a v-t graph equals total displacement (distance moved in a direction).'
+      }
+    ]
+  },
   {
     id: 'olevel_1',
     title: 'Cambridge O-Level Physics 0625 - Mechanics & Motion',
@@ -828,33 +204,6 @@ const INITIAL_QUIZZES = [
         question_text: 'A car accelerates uniformly from rest to a velocity of 20 m/s in 5 seconds. What is its acceleration?',
         option_a: '2 m/s²', option_b: '4 m/s²', option_c: '5 m/s²', option_d: '100 m/s²',
         correct_option: 'B', explanation: 'Acceleration a = (v - u) / t = (20 - 0) / 5 = 4 m/s².'
-      },
-      {
-        id: 'q1_2',
-        topic: 'Thermal Physics',
-        question_text: 'Which method of thermal energy transfer does NOT require a medium?',
-        option_a: 'Conduction', option_b: 'Convection', option_c: 'Radiation', option_d: 'Evaporation',
-        correct_option: 'C', explanation: 'Radiation travels via electromagnetic waves and works in a vacuum.'
-      }
-    ]
-  },
-  {
-    id: 'olevel_2',
-    title: 'Cambridge O-Level Computer Science 2210 - Algorithms',
-    subject: 'Computer Science',
-    grade: 10,
-    topic: 'Data Structures & FIFO',
-    subject_code: '2210',
-    exam_year: 2024,
-    variant: 'Paper 21',
-    is_past_paper: true,
-    questions: [
-      {
-        id: 'q2_1',
-        topic: 'Data Structures & FIFO',
-        question_text: 'Which data structure operates on a First-In, First-Out (FIFO) basis?',
-        option_a: 'Stack', option_b: 'Queue', option_c: 'Array', option_d: 'Tree',
-        correct_option: 'B', explanation: 'Queues process items in the order they arrive (FIFO).'
       }
     ]
   },
@@ -874,23 +223,31 @@ const INITIAL_QUIZZES = [
         correct_option: 'A', explanation: '(3 + 5 - 2)x = 6x.'
       }
     ]
+  }
+];
+
+const INITIAL_SHOP_ORDERS = [
+  {
+    id: 'ord_101',
+    student_name: 'Aminath Raya',
+    student_index: 'STU-1002',
+    grade: 10,
+    item_name: 'LS Stainless Steel Water Bottle',
+    cost: 450,
+    claim_code: 'LS-GIFT-8821',
+    status: 'Pending Pickup',
+    date: '2026-10-14'
   },
   {
-    id: 'g7_dhivehi_1',
-    title: 'Grade 7 Dhivehi - ތާނަ އަކުރު އަދި ފިލި',
-    subject: 'Dhivehi',
-    grade: 7,
-    topic: 'ތާނަ އަކުރުތައް',
-    is_past_paper: false,
-    questions: [
-      {
-        id: 'q7_dh_1',
-        topic: 'ތާނަ އަކުރުތައް',
-        question_text: 'ދިވެހި ތާނައަކުރުގައި ހިމެނެނީ ކިތައް އަކުރު؟',
-        option_a: '20 އަކުރު', option_b: '24 އަކުރު', option_c: '28 އަކުރު', option_d: '30 އަކުރު',
-        correct_option: 'B', explanation: 'ތާނަ އަކުރުގައި ހިމެނެނީ 24 އަކުރެވެ.'
-      }
-    ]
+    id: 'ord_102',
+    student_name: 'Hassan Zayan',
+    student_index: 'STU-1045',
+    grade: 9,
+    item_name: 'LS Hardcover A5 Study Journal',
+    cost: 250,
+    claim_code: 'LS-GIFT-3312',
+    status: 'Fulfilled / Given',
+    date: '2026-10-12'
   }
 ];
 
@@ -931,7 +288,7 @@ export default function App() {
   const [quizzes, setQuizzes] = useState(INITIAL_QUIZZES);
   const [books, setBooks] = useState(INITIAL_BOOKS);
   const [shopItems, setShopItems] = useState(INITIAL_SHOP_ITEMS);
-  const [badges, setBadges] = useState(INITIAL_BADGES);
+  const [shopOrders, setShopOrders] = useState(INITIAL_SHOP_ORDERS);
   const [leaderboardUsers, setLeaderboardUsers] = useState([
     { full_name: 'Aminath Raya', index_number: 'STU-1002', grade: 10, xp: 2850, streak: 12, coins: 890, reading_hours: 42.0 },
     { full_name: 'Hassan Zayan', index_number: 'STU-1045', grade: 9, xp: 2100, streak: 9, coins: 620, reading_hours: 31.5 },
@@ -943,14 +300,12 @@ export default function App() {
   const [claimingBook, setClaimingBook] = useState(null);
   const [viewingVoucher, setViewingVoucher] = useState(null);
   const [bookPageIndex, setBookPageIndex] = useState(0);
-  const [readerFontSize, setReaderFontSize] = useState('base');
-  const [readerTheme, setReaderTheme] = useState('light');
-  const [isFullScreenReader, setIsFullScreenReader] = useState(false);
 
   // --- Global Filter State ---
   const [selectedSubject, setSelectedSubject] = useState('All');
   const [selectedTopic, setSelectedTopic] = useState('All');
   const [shopFilter, setShopFilter] = useState('All');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
   // --- Quiz Runner State ---
@@ -967,28 +322,17 @@ export default function App() {
   const [userAnswers, setUserAnswers] = useState({});
 
   // --- Admin CRUD Center State ---
-  const [adminTab, setAdminTab] = useState('books');
+  const [adminTab, setAdminTab] = useState('orders');
   const [editingBook, setEditingBook] = useState(null);
-  const [bookForm, setBookForm] = useState({
-    title: '', author: '', subject: 'Dhivehi', cover_url: '', summary: '', extract: '', pageText: '',
-    reading_hours: 2.0, claim_code: ''
-  });
-
+  const [bookForm, setBookForm] = useState({ title: '', author: '', subject: 'Dhivehi', cover_url: '', summary: '', extract: '', pageText: '', reading_hours: 2.0, claim_code: '' });
   const [editingPrize, setEditingPrize] = useState(null);
   const [prizeForm, setPrizeForm] = useState({ name: '', category: 'Physical Store', is_physical: true, cost: 200, icon: '🎒', desc: '' });
-
-  const [editingBadge, setEditingBadge] = useState(null);
-  const [badgeForm, setBadgeForm] = useState({ title: '', desc: '', icon: '🏅', minQuizzes: 0, minBooks: 0, minXp: 0, minCoins: 0, minStreak: 0 });
-
-  const [editingQuiz, setEditingQuiz] = useState(null);
-  const [quizForm, setQuizForm] = useState({ title: '', subject: 'Maths', topic: 'General Topic', grade: 7, subject_code: '', exam_year: 2024, variant: 'Paper 12', is_past_paper: false });
 
   // --- Navigation Controls ---
   const navigateToTab = (tabName) => {
     setActiveQuiz(null);
     setSelectedBook(null);
     setClaimingBook(null);
-    setIsFullScreenReader(false);
     setActiveTab(tabName);
     setSelectedSubject('All');
     setSelectedTopic('All');
@@ -999,27 +343,17 @@ export default function App() {
     window.history.replaceState({ tab: activeTab }, '', `#${activeTab}`);
 
     const handlePopState = (e) => {
-      if (selectedBook) {
-        setSelectedBook(null);
-        setIsFullScreenReader(false);
-        return;
-      }
-      if (activeQuiz) {
-        setActiveQuiz(null);
-        return;
-      }
-      if (e.state && e.state.tab) {
-        setActiveTab(e.state.tab);
-      } else {
-        setActiveTab('dashboard');
-      }
+      if (selectedBook) { setSelectedBook(null); return; }
+      if (activeQuiz) { setActiveQuiz(null); return; }
+      if (e.state && e.state.tab) { setActiveTab(e.state.tab); }
+      else { setActiveTab('dashboard'); }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [activeQuiz, selectedBook, activeTab]);
 
-  // --- Supabase Listeners & Fetchers ---
+  // --- Supabase Session Sync ---
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -1040,8 +374,7 @@ export default function App() {
     fetchDatabaseQuizzes();
     fetchDatabaseBooks();
     fetchDatabaseShop();
-    fetchDatabaseBadges();
-    fetchLeaderboard();
+    fetchDatabaseOrders();
 
     return () => subscription.unsubscribe();
   }, []);
@@ -1058,7 +391,7 @@ export default function App() {
         const dbIds = new Set(formatted.map(q => q.id));
         setQuizzes([...formatted, ...INITIAL_QUIZZES.filter(q => !dbIds.has(q.id))]);
       }
-    } catch (e) { console.warn("Quizzes fetch error:", e); }
+    } catch (e) { console.warn("Quizzes error:", e); }
   };
 
   const fetchDatabaseBooks = async () => {
@@ -1074,7 +407,7 @@ export default function App() {
         const dbIds = new Set(formatted.map(b => b.id));
         setBooks([...formatted, ...INITIAL_BOOKS.filter(b => !dbIds.has(b.id))]);
       }
-    } catch (e) { console.warn("Books fetch error:", e); }
+    } catch (e) { console.warn("Books error:", e); }
   };
 
   const fetchDatabaseShop = async () => {
@@ -1084,17 +417,16 @@ export default function App() {
         const dbIds = new Set(data.map(i => i.id));
         setShopItems([...data, ...INITIAL_SHOP_ITEMS.filter(i => !dbIds.has(i.id))]);
       }
-    } catch (e) { console.warn("Shop fetch error:", e); }
+    } catch (e) { console.warn("Shop error:", e); }
   };
 
-  const fetchDatabaseBadges = async () => {
+  const fetchDatabaseOrders = async () => {
     try {
-      const { data } = await supabase.from('badges').select('*').order('created_at', { ascending: false });
+      const { data } = await supabase.from('shop_orders').select('*').order('created_at', { ascending: false });
       if (data && data.length > 0) {
-        const dbIds = new Set(data.map(b => b.id));
-        setBadges([...data, ...INITIAL_BADGES.filter(b => !dbIds.has(b.id))]);
+        setShopOrders(data);
       }
-    } catch (e) { console.warn("Badges fetch error:", e); }
+    } catch (e) { console.warn("Orders fetch error:", e); }
   };
 
   const fetchUserProfile = async (userId) => {
@@ -1118,7 +450,6 @@ export default function App() {
         setCompletedBookIds(data.completed_book_ids || []);
       }
     } catch (e) { console.warn("Profile fetch error:", e); }
-    fetchLeaderboard();
   };
 
   const syncProfileToSupabase = async (updates) => {
@@ -1143,32 +474,17 @@ export default function App() {
         completed_book_ids: updates.completed_book_ids ?? completedBookIds,
         updated_at: new Date().toISOString()
       });
-      fetchLeaderboard();
     } catch (e) { console.warn("Profile sync error:", e); }
   };
 
-  const fetchLeaderboard = async () => {
-    try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name, index_number, grade, xp, streak, coins, books_read, reading_hours')
-        .order('xp', { ascending: false })
-        .limit(10);
-      if (data && data.length > 0) setLeaderboardUsers(data);
-    } catch (e) { console.warn("Leaderboard error:", e); }
-  };
-
-  // --- Auth Handlers ---
+  // --- Auth Actions ---
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!authEmail || !authPassword) return alert('Please enter your email and password.');
     setAuthLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: authEmail,
-        password: authPassword,
-      });
+      const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
       if (error) throw error;
     } catch (err) {
       alert("Login Error: " + err.message);
@@ -1180,21 +496,10 @@ export default function App() {
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!authName.trim()) return alert('Please enter your full name.');
-    if (!authEmail.trim() || !authPassword.trim()) return alert('Please enter an email and password.');
+    if (!authEmail.trim() || !authPassword.trim()) return alert('Please enter email and password.');
 
     if (role === 'student' && !indexNumber.trim()) {
       return alert('Please enter your Student Index Number.');
-    }
-
-    if (role === 'teacher' || role === 'admin') {
-      if (!teacherPasscode.trim()) return alert('Secret Admin Passcode required for Teacher registration.');
-      try {
-        const { data: settingData } = await supabase.from('app_settings').select('value').eq('key', 'teacher_passcode').single();
-        const validPasscode = settingData?.value || 'SCH-TEACHER-2026';
-        if (teacherPasscode.trim() !== validPasscode) throw new Error('Invalid Secret Admin Passcode!');
-      } catch (e) {
-        if (e.message.includes('Invalid Secret')) return alert(e.message);
-      }
     }
 
     setAuthLoading(true);
@@ -1204,9 +509,7 @@ export default function App() {
       const { data, error } = await supabase.auth.signUp({
         email: authEmail,
         password: authPassword,
-        options: {
-          data: { full_name: authName, index_number: assignedIndex, role, grade: studentGrade }
-        }
+        options: { data: { full_name: authName, index_number: assignedIndex, role, grade: studentGrade } }
       });
       if (error) throw error;
 
@@ -1230,27 +533,9 @@ export default function App() {
           completed_book_ids: []
         }]);
       }
-      alert(`✅ Account registered successfully as ${role.toUpperCase()}! Welcome to EduSpark IQ.`);
+      alert(`✅ Registered successfully as ${role.toUpperCase()}! Welcome to EduSpark IQ.`);
     } catch (err) {
       alert("Registration Error: " + err.message);
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  const handleForgotPassword = async (e) => {
-    e.preventDefault();
-    if (!authEmail.trim()) return alert('Please enter your registered email address.');
-    setAuthLoading(true);
-
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(authEmail, {
-        redirectTo: window.location.origin
-      });
-      if (error) throw error;
-      setResetSent(true);
-    } catch (err) {
-      alert("Password Reset Error: " + err.message);
     } finally {
       setAuthLoading(false);
     }
@@ -1263,25 +548,20 @@ export default function App() {
     setAuthView('landing');
   };
 
-  // --- Quiz Engine ---
-  useEffect(() => {
-    let interval = null;
-    if (activeQuiz && quizMode === 'challenge' && !quizFinished && !gameOver && !showExplanation && timer > 0) {
-      interval = setInterval(() => setTimer(t => t - 1), 1000);
-    } else if (timer === 0 && activeQuiz && !quizFinished && !gameOver && !showExplanation) {
-      handleAnswerSubmit(null);
+  // --- Quiz Launch Handlers ---
+  const handleStartDailyQuiz = () => {
+    const dailyQuizObj = quizzes.find(q => q.is_daily_quiz) || quizzes[0];
+    if (dailyQuizObj) {
+      if (!user) {
+        setAuthView('login');
+      } else {
+        startQuiz(dailyQuizObj, 'challenge');
+      }
     }
-    return () => clearInterval(interval);
-  }, [activeQuiz, quizMode, quizFinished, gameOver, showExplanation, timer]);
+  };
 
   const startQuiz = (quiz, mode) => {
-    if (mode === 'challenge' && completedChallenges.includes(quiz.id)) {
-      alert("⚠️ You have already completed Challenge Mode for this test! You can continue practicing in Practice Mode.");
-      return;
-    }
-
     const duration = getQuizTimeLimit(quiz);
-
     setActiveQuiz(quiz);
     setQuizMode(mode);
     setCurrentQuestionIdx(0);
@@ -1293,15 +573,6 @@ export default function App() {
     setQuizFinished(false);
     setGameOver(false);
     setUserAnswers({});
-
-    window.history.pushState({ quizId: quiz.id }, '', `#quiz-${quiz.id}`);
-  };
-
-  const openBookModal = (book) => {
-    setSelectedBook(book);
-    setBookPageIndex(0);
-    setIsFullScreenReader(false);
-    window.history.pushState({ bookId: book.id }, '', `#book-${book.id}`);
   };
 
   const handleAnswerSubmit = (option) => {
@@ -1331,9 +602,7 @@ export default function App() {
   const nextQuestion = () => {
     setSelectedOption(null);
     setShowExplanation(false);
-    
-    const duration = getQuizTimeLimit(activeQuiz);
-    setTimer(duration);
+    setTimer(getQuizTimeLimit(activeQuiz));
 
     if (currentQuestionIdx + 1 < activeQuiz.questions.length) {
       setCurrentQuestionIdx(idx => idx + 1);
@@ -1345,279 +614,87 @@ export default function App() {
   const finishQuiz = () => {
     setQuizFinished(true);
     playSound('coin');
-    confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+    confetti({ particleCount: 120, spread: 80 });
 
-    const coinsEarned = score * 15;
-    const xpEarned = score * 30;
+    const isDaily = activeQuiz.is_daily_quiz;
+    const multiplier = isDaily ? 2 : 1;
+    const coinsEarned = score * 15 * multiplier;
+    const xpEarned = score * 30 * multiplier;
     const newCoins = coins + coinsEarned;
     const newXp = xp + xpEarned;
     const newQuizzesCount = quizzesCompleted + 1;
 
-    let updatedCompletedChallenges = completedChallenges;
-    let updatedChallengeAttempts = challengeAttempts;
-
-    if (quizMode === 'challenge' && activeQuiz) {
-      if (!completedChallenges.includes(activeQuiz.id)) {
-        updatedCompletedChallenges = [...completedChallenges, activeQuiz.id];
-      }
-
-      const totalQ = activeQuiz.questions.length;
-      const initialLimit = getQuizTimeLimit(activeQuiz);
-      const estTimePerQ = Math.max(10, initialLimit - timer);
-
-      const attemptRecord = {
-        quizId: activeQuiz.id,
-        quizTitle: activeQuiz.title,
-        subject: activeQuiz.subject || 'General',
-        score: score,
-        total: totalQ,
-        percentage: Math.round((score / totalQ) * 100),
-        timeSpentSeconds: estTimePerQ * totalQ,
-        date: new Date().toLocaleDateString(),
-        questionDetails: activeQuiz.questions.map((q, idx) => {
-          const qKey = q.id || idx;
-          const chosen = userAnswers[qKey] || null;
-          return {
-            id: qKey,
-            topic: q.topic || activeQuiz.topic || 'General Concept',
-            question_text: q.question_text,
-            correct_option: q.correct_option,
-            user_option: chosen,
-            is_correct: chosen === q.correct_option,
-            explanation: q.explanation || ''
-          };
-        })
-      };
-
-      updatedChallengeAttempts = [attemptRecord, ...challengeAttempts];
-      setCompletedChallenges(updatedCompletedChallenges);
-      setChallengeAttempts(updatedChallengeAttempts);
-    }
-
-    const newLog = [
-      {
-        id: `act_${Date.now()}`,
-        title: `${quizMode === 'challenge' ? '🔥 Challenge Test' : '📖 Practice Quiz'}: ${activeQuiz.title}`,
-        score: `${score}/${activeQuiz.questions.length}`,
-        coinsGained: coinsEarned,
-        xpGained: xpEarned,
-        date: 'Just now'
-      },
-      ...activityLog
-    ];
-
     setCoins(newCoins);
     setXp(newXp);
     setQuizzesCompleted(newQuizzesCount);
-    setActivityLog(newLog);
 
     syncProfileToSupabase({
       coins: newCoins,
       xp: newXp,
-      quizzes_completed: newQuizzesCount,
-      activity_log: newLog,
-      completed_challenges: updatedCompletedChallenges,
-      challenge_attempts: updatedChallengeAttempts
+      quizzes_completed: newQuizzesCount
     });
   };
 
-  // --- Claim Verified Reading Hours ---
-  const handleClaimVerifiedReadingHours = (book) => {
-    const hoursToCredit = parseFloat(book.reading_hours) || 2.0;
-    const newReadingHours = Math.round((readingHours + hoursToCredit) * 10) / 10;
-    const newCoins = coins + Math.round(hoursToCredit * 15);
-    const newXp = xp + Math.round(hoursToCredit * 30);
-    const newCompletedBookIds = Array.from(new Set([...completedBookIds, book.id]));
-    const newBooksReadCount = booksRead + 1;
-
-    const newLog = [
-      {
-        id: `act_${Date.now()}`,
-        title: `📚 Logged Library Book: ${book.title}`,
-        readingHoursLogged: hoursToCredit,
-        coinsGained: Math.round(hoursToCredit * 15),
-        xpGained: Math.round(hoursToCredit * 30),
-        date: 'Just now'
-      },
-      ...activityLog
-    ];
-
-    setReadingHours(newReadingHours);
-    setCoins(newCoins);
-    setXp(newXp);
-    setBooksRead(newBooksReadCount);
-    setCompletedBookIds(newCompletedBookIds);
-    setActivityLog(newLog);
-    setClaimingBook(null);
-
-    playSound('coin');
-    confetti({ particleCount: 110, spread: 80 });
-
-    syncProfileToSupabase({
-      reading_hours: newReadingHours,
-      coins: newCoins,
-      xp: newXp,
-      books_read: newBooksReadCount,
-      completed_book_ids: newCompletedBookIds,
-      activity_log: newLog
-    });
-
-    alert(`🎉 Verified! Logged +${hoursToCredit} Reading Hours, +${Math.round(hoursToCredit * 15)} EduCoins, and +${Math.round(hoursToCredit * 30)} XP!`);
-  };
-
-  // --- Redeem Physical & Digital Gift Store Rewards ---
-  const handleRedeemReward = (item) => {
+  // --- Redeem LS Shop Physical or Digital Item ---
+  const handleRedeemReward = async (item) => {
     if (coins < item.cost) return alert(`Insufficient EduCoins! You need ${item.cost - coins} more coins.`);
     
     const confirmMsg = item.is_physical
-      ? `Redeem real physical item "${item.name}" for ${item.cost} EduCoins?\n\nYou will receive an official LS Store pickup code to collect it at the school library/store desk!`
+      ? `Buy real physical item "${item.name}" for ${item.cost} EduCoins?\n\nYour order will be sent to the LS Shop Admin, and you will get a physical claim voucher to pick it up!`
       : `Redeem "${item.name}" for ${item.cost} EduCoins?`;
 
     if (confirm(confirmMsg)) {
       const newCoins = coins - item.cost;
-      const redemption = {
-        id: `claimed_${Date.now()}`,
-        name: item.name,
-        cost: item.cost,
-        is_physical: item.is_physical || item.category === 'Physical Store',
-        date: new Date().toISOString().split('T')[0],
-        code: `LS-GIFT-${Math.floor(1000 + Math.random() * 9000)}`
-      };
+      const claimCode = `LS-GIFT-${Math.floor(1000 + Math.random() * 9000)}`;
       
-      const newClaimed = [redemption, ...claimedRewards];
-      const newLog = [{ id: `act_${Date.now()}`, title: `LS Gift Shop: ${item.name}`, cost: item.cost, date: 'Just now' }, ...activityLog];
+      const newOrder = {
+        id: `ord_${Date.now()}`,
+        student_name: authName || 'Student User',
+        student_index: indexNumber || 'STU-2026-N/A',
+        grade: studentGrade || 7,
+        item_name: item.name,
+        cost: item.cost,
+        claim_code: claimCode,
+        status: 'Pending Pickup',
+        date: new Date().toISOString().split('T')[0]
+      };
 
+      try {
+        await supabase.from('shop_orders').insert([newOrder]);
+      } catch (e) {
+        console.warn("Supabase order insert warning:", e);
+      }
+
+      const updatedOrders = [newOrder, ...shopOrders];
+      setShopOrders(updatedOrders);
       setCoins(newCoins);
-      setClaimedRewards(newClaimed);
-      setActivityLog(newLog);
 
       playSound('coin');
-      confetti({ particleCount: 120, spread: 80 });
+      confetti({ particleCount: 130, spread: 85 });
 
-      syncProfileToSupabase({ coins: newCoins, claimed_rewards: newClaimed, activity_log: newLog });
+      syncProfileToSupabase({ coins: newCoins });
 
-      if (redemption.is_physical) {
-        setViewingVoucher(redemption);
+      if (item.is_physical) {
+        setViewingVoucher(newOrder);
       } else {
-        alert(`🎉 Purchased ${item.name}! Your reward is now active.`);
+        alert(`🎉 Purchased ${item.name}! Your reward pass is now active.`);
       }
     }
   };
 
-  // --- Admin CRUD Handlers ---
-  const handleSaveBook = async (e) => {
-    e.preventDefault();
-    if (!bookForm.title || !bookForm.author || !bookForm.pageText) return alert("Please fill title, author, and chapter page text.");
-    if (!bookForm.claim_code.trim()) return alert("Please assign a unique Library Claim Code for this book.");
+  // --- Shop Admin Order Fulfillment Action ---
+  const handleFulfillOrder = async (orderId) => {
+    const updatedOrders = shopOrders.map(ord => ord.id === orderId ? { ...ord, status: 'Fulfilled / Given' } : ord);
+    setShopOrders(updatedOrders);
 
-    const parsedPages = bookForm.pageText.includes('---PAGE---')
-      ? bookForm.pageText.split('---PAGE---').map(p => p.trim())
-      : [bookForm.pageText.trim()];
+    try {
+      await supabase.from('shop_orders').update({ status: 'Fulfilled / Given' }).eq('id', orderId);
+    } catch (e) { console.warn(e); }
 
-    const bookObject = {
-      title: bookForm.title,
-      author: bookForm.author,
-      subject: bookForm.subject,
-      cover_url: bookForm.cover_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80',
-      summary: bookForm.summary || `Book on ${bookForm.subject} by ${bookForm.author}`,
-      extract: bookForm.extract || parsedPages[0].slice(0, 120) + '...',
-      pages: parsedPages,
-      reading_hours: parseFloat(bookForm.reading_hours) || 2.0,
-      claim_code: bookForm.claim_code.trim().toUpperCase()
-    };
-
-    if (editingBook) {
-      try {
-        await supabase.from('books').update(bookObject).eq('id', editingBook.id);
-        setBooks(books.map(b => b.id === editingBook.id ? { ...b, ...bookObject } : b));
-        setEditingBook(null);
-        alert("✅ Book and Claim Code updated!");
-      } catch (err) { alert("Update failed: " + err.message); }
-    } else {
-      const newBook = { id: `book_${Date.now()}`, ...bookObject };
-      try {
-        await supabase.from('books').insert([newBook]);
-        setBooks([newBook, ...books]);
-        alert("✅ New Book created!");
-      } catch (err) { alert("Create failed: " + err.message); }
-    }
-    setBookForm({ title: '', author: '', subject: 'Dhivehi', cover_url: '', summary: '', extract: '', pageText: '', reading_hours: 2.0, claim_code: '' });
+    alert("✅ Order marked as Fulfilled / Given to student!");
   };
 
-  const startEditBook = (book) => {
-    setEditingBook(book);
-    setBookForm({
-      title: book.title,
-      author: book.author,
-      subject: book.subject,
-      cover_url: book.cover_url || '',
-      summary: book.summary || '',
-      extract: book.extract || '',
-      pageText: Array.isArray(book.pages) ? book.pages.join('\n\n---PAGE---\n\n') : book.pages,
-      reading_hours: book.reading_hours || 2.0,
-      claim_code: book.claim_code || ''
-    });
-  };
-
-  const handleDeleteBook = async (id) => {
-    if (confirm("Delete this book?")) {
-      try { await supabase.from('books').delete().eq('id', id); } catch (e) { console.warn(e); }
-      setBooks(books.filter(b => b.id !== id));
-    }
-  };
-
-  const handleSavePrize = async (e) => {
-    e.preventDefault();
-    if (!prizeForm.name || !prizeForm.cost) return alert("Please fill prize name and cost.");
-
-    const prizeData = {
-      name: prizeForm.name,
-      category: prizeForm.category,
-      is_physical: prizeForm.is_physical || prizeForm.category === 'Physical Store',
-      cost: parseInt(prizeForm.cost),
-      icon: prizeForm.icon || '🎒',
-      desc: prizeForm.desc
-    };
-
-    if (editingPrize) {
-      const updatedPrize = { ...editingPrize, ...prizeData };
-      try {
-        await supabase.from('shop_items').update(updatedPrize).eq('id', editingPrize.id);
-        setShopItems(shopItems.map(i => i.id === editingPrize.id ? updatedPrize : i));
-        setEditingPrize(null);
-        alert("✅ LS Shop item updated!");
-      } catch (err) { alert("Update failed: " + err.message); }
-    } else {
-      const newPrize = { id: `item_${Date.now()}`, ...prizeData };
-      try {
-        await supabase.from('shop_items').insert([newPrize]);
-        setShopItems([newPrize, ...shopItems]);
-        alert("✅ LS Shop item published!");
-      } catch (err) { alert("Create failed: " + err.message); }
-    }
-    setPrizeForm({ name: '', category: 'Physical Store', is_physical: true, cost: 200, icon: '🎒', desc: '' });
-  };
-
-  const startEditPrize = (item) => {
-    setEditingPrize(item);
-    setPrizeForm({
-      name: item.name,
-      category: item.category || 'Physical Store',
-      is_physical: item.is_physical ?? true,
-      cost: item.cost,
-      icon: item.icon,
-      desc: item.desc || ''
-    });
-  };
-
-  const handleDeletePrize = async (id) => {
-    if (confirm("Delete this shop item?")) {
-      try { await supabase.from('shop_items').delete().eq('id', id); } catch (e) { console.warn(e); }
-      setShopItems(shopItems.filter(i => i.id !== id));
-    }
-  };
-
-  // --- Dynamic Topic Extractor for Filter Selector ---
+  // --- Dynamic Topic Extractor for Filter ---
   const availableTopics = Array.from(new Set(
     quizzes
       .filter(q => selectedSubject === 'All' || q.subject === selectedSubject)
@@ -1625,7 +702,6 @@ export default function App() {
       .filter(Boolean)
   ));
 
-  // --- Filtered Quiz Datasets ---
   const gradePracticeQuizzes = quizzes.filter(q => {
     const isGradeMatch = q.grade === parseInt(studentGrade);
     const isNotPastPaper = !q.is_past_paper;
@@ -1636,30 +712,20 @@ export default function App() {
     return isGradeMatch && isNotPastPaper && isSubjectMatch && isTopicMatch && matchesSearch;
   });
 
-  const oLevelQuizzes = quizzes.filter(q => {
-    const matchesSearch = (q.title || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const isSubjectMatch = selectedSubject === 'All' || q.subject === selectedSubject;
-    const isPast = q.is_past_paper === true || q.is_past_paper === 'true';
-    return isPast && matchesSearch && isSubjectMatch;
-  });
-
-  const filteredLibraryBooks = books.filter(b => selectedSubject === 'All' || b.subject === selectedSubject);
-
-  const filteredShopItems = shopItems.filter(i => {
-    if (shopFilter === 'Physical') return i.is_physical || i.category === 'Physical Store';
-    if (shopFilter === 'Digital') return !i.is_physical && i.category !== 'Physical Store';
+  const filteredOrders = shopOrders.filter(ord => {
+    if (orderStatusFilter === 'Pending') return ord.status === 'Pending Pickup';
+    if (orderStatusFilter === 'Fulfilled') return ord.status === 'Fulfilled / Given';
     return true;
   });
 
   const currentRank = getStudentRank(xp);
 
   // =========================================================================
-  // --- AUTHENTICATION & ENHANCED LANDING PAGE VIEWS ---
+  // --- AUTHENTICATION & LANDING PAGE VIEWS ---
   // =========================================================================
   if (!user) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between font-sans relative overflow-hidden">
-        {/* Glowing Background Orbs */}
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-amber-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -1693,14 +759,14 @@ export default function App() {
           </div>
         </header>
 
-        {/* HIGH-ENERGY ELEGANT LANDING PAGE */}
+        {/* ELEGANT LANDING PAGE WITH QUIZ OF THE DAY & PARTNERS */}
         {authView === 'landing' && (
           <main className="max-w-7xl w-full mx-auto px-6 py-8 z-10 space-y-16 flex-1">
             {/* HERO BANNER */}
             <section className="text-center space-y-6 max-w-4xl mx-auto pt-4">
               <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-500/20 via-indigo-500/20 to-purple-500/20 border border-amber-500/30 px-4 py-1.5 rounded-full text-amber-300 text-xs font-bold shadow-xs">
                 <Store className="w-4 h-4 text-amber-400" />
-                <span>LS Physical Gift Shop & Topic-Wise Vault Now Live!</span>
+                <span>LS Physical Gift Shop & Quiz of the Day Now Live!</span>
               </div>
 
               <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight">
@@ -1711,7 +777,7 @@ export default function App() {
               </h1>
 
               <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
-                EduSpark IQ empowers students with topic-wise practice, O-Level past paper drills, Dhivehi and Islam reading logs, and real physical prizes at the LS Gift Shop!
+                EduSpark IQ bridges academic effort with real physical rewards. Earn EduCoins through topic quizzes and library reading logs to buy real school merchandise at the LS Gift Shop!
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
@@ -1722,18 +788,20 @@ export default function App() {
                   <span>Student Portal Registration</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
+
                 <button
-                  onClick={() => setAuthView('login')}
-                  className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold px-8 py-4 rounded-2xl text-sm transition"
+                  onClick={handleStartDailyQuiz}
+                  className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-4 rounded-2xl text-sm transition flex items-center justify-center space-x-2 shadow-xl"
                 >
-                  Existing User Sign In
+                  <Flame className="w-4 h-4 text-amber-300" />
+                  <span>Start Quiz of the Day (2x Coins)</span>
                 </button>
               </div>
             </section>
 
-            {/* HIGH-IMPACT FEATURE SHOWCASE CARDS */}
+            {/* FEATURE SHOWCASE CARDS */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* FEATURE 1: QUIZ OF THE DAY */}
+              {/* FEATURE 1: DIRECT QUIZ OF THE DAY LINK */}
               <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/30 p-6 rounded-3xl space-y-4 shadow-xl relative overflow-hidden">
                 <div className="flex justify-between items-start">
                   <div className="p-3 bg-indigo-500/20 text-indigo-400 rounded-2xl">
@@ -1743,18 +811,23 @@ export default function App() {
                     2x Coins Bonus
                   </span>
                 </div>
+
                 <div className="space-y-1">
-                  <span className="text-[11px] font-bold text-indigo-300 uppercase block">Quiz of the Day</span>
-                  <h3 className="text-lg font-black text-white">Physics — Kinematics & Motion</h3>
-                  <p className="text-xs text-slate-400">Complete today's featured topic test to earn double EduCoins!</p>
+                  <span className="text-[11px] font-bold text-indigo-300 uppercase block">Daily Challenge</span>
+                  <h3 className="text-lg font-black text-white">Quiz of the Day</h3>
+                  <p className="text-xs text-slate-400">Featured Physics topic quiz. Score high to earn double EduCoins today!</p>
                 </div>
-                <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-xs font-bold text-indigo-300">
-                  <span>Grade 10 Syllabus</span>
-                  <span>10 Questions • 120s</span>
-                </div>
+
+                <button
+                  onClick={handleStartDailyQuiz}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition"
+                >
+                  <Play className="w-3.5 h-3.5 fill-white" />
+                  <span>Launch Daily Quiz Now</span>
+                </button>
               </div>
 
-              {/* FEATURE 2: STUDENT OF THE MONTH */}
+              {/* FEATURE 2: STUDENT OF THE MONTH SPOTLIGHT */}
               <div className="bg-gradient-to-br from-slate-900 via-amber-950/40 to-slate-900 border border-amber-500/30 p-6 rounded-3xl space-y-4 shadow-xl relative overflow-hidden">
                 <div className="flex justify-between items-start">
                   <div className="p-3 bg-amber-500/20 text-amber-400 rounded-2xl">
@@ -1764,18 +837,20 @@ export default function App() {
                     🏆 Spotlight Award
                   </span>
                 </div>
+
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold text-amber-400 uppercase block">Student of the Month</span>
                   <h3 className="text-lg font-black text-white">Aminath Raya</h3>
-                  <p className="text-xs text-slate-400">Grade 10 • Index: STU-1002 • 42.0 Logged Reading Hours</p>
+                  <p className="text-xs text-slate-400">Grade 10 • Index: STU-1002 • 42.0 Reading Hours Logged</p>
                 </div>
+
                 <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-xs font-bold text-amber-300">
-                  <span>XP Score: 2,850 XP</span>
+                  <span>Score: 2,850 XP</span>
                   <span>Master Rank 🔥</span>
                 </div>
               </div>
 
-              {/* FEATURE 3: LS GIFT SHOP SHOWCASE */}
+              {/* FEATURE 3: LS GIFT SHOP */}
               <div className="bg-gradient-to-br from-slate-900 via-purple-950/40 to-slate-900 border border-purple-500/30 p-6 rounded-3xl space-y-4 shadow-xl relative overflow-hidden">
                 <div className="flex justify-between items-start">
                   <div className="p-3 bg-purple-500/20 text-purple-400 rounded-2xl">
@@ -1785,78 +860,34 @@ export default function App() {
                     Real Physical Goods
                   </span>
                 </div>
+
                 <div className="space-y-1">
                   <span className="text-[11px] font-bold text-purple-300 uppercase block">LS Gift Store</span>
                   <h3 className="text-lg font-black text-white">Real Rewards for Learning</h3>
-                  <p className="text-xs text-slate-400">Buy LS Water Bottles, Hoodies, Faber-Castell pens, and journals with EduCoins!</p>
+                  <p className="text-xs text-slate-400">Buy LS Water Bottles, Hoodies, Faber-Castell pens, and study journals with EduCoins!</p>
                 </div>
+
                 <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-xs font-bold text-purple-300">
-                  <span>Physical Pickup Vouchers</span>
+                  <span>Physical Store Pickup</span>
                   <span>In-Stock 🎒</span>
                 </div>
               </div>
             </section>
 
-            {/* REAL PHYSICAL GIFTS PREVIEW GRID */}
-            <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white flex items-center space-x-2">
-                    <span>🎒 LS Gift Shop Highlights</span>
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-1">Students earn EduCoins by attempting quizzes and logging physical reading hours.</p>
-                </div>
-                <button
-                  onClick={() => setAuthView('register')}
-                  className="text-xs font-bold text-amber-400 hover:underline flex items-center space-x-1"
-                >
-                  <span>View All Shop Rewards</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+            {/* PARTNERS & EDUCATIONAL SPONSORS LOGO SHOWCASE */}
+            <section className="bg-slate-900/60 border border-slate-800 rounded-3xl p-8 text-center space-y-6">
+              <div className="space-y-1 max-w-md mx-auto">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-amber-400 block">Our Esteemed Network</span>
+                <h3 className="text-xl font-black text-white">Educational Partners & Sponsors</h3>
+                <p className="text-xs text-slate-400">Empowering curriculum standards and real-world student incentives.</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {INITIAL_SHOP_ITEMS.filter(i => i.is_physical).map((item) => (
-                  <div key={item.id} className="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-4 flex flex-col justify-between space-y-3">
-                    <div className="space-y-2">
-                      <span className="text-3xl block">{item.icon}</span>
-                      <h4 className="font-bold text-white text-sm">{item.name}</h4>
-                      <p className="text-[11px] text-slate-400 line-clamp-2">{item.desc}</p>
-                    </div>
-                    <div className="flex justify-between items-center pt-2 border-t border-slate-700/60">
-                      <span className="text-xs font-black text-amber-400">{item.cost} EduCoins</span>
-                      <span className="text-[10px] font-bold bg-amber-500/10 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">
-                        Physical
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* LIVE LEADERBOARD SHOWCASE */}
-            <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6">
-              <div className="text-center space-y-2 max-w-md mx-auto">
-                <Trophy className="w-10 h-10 text-amber-400 mx-auto" />
-                <h2 className="text-2xl font-black text-white">Top Student Leaderboard</h2>
-                <p className="text-xs text-slate-400">Live school rankings based on quiz accuracy and library reading logs.</p>
-              </div>
-
-              <div className="max-w-2xl mx-auto space-y-2">
-                {leaderboardUsers.slice(0, 3).map((student, idx) => (
-                  <div key={idx} className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-2xl flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-xl font-black w-8">
-                        {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
-                      </span>
-                      <div>
-                        <h4 className="font-black text-white text-sm">{student.full_name}</h4>
-                        <span className="text-[11px] text-slate-400 font-mono">
-                          {student.index_number} • Grade {student.grade} • {student.reading_hours} Reading Hrs
-                        </span>
-                      </div>
-                    </div>
-                    <span className="text-sm font-black text-amber-400">{student.xp} XP</span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 pt-2">
+                {EDUCATIONAL_PARTNERS.map((partner, idx) => (
+                  <div key={idx} className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-2xl space-y-2 hover:border-amber-500/40 transition">
+                    <span className="text-3xl block">{partner.logo}</span>
+                    <h4 className="font-bold text-xs text-white leading-tight">{partner.name}</h4>
+                    <span className="text-[9px] text-slate-400 block">{partner.category}</span>
                   </div>
                 ))}
               </div>
@@ -1890,16 +921,7 @@ export default function App() {
                 </div>
 
                 <div>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <label className="text-xs font-bold text-slate-300">Password</label>
-                    <button
-                      type="button"
-                      onClick={() => setAuthView('forgot_password')}
-                      className="text-[11px] font-bold text-amber-400 hover:underline"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1.5">Password</label>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
                     <input
@@ -1910,13 +932,6 @@ export default function App() {
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-amber-500"
                       required
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-3 text-slate-500 hover:text-slate-300"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
                   </div>
                 </div>
 
@@ -2007,7 +1022,7 @@ export default function App() {
                   />
                 </div>
 
-                {role === 'student' ? (
+                {role === 'student' && (
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-xs font-bold text-slate-300 block mb-1">Grade Level</label>
@@ -2034,18 +1049,6 @@ export default function App() {
                       />
                     </div>
                   </div>
-                ) : (
-                  <div>
-                    <label className="text-xs font-bold text-purple-300 block mb-1">Admin Passcode</label>
-                    <input
-                      type="password"
-                      value={teacherPasscode}
-                      onChange={(e) => setTeacherPasscode(e.target.value)}
-                      placeholder="SCH-TEACHER-2026"
-                      className="w-full bg-slate-950 border border-purple-500/40 rounded-xl px-3 py-2 text-xs font-mono text-purple-200"
-                      required
-                    />
-                  </div>
                 )}
 
                 <button
@@ -2069,66 +1072,6 @@ export default function App() {
           </main>
         )}
 
-        {/* FORGOT PASSWORD MODAL */}
-        {authView === 'forgot_password' && (
-          <main className="max-w-md w-full mx-auto px-6 py-12 z-10 flex-1 flex flex-col justify-center">
-            <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl space-y-6">
-              <div className="text-center space-y-2">
-                <div className="w-12 h-12 bg-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center mx-auto">
-                  <HelpCircle className="w-6 h-6" />
-                </div>
-                <h2 className="text-2xl font-black text-white">Reset Password</h2>
-                <p className="text-xs text-slate-400">Enter your email to receive a password reset link.</p>
-              </div>
-
-              {resetSent ? (
-                <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-2xl text-center space-y-2">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
-                  <p className="text-xs font-bold text-emerald-300">Password Reset Link Sent!</p>
-                  <p className="text-[11px] text-slate-400">Please check your email inbox to set a new password.</p>
-                  <button
-                    onClick={() => { setResetSent(false); setAuthView('login'); }}
-                    className="mt-2 bg-amber-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs"
-                  >
-                    Return to Sign In
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <div>
-                    <label className="text-xs font-bold text-slate-300 block mb-1.5">Registered Email</label>
-                    <div className="relative">
-                      <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
-                      <input
-                        type="email"
-                        value={authEmail}
-                        onChange={(e) => setAuthEmail(e.target.value)}
-                        placeholder="email@school.edu"
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-3 py-2.5 text-xs text-white placeholder-slate-500"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={authLoading}
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3 rounded-xl text-xs transition shadow-md"
-                  >
-                    {authLoading ? 'Sending Reset Email...' : 'Send Reset Link'}
-                  </button>
-                </form>
-              )}
-
-              <div className="text-center pt-2 border-t border-slate-800">
-                <button onClick={() => setAuthView('login')} className="text-xs text-slate-400 hover:text-white font-bold">
-                  ← Back to Sign In
-                </button>
-              </div>
-            </div>
-          </main>
-        )}
-
         <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-900">
           EduSpark IQ © 2026 • School Student Portal & LS Gift Store
         </footer>
@@ -2144,10 +1087,7 @@ export default function App() {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-xs print:hidden">
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center justify-between w-full sm:w-auto">
-            <div 
-              onClick={() => navigateToTab('dashboard')} 
-              className="flex items-center space-x-3 cursor-pointer hover:opacity-85 transition"
-            >
+            <div onClick={() => navigateToTab('dashboard')} className="flex items-center space-x-3 cursor-pointer">
               <div className="bg-gradient-to-tr from-indigo-600 via-purple-600 to-amber-500 p-2 rounded-xl shadow-md">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
@@ -2177,15 +1117,11 @@ export default function App() {
                 <Coins className="w-3.5 h-3.5" />
                 <span>{coins} Coins</span>
               </div>
-              <div className="flex items-center space-x-1 text-indigo-600">
-                <Zap className="w-3.5 h-3.5" />
-                <span>{xp} XP</span>
-              </div>
             </div>
 
             <button
               onClick={() => navigateToTab('profile')}
-              className="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-3 py-1.5 rounded-xl transition text-xs font-bold text-slate-700"
+              className="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700"
             >
               <User className="w-3.5 h-3.5 text-indigo-600" />
               <span>{authName || 'Profile'}</span>
@@ -2203,7 +1139,7 @@ export default function App() {
             onClick={() => navigateToTab('dashboard')}
             className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-slate-600 hover:bg-slate-100'}`}
           >
-            <BookOpen className="w-3.5 h-3.5 text-indigo-600" /> <span>Topic-Wise Vault</span>
+            <BookOpen className="w-3.5 h-3.5 text-indigo-600" /> <span>Topic Vault</span>
           </button>
 
           <button
@@ -2226,39 +1162,30 @@ export default function App() {
             onClick={() => navigateToTab('shop')}
             className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'shop' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-600 hover:bg-slate-100'}`}
           >
-            <Store className="w-3.5 h-3.5" /> <span>🎒 LS Physical Gift Shop</span>
+            <Store className="w-3.5 h-3.5" /> <span>🎒 LS Gift Shop</span>
           </button>
 
           <button
             onClick={() => navigateToTab('profile')}
             className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'profile' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'text-slate-600 hover:bg-slate-100'}`}
           >
-            <User className="w-3.5 h-3.5 text-purple-600" /> <span>My Profile & Topic Stats</span>
+            <User className="w-3.5 h-3.5 text-purple-600" /> <span>My Profile</span>
           </button>
 
           <button
-            onClick={() => { navigateToTab('leaderboard'); fetchLeaderboard(); }}
+            onClick={() => { navigateToTab('leaderboard'); }}
             className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'leaderboard' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' : 'text-slate-600 hover:bg-slate-100'}`}
           >
             <Trophy className="w-3.5 h-3.5 text-yellow-600" /> <span>Leaderboard</span>
           </button>
 
           {(role === 'teacher' || role === 'admin') && (
-            <>
-              <button
-                onClick={() => navigateToTab('studio')}
-                className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'studio' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'text-slate-600 hover:bg-slate-100'}`}
-              >
-                <BrainCircuit className="w-3.5 h-3.5 text-purple-600" /> <span>Teacher Studio</span>
-              </button>
-
-              <button
-                onClick={() => navigateToTab('settings')}
-                className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'settings' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'text-slate-600 hover:bg-slate-100'}`}
-              >
-                <Settings className="w-3.5 h-3.5 text-rose-600" /> <span>⚙️ Admin Settings</span>
-              </button>
-            </>
+            <button
+              onClick={() => navigateToTab('settings')}
+              className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 whitespace-nowrap ${activeTab === 'settings' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+              <Settings className="w-3.5 h-3.5 text-rose-600" /> <span>⚙️ Admin & Shop Orders</span>
+            </button>
           )}
         </div>
       </header>
@@ -2266,7 +1193,7 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
 
-        {/* TAB 1: TOPIC-WISE GRADE PRACTICE VAULT */}
+        {/* TAB 1: TOPIC PRACTICE VAULT */}
         {activeTab === 'dashboard' && !activeQuiz && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -2276,25 +1203,13 @@ export default function App() {
               </div>
 
               <div className="flex items-center space-x-2">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search quizzes or topics..."
-                  className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800"
-                />
-
-                {(role === 'teacher' || role === 'admin') && (
-                  <select
-                    value={studentGrade}
-                    onChange={(e) => setStudentGrade(parseInt(e.target.value))}
-                    className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-indigo-600"
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => (
-                      <option key={g} value={g}>Grade {g}</option>
-                    ))}
-                  </select>
-                )}
+                <button
+                  onClick={handleStartDailyQuiz}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center space-x-1 shadow-xs"
+                >
+                  <Flame className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Quiz of the Day</span>
+                </button>
               </div>
             </div>
 
@@ -2317,7 +1232,7 @@ export default function App() {
               ))}
             </div>
 
-            {/* TOPIC SELECTOR FILTER BAR */}
+            {/* Topic Filter Bar */}
             {availableTopics.length > 0 && (
               <div className="bg-indigo-50/60 border border-indigo-100 p-3 rounded-2xl flex items-center space-x-2 overflow-x-auto">
                 <span className="text-[11px] font-bold text-indigo-900 shrink-0 flex items-center space-x-1">
@@ -2326,7 +1241,7 @@ export default function App() {
                 </span>
                 <button
                   onClick={() => setSelectedTopic('All')}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold shrink-0 transition ${selectedTopic === 'All' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-800 hover:bg-indigo-100'}`}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold shrink-0 transition ${selectedTopic === 'All' ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-800'}`}
                 >
                   All Topics
                 </button>
@@ -2334,7 +1249,7 @@ export default function App() {
                   <button
                     key={top}
                     onClick={() => setSelectedTopic(top)}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold shrink-0 transition ${selectedTopic === top ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-800 hover:bg-indigo-100'}`}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold shrink-0 transition ${selectedTopic === top ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-800'}`}
                   >
                     {top}
                   </button>
@@ -2344,21 +1259,14 @@ export default function App() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {gradePracticeQuizzes.map((quiz) => {
-                const isChallengeDone = completedChallenges.includes(quiz.id);
                 const quizTopic = quiz.topic || (quiz.questions && quiz.questions[0]?.topic) || 'General Topic';
-
                 return (
-                  <div key={quiz.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col justify-between hover:border-indigo-300 transition shadow-xs space-y-3">
+                  <div key={quiz.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col justify-between shadow-xs space-y-3">
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg font-bold">
                           {quiz.subject}
                         </span>
-                        {(role === 'teacher' || role === 'admin') && (
-                          <button onClick={() => deleteQuiz(quiz.id)} className="p-1 text-slate-400 hover:text-red-600">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
                       </div>
 
                       <h3 className="text-base font-bold text-slate-900">{quiz.title}</h3>
@@ -2367,247 +1275,20 @@ export default function App() {
                         <Tag className="w-3 h-3 text-purple-600" />
                         <span>Syllabus Topic: {quizTopic}</span>
                       </div>
-
-                      <p className="text-xs text-slate-500 mt-2">{quiz.questions.length} Practice Questions</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100">
-                      <button onClick={() => startQuiz(quiz, 'practice')} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-bold transition">
-                        Practice Mode
+                      <button onClick={() => startQuiz(quiz, 'practice')} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-bold">
+                        Practice
                       </button>
-                      
-                      <button
-                        onClick={() => startQuiz(quiz, 'challenge')}
-                        disabled={isChallengeDone}
-                        className={`w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1 ${isChallengeDone ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs'}`}
-                      >
-                        {isChallengeDone ? (
-                          <>
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>✓ Completed</span>
-                          </>
-                        ) : (
-                          <>
-                            <Flame className="w-3.5 h-3.5 text-amber-300" />
-                            <span>Challenge</span>
-                          </>
-                        )}
+                      <button onClick={() => startQuiz(quiz, 'challenge')} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl text-xs font-bold">
+                        Challenge
                       </button>
                     </div>
                   </div>
                 );
               })}
             </div>
-          </div>
-        )}
-
-        {/* TAB 2: ONLINE E-LIBRARY & PHYSICAL SCHOOL BOOKS */}
-        {activeTab === 'library' && !activeQuiz && (
-          <div className="space-y-6">
-            <div className="bg-gradient-to-r from-emerald-800 via-teal-700 to-cyan-800 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div className="space-y-2 max-w-xl">
-                <div className="flex items-center space-x-2">
-                  <Library className="w-6 h-6 text-emerald-300" />
-                  <h2 className="text-2xl sm:text-3xl font-black">Interactive E-Library & Reading Hub</h2>
-                </div>
-                <p className="text-xs text-emerald-100">
-                  Read digital books online or borrow physical books from the school library! Enter the **Book-Specific Code** provided by your librarian to log official **School Reading Hours**.
-                </p>
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-center space-y-1">
-                <span className="text-[10px] text-emerald-200 block uppercase font-bold">Your Logged Reading</span>
-                <span className="text-2xl font-black text-amber-300">{readingHours} Hours</span>
-              </div>
-            </div>
-
-            {/* Subject Filter Bar */}
-            <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none py-1 w-full">
-              <button
-                onClick={() => setSelectedSubject('All')}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${selectedSubject === 'All' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-              >
-                All Subjects
-              </button>
-              {ALL_SUBJECTS.map((subj) => (
-                <button
-                  key={subj}
-                  onClick={() => setSelectedSubject(subj)}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${subj === 'Dhivehi' || subj === 'Islam' ? 'font-faruma' : ''} ${selectedSubject === subj ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                >
-                  {subj === 'Dhivehi' ? '🇲🇻 ދިވެހި' : subj === 'Islam' ? '☪️ އިސްލާމް' : subj}
-                </button>
-              ))}
-            </div>
-
-            {/* Book Grid Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {filteredLibraryBooks.map((book) => {
-                const isRTL = isRTLSubject(book.subject);
-                const isCompleted = completedBookIds.includes(book.id);
-
-                return (
-                  <div key={book.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between">
-                    <div>
-                      {/* Cover Image Container */}
-                      <div className="relative h-48 w-full bg-slate-100 overflow-hidden">
-                        <img
-                          src={book.cover_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80'}
-                          alt={book.title}
-                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                        />
-                        
-                        <span className={`absolute top-3 left-3 text-[11px] font-bold px-2.5 py-1 rounded-xl shadow-xs ${isRTL ? 'bg-amber-500 text-white font-faruma' : 'bg-emerald-600 text-white'}`}>
-                          {book.subject}
-                        </span>
-
-                        <span className="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-xs text-amber-300 text-[11px] font-black px-2.5 py-1 rounded-xl flex items-center space-x-1 shadow-xs">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>{book.reading_hours || 2.0} Reading Hrs</span>
-                        </span>
-
-                        {isCompleted && (
-                          <span className="absolute top-3 right-3 bg-emerald-500 text-white text-[10px] font-black px-2.5 py-1 rounded-xl flex items-center space-x-1 shadow-xs">
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>Logged</span>
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Card Body */}
-                      <div className="p-5 space-y-3">
-                        <div className={isRTL ? 'text-right font-faruma' : 'text-left'} dir={isRTL ? 'rtl' : 'ltr'}>
-                          <h4 className={`font-black text-slate-900 ${isRTL ? 'text-xl' : 'text-base'}`}>{book.title}</h4>
-                          <p className="text-xs text-slate-400 mt-0.5">By {book.author}</p>
-                          
-                          <div className={`mt-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-600 italic ${isRTL ? 'text-xs leading-relaxed font-faruma' : 'text-xs leading-relaxed font-serif'}`}>
-                            "{book.extract || (Array.isArray(book.pages) ? book.pages[0].slice(0, 120) + '...' : '')}"
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="p-5 pt-0 space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => openBookModal(book)}
-                          className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-2xl text-xs flex items-center justify-center space-x-1 transition"
-                        >
-                          <BookOpen className="w-3.5 h-3.5" />
-                          <span>Read Online</span>
-                        </button>
-
-                        <button
-                          onClick={() => setClaimingBook(book)}
-                          className={`w-full font-bold py-2.5 rounded-2xl text-xs flex items-center justify-center space-x-1 transition ${
-                            isCompleted
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
-                          }`}
-                        >
-                          <Award className="w-3.5 h-3.5" />
-                          <span>{isCompleted ? '✓ Logged' : 'Claim Hours'}</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: O-LEVEL ARENA */}
-        {activeTab === 'olevel' && !activeQuiz && (role === 'teacher' || role === 'admin' || studentGrade >= 8) && (
-          <div className="space-y-6">
-            <div className="bg-gradient-to-r from-amber-900 via-yellow-900 to-amber-950 text-white rounded-3xl p-6 sm:p-8 shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-black">O-Level Past Paper Arena 🎓</h2>
-                <p className="text-xs text-amber-100">Official Cambridge O-Level exam papers across all subjects.</p>
-              </div>
-
-              <div className="flex items-center space-x-2 w-full sm:w-auto">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search past papers..."
-                  className="bg-white/10 text-white placeholder-amber-200 border border-amber-700/50 rounded-xl px-3 py-1.5 text-xs w-full sm:w-48 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none py-1 w-full">
-              <button
-                onClick={() => setSelectedSubject('All')}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${selectedSubject === 'All' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-              >
-                All Subjects
-              </button>
-              {ALL_SUBJECTS.map((subj) => (
-                <button
-                  key={subj}
-                  onClick={() => setSelectedSubject(subj)}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${subj === 'Dhivehi' || subj === 'Islam' ? 'font-faruma' : ''} ${selectedSubject === subj ? 'bg-amber-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                >
-                  {subj === 'Dhivehi' ? '🇲🇻 ދިވެހި' : subj === 'Islam' ? '☪️ އިސްލާމް' : subj}
-                </button>
-              ))}
-            </div>
-
-            {oLevelQuizzes.length === 0 ? (
-              <div className="text-center py-12 bg-white border border-slate-200 rounded-3xl p-6 space-y-3">
-                <GraduationCap className="w-10 h-10 text-amber-600 mx-auto" />
-                <h3 className="text-base font-bold text-slate-800">No O-Level Past Papers Found for "{selectedSubject}"</h3>
-                <p className="text-xs text-slate-500">Teachers can add O-Level past papers for this subject in the Teacher Studio!</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {oLevelQuizzes.map((quiz) => {
-                  const isChallengeDone = completedChallenges.includes(quiz.id);
-                  return (
-                    <div key={quiz.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col justify-between shadow-xs hover:border-amber-300 transition">
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs bg-amber-50 text-amber-800 px-2.5 py-1 rounded-lg font-bold">
-                            {quiz.subject} {quiz.subject_code ? `(${quiz.subject_code})` : ''}
-                          </span>
-                          {(role === 'teacher' || role === 'admin') && (
-                            <button onClick={() => deleteQuiz(quiz.id)} className="p-1 text-slate-400 hover:text-red-600">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                        <h3 className="text-base font-bold text-slate-900">{quiz.title}</h3>
-                        <p className="text-xs text-slate-500 mt-1 mb-4">{quiz.questions.length} Exam Questions</p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100">
-                        <button onClick={() => startQuiz(quiz, 'practice')} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-bold transition">
-                          Practice Mode
-                        </button>
-                        
-                        <button
-                          onClick={() => startQuiz(quiz, 'challenge')}
-                          disabled={isChallengeDone}
-                          className={`w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1 ${isChallengeDone ? 'bg-amber-50 border border-amber-200 text-amber-800 cursor-not-allowed' : 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs'}`}
-                        >
-                          {isChallengeDone ? (
-                            <>
-                              <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
-                              <span>✓ Completed</span>
-                            </>
-                          ) : (
-                            <span>Timed Exam</span>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
         )}
 
@@ -2631,63 +1312,21 @@ export default function App() {
               </div>
             </div>
 
-            {/* Shop Category Filter */}
-            <div className="flex items-center space-x-2 border-b border-slate-200 pb-3">
-              <button
-                onClick={() => setShopFilter('All')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition ${shopFilter === 'All' ? 'bg-amber-500 text-slate-950' : 'bg-white border text-slate-600 hover:bg-slate-50'}`}
-              >
-                All Items ({shopItems.length})
-              </button>
-              <button
-                onClick={() => setShopFilter('Physical')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition ${shopFilter === 'Physical' ? 'bg-amber-500 text-slate-950' : 'bg-white border text-slate-600 hover:bg-slate-50'}`}
-              >
-                🎒 Real Physical Goods
-              </button>
-              <button
-                onClick={() => setShopFilter('Digital')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition ${shopFilter === 'Digital' ? 'bg-amber-500 text-slate-950' : 'bg-white border text-slate-600 hover:bg-slate-50'}`}
-              >
-                🎟️ Digital Perks & Passes
-              </button>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {filteredShopItems.map((item) => (
-                <div key={item.id} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:shadow-md transition flex flex-col justify-between">
+              {shopItems.map((item) => (
+                <div key={item.id} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
                   <div className="space-y-3">
-                    <div className="flex justify-between items-start">
-                      <span className="text-4xl p-3 bg-amber-50 rounded-2xl border border-amber-100 block">{item.icon}</span>
-                      {item.is_physical || item.category === 'Physical Store' ? (
-                        <span className="text-[10px] font-black bg-amber-500 text-slate-950 px-2.5 py-1 rounded-full uppercase">
-                          Physical Store Item
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full uppercase">
-                          {item.category}
-                        </span>
-                      )}
-                    </div>
-
+                    <span className="text-4xl p-3 bg-amber-50 rounded-2xl border border-amber-100 block">{item.icon}</span>
                     <h3 className="font-black text-slate-900 text-base">{item.name}</h3>
-                    <p className="text-xs text-slate-500 leading-relaxed">{item.desc}</p>
+                    <p className="text-xs text-slate-500">{item.desc}</p>
                   </div>
 
                   <div className="pt-5 mt-4 border-t border-slate-100 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] text-slate-400 font-bold block uppercase">Price</span>
-                      <span className="font-black text-amber-600 text-base">{item.cost} Coins</span>
-                    </div>
-
+                    <span className="font-black text-amber-600 text-base">{item.cost} Coins</span>
                     <button
                       onClick={() => handleRedeemReward(item)}
                       disabled={coins < item.cost}
-                      className={`px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-xs ${
-                        coins >= item.cost
-                          ? 'bg-amber-500 hover:bg-amber-600 text-slate-950'
-                          : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                      }`}
+                      className={`px-5 py-2.5 rounded-xl text-xs font-bold ${coins >= item.cost ? 'bg-amber-500 text-slate-950' : 'bg-slate-100 text-slate-400'}`}
                     >
                       {item.is_physical ? 'Buy Real Item' : 'Redeem Perk'}
                     </button>
@@ -2698,205 +1337,110 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 5: MY PROFILE & TOPIC ANALYTICS */}
-        {activeTab === 'profile' && !activeQuiz && (
-          <div className="space-y-6 max-w-5xl mx-auto">
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
-              <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left">
-                <div className="w-20 h-20 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center text-white text-3xl font-black shadow-lg">
-                  {authName ? authName.charAt(0).toUpperCase() : 'U'}
-                </div>
-
-                <div className="space-y-1.5 flex-1">
-                  <h2 className="text-2xl font-black text-slate-900">{authName || 'User'}</h2>
-                  <p className="text-xs text-slate-500 font-medium">
-                    ID: <span className="font-mono font-bold text-indigo-600">{indexNumber}</span> • Grade {studentGrade} • Role: <span className="uppercase font-bold text-purple-600">{role}</span>
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-4 border-t border-slate-100">
-                <div className="bg-slate-50 p-3.5 rounded-2xl border text-center">
-                  <span className="text-[11px] font-bold text-slate-400 block">Quizzes Done</span>
-                  <span className="text-lg font-black text-slate-900">{quizzesCompleted}</span>
-                </div>
-                <div className="bg-slate-50 p-3.5 rounded-2xl border text-center">
-                  <span className="text-[11px] font-bold text-slate-400 block">Books Read</span>
-                  <span className="text-lg font-black text-emerald-600">{completedBookIds.length || booksRead}</span>
-                </div>
-                <div className="bg-slate-50 p-3.5 rounded-2xl border text-center">
-                  <span className="text-[11px] font-bold text-slate-400 block">Reading Hours</span>
-                  <span className="text-lg font-black text-teal-600">{readingHours} hrs</span>
-                </div>
-                <div className="bg-slate-50 p-3.5 rounded-2xl border text-center">
-                  <span className="text-[11px] font-bold text-slate-400 block">EduCoins</span>
-                  <span className="text-lg font-black text-amber-600">{coins}</span>
-                </div>
-                <div className="bg-slate-50 p-3.5 rounded-2xl border text-center col-span-2 sm:col-span-1">
-                  <span className="text-[11px] font-bold text-slate-400 block">Daily Streak</span>
-                  <span className="text-lg font-black text-orange-600">{streak} Days 🔥</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <BarChart2 className="w-6 h-6 text-indigo-600" />
-                <h3 className="text-lg font-black text-slate-900">Syllabus Topic Strengths & Weaknesses</h3>
-              </div>
-              
-              {ALL_SUBJECTS.map((subj) => (
-                <SubjectAnalyticsCard
-                  key={subj}
-                  subject={subj}
-                  attempts={challengeAttempts}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 6: TEACHER STUDIO */}
-        {activeTab === 'studio' && (role === 'teacher' || role === 'admin') && (
-          <div className="max-w-5xl mx-auto space-y-6">
-            <TeacherStudentTracker subjects={ALL_SUBJECTS} />
-          </div>
-        )}
-
-        {/* TAB 7: COMPLETE ADMIN CRUD CENTER */}
+        {/* TAB 7: ADMIN & SHOP FULFILLMENT MANAGEMENT */}
         {activeTab === 'settings' && (role === 'teacher' || role === 'admin') && (
           <div className="max-w-5xl mx-auto space-y-6">
             <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
               <div className="flex items-center space-x-3">
                 <Settings className="w-7 h-7 text-rose-600" />
                 <div>
-                  <h2 className="text-xl font-black text-slate-900">Admin CRUD Management Center</h2>
-                  <p className="text-xs text-slate-500">Full Create, Read, Edit, and Delete access for Books, LS Shop Gifts, Badges, and Quizzes.</p>
+                  <h2 className="text-xl font-black text-slate-900">Admin Control & LS Shop Fulfillment Panel</h2>
+                  <p className="text-xs text-slate-500">Track student purchases, verify claim codes, and mark items as given/fulfilled.</p>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2 pt-2 border-t border-slate-100 overflow-x-auto scrollbar-none">
-                <button onClick={() => setAdminTab('books')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'books' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>📚 Manage Books ({books.length})</button>
-                <button onClick={() => setAdminTab('prizes')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'prizes' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'}`}>🎒 LS Shop Gifts ({shopItems.length})</button>
-                <button onClick={() => setAdminTab('badges')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'badges' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600'}`}>🏅 Badges ({badges.length})</button>
-                <button onClick={() => setAdminTab('quizzes')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 whitespace-nowrap ${adminTab === 'quizzes' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>📝 Quizzes ({quizzes.length})</button>
+              <div className="flex items-center space-x-2 pt-2 border-t border-slate-100 overflow-x-auto">
+                <button onClick={() => setAdminTab('orders')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 ${adminTab === 'orders' ? 'bg-amber-500 text-slate-950' : 'bg-slate-100 text-slate-600'}`}>
+                  📦 Student Shop Orders ({shopOrders.length})
+                </button>
+                <button onClick={() => setAdminTab('books')} className={`px-4 py-2 rounded-xl text-xs font-bold transition shrink-0 ${adminTab === 'books' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                  📚 Manage Books ({books.length})
+                </button>
               </div>
             </div>
 
-            {/* BOOKS CRUD */}
-            {adminTab === 'books' && (
-              <div className="space-y-6">
-                <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
-                  <h3 className="text-base font-black text-slate-900">{editingBook ? '✏️ Edit Book' : '➕ Create New Multi-Page Book'}</h3>
-                  <form onSubmit={handleSaveBook} className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <input type="text" value={bookForm.title} onChange={(e) => setBookForm({ ...bookForm, title: e.target.value })} placeholder="Book Title" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                      <input type="text" value={bookForm.author} onChange={(e) => setBookForm({ ...bookForm, author: e.target.value })} placeholder="Author Name" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                      <select value={bookForm.subject} onChange={(e) => setBookForm({ ...bookForm, subject: e.target.value })} className="bg-slate-50 border rounded-xl p-2.5 text-xs font-bold text-slate-800">
-                        {ALL_SUBJECTS.map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                    </div>
+            {/* SHOP ORDERS FULFILLMENT PANEL */}
+            {adminTab === 'orders' && (
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4">
+                  <div>
+                    <h3 className="text-base font-black text-slate-900">Student Purchase Records & Redemptions</h3>
+                    <p className="text-xs text-slate-500">When a student visits the library desk to collect a gift, search their index or code below.</p>
+                  </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[11px] font-bold text-slate-600 block mb-1">⏱️ Assigned Reading Hours</label>
-                        <input
-                          type="number"
-                          step="0.5"
-                          value={bookForm.reading_hours}
-                          onChange={(e) => setBookForm({ ...bookForm, reading_hours: e.target.value })}
-                          placeholder="e.g. 2.5"
-                          className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs font-bold text-emerald-700"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="text-[11px] font-bold text-slate-600 block mb-1">🔑 Book Claim Code (Librarian Code)</label>
-                        <input
-                          type="text"
-                          value={bookForm.claim_code}
-                          onChange={(e) => setBookForm({ ...bookForm, claim_code: e.target.value })}
-                          placeholder="e.g. LIB-DHIV-01"
-                          className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs font-mono font-bold text-purple-700 uppercase"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <textarea rows={4} value={bookForm.pageText} onChange={(e) => setBookForm({ ...bookForm, pageText: e.target.value })} placeholder="Page text... Use ---PAGE--- for chapter splits." className="w-full bg-slate-50 border rounded-xl p-3 text-xs" required />
-                    
-                    <div className="flex space-x-2">
-                      <button type="submit" className="bg-emerald-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs">{editingBook ? 'Save Changes' : 'Publish Book'}</button>
-                      {editingBook && <button type="button" onClick={() => setEditingBook(null)} className="bg-slate-100 text-slate-600 font-bold px-4 py-2.5 rounded-xl text-xs">Cancel</button>}
-                    </div>
-                  </form>
+                  <div className="flex items-center space-x-2">
+                    <button onClick={() => setOrderStatusFilter('All')} className={`px-3 py-1.5 rounded-xl text-xs font-bold ${orderStatusFilter === 'All' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'}`}>All</button>
+                    <button onClick={() => setOrderStatusFilter('Pending')} className={`px-3 py-1.5 rounded-xl text-xs font-bold ${orderStatusFilter === 'Pending' ? 'bg-amber-500 text-slate-950' : 'bg-slate-100 text-slate-600'}`}>Pending Pickup</button>
+                    <button onClick={() => setOrderStatusFilter('Fulfilled')} className={`px-3 py-1.5 rounded-xl text-xs font-bold ${orderStatusFilter === 'Fulfilled' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>Fulfilled</button>
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {/* SHOP CRUD WITH PHYSICAL ITEM TOGGLE */}
-            {adminTab === 'prizes' && (
-              <div className="space-y-6">
-                <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
-                  <h3 className="text-base font-black text-slate-900">{editingPrize ? '✏️ Edit LS Shop Gift' : '➕ Create New LS Shop Gift'}</h3>
-                  <form onSubmit={handleSavePrize} className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                      <input type="text" value={prizeForm.name} onChange={(e) => setPrizeForm({ ...prizeForm, name: e.target.value })} placeholder="Item Name" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                      <input type="number" value={prizeForm.cost} onChange={(e) => setPrizeForm({ ...prizeForm, cost: e.target.value })} placeholder="EduCoins Cost" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" required />
-                      <input type="text" value={prizeForm.icon} onChange={(e) => setPrizeForm({ ...prizeForm, icon: e.target.value })} placeholder="Emoji Icon (e.g. 🎒)" className="bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-                      <select value={prizeForm.category} onChange={(e) => setPrizeForm({ ...prizeForm, category: e.target.value })} className="bg-slate-50 border rounded-xl p-2.5 text-xs font-bold text-slate-800">
-                        <option value="Physical Store">Physical Store Item</option>
-                        <option value="Privilege">School Privilege</option>
-                        <option value="Digital Perk">Digital Perk</option>
-                        <option value="Booster">Booster</option>
-                      </select>
-                    </div>
-
-                    <div className="flex items-center space-x-2 pt-1">
-                      <input
-                        type="checkbox"
-                        id="phys_item_chk"
-                        checked={prizeForm.is_physical}
-                        onChange={(e) => setPrizeForm({ ...prizeForm, is_physical: e.target.checked })}
-                      />
-                      <label htmlFor="phys_item_chk" className="text-xs font-bold text-slate-700">
-                        Real Physical Goods (Requires Physical Store Claim Voucher)
-                      </label>
-                    </div>
-
-                    <input type="text" value={prizeForm.desc} onChange={(e) => setPrizeForm({ ...prizeForm, desc: e.target.value })} placeholder="Item Description" className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs text-slate-800" />
-
-                    <div className="flex space-x-2">
-                      <button type="submit" className="bg-amber-500 text-slate-950 font-black px-6 py-2.5 rounded-xl text-xs">{editingPrize ? 'Save Changes' : 'Publish Item'}</button>
-                      {editingPrize && <button type="button" onClick={() => setEditingPrize(null)} className="bg-slate-100 text-slate-600 font-bold px-4 py-2.5 rounded-xl text-xs">Cancel</button>}
-                    </div>
-                  </form>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b text-slate-400 uppercase text-[10px] font-bold">
+                        <th className="py-2.5 px-3">Date</th>
+                        <th className="py-2.5 px-3">Student Name</th>
+                        <th className="py-2.5 px-3">Index #</th>
+                        <th className="py-2.5 px-3">Item Purchased</th>
+                        <th className="py-2.5 px-3">Claim Code</th>
+                        <th className="py-2.5 px-3 text-center">Status</th>
+                        <th className="py-2.5 px-3 text-right">Shop Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredOrders.map((ord) => (
+                        <tr key={ord.id} className="hover:bg-slate-50 transition">
+                          <td className="py-3 px-3 font-mono text-slate-500">{ord.date}</td>
+                          <td className="py-3 px-3 font-bold text-slate-900">{ord.student_name}</td>
+                          <td className="py-3 px-3 font-mono text-slate-600">{ord.student_index} (Grade {ord.grade})</td>
+                          <td className="py-3 px-3 font-bold text-indigo-700">{ord.item_name}</td>
+                          <td className="py-3 px-3 font-mono font-bold text-purple-700">{ord.claim_code}</td>
+                          <td className="py-3 px-3 text-center">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
+                              ord.status === 'Fulfilled / Given' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
+                            }`}>
+                              {ord.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            {ord.status !== 'Fulfilled / Given' ? (
+                              <button
+                                onClick={() => handleFulfillOrder(ord.id)}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-[11px] transition"
+                              >
+                                Mark as Given
+                              </button>
+                            ) : (
+                              <span className="text-[11px] text-slate-400 font-bold">✓ Complete</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
           </div>
         )}
 
-        {/* TAB 8: LEADERBOARD */}
+        {/* LEADERBOARD TAB */}
         {activeTab === 'leaderboard' && (
           <div className="max-w-xl mx-auto space-y-4">
             <div className="bg-white border border-slate-200 p-6 rounded-3xl text-center space-y-2 shadow-xs">
               <Trophy className="w-10 h-10 text-yellow-500 mx-auto" />
               <h2 className="text-xl sm:text-2xl font-black text-slate-900">School Leaderboard</h2>
-              <p className="text-xs text-slate-500">Live ranks calculated from combined quiz & reading XP!</p>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-3xl divide-y divide-slate-100 shadow-xs">
+            <div className="bg-white border border-slate-200 rounded-3xl divide-y divide-slate-100">
               {leaderboardUsers.map((s, idx) => (
                 <div key={idx} className="p-4 flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <span className="text-base font-bold w-6">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`}</span>
+                    <span className="text-base font-bold w-6">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>
                     <div>
-                      <h4 className="font-bold text-xs sm:text-sm text-slate-900">{s.full_name || 'Student'}</h4>
-                      <span className="text-[11px] text-slate-500 font-mono">ID: {s.index_number || 'N/A'} • Grade {s.grade} • {s.reading_hours || 0} Reading Hrs</span>
+                      <h4 className="font-bold text-xs sm:text-sm text-slate-900">{s.full_name}</h4>
+                      <span className="text-[11px] text-slate-500 font-mono">ID: {s.index_number} • Grade {s.grade}</span>
                     </div>
                   </div>
                   <span className="text-xs sm:text-sm font-black text-indigo-600">{s.xp} XP</span>
@@ -2911,11 +1455,8 @@ export default function App() {
           <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-3xl p-5 sm:p-8 shadow-md">
             {gameOver ? (
               <div className="text-center py-6 space-y-5">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-3xl">💔</div>
                 <h2 className="text-2xl font-black text-slate-900">Game Over!</h2>
-                <div className="flex justify-center space-x-3 pt-2">
-                  <button onClick={() => setActiveQuiz(null)} className="bg-indigo-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs">Back to Portal</button>
-                </div>
+                <button onClick={() => setActiveQuiz(null)} className="bg-indigo-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs">Back to Portal</button>
               </div>
             ) : !quizFinished ? (
               <>
@@ -2958,12 +1499,8 @@ export default function App() {
                 </div>
 
                 {showExplanation && (
-                  <button
-                    onClick={nextQuestion}
-                    className="w-full bg-indigo-600 text-white font-bold py-3 rounded-2xl transition flex items-center justify-center space-x-2"
-                  >
-                    <span>{currentQuestionIdx + 1 < activeQuiz.questions.length ? 'Next Question' : 'Finish Test'}</span>
-                    <ChevronRight className="w-4 h-4" />
+                  <button onClick={nextQuestion} className="w-full bg-indigo-600 text-white font-bold py-3 rounded-2xl transition">
+                    Next Question
                   </button>
                 )}
               </>
@@ -2977,23 +1514,6 @@ export default function App() {
           </div>
         )}
       </main>
-
-      {/* VERIFICATION CLAIM MODAL */}
-      {claimingBook && (
-        <ClaimReadingHoursModal
-          book={claimingBook}
-          onVerified={() => handleClaimVerifiedReadingHours(claimingBook)}
-          onClose={() => setClaimingBook(null)}
-        />
-      )}
-
-      {/* PHYSICAL GIFT CLAIM VOUCHER MODAL */}
-      {viewingVoucher && (
-        <PhysicalGiftVoucherModal
-          redemption={viewingVoucher}
-          onClose={() => setViewingVoucher(null)}
-        />
-      )}
     </div>
   );
 }
