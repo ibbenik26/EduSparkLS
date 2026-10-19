@@ -32,6 +32,12 @@ const ALL_SUBJECTS = [
   'Science'
 ];
 
+const QUICK_EMOJIS = ['🎒', '📓', '📐', '🖍️', '🎨', '🎟️', '⚡', '🎁', '⚽', '🏆', '📱', '📚', '🧩', '🎮', '🎧', '✏️'];
+
+const isRTLSubject = (subject) => {
+  return subject === 'Dhivehi' || subject === 'Islam' || subject === 'ދިވެހި' || subject === 'އިސްލާމް';
+};
+
 const playSound = (type) => {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -79,7 +85,9 @@ const getStudentRank = (xp) => {
 const INITIAL_SHOP_ITEMS = [
   { id: 'item_1', name: 'Deluxe Geometry Set', category: 'School Supplies', cost: 250, stock: 12, is_real: true, icon: '📐', desc: 'Complete metal geometry compass set for Math class.' },
   { id: 'item_2', name: 'EduSpark Branded Notebook', category: 'Stationery', cost: 180, stock: 20, is_real: true, icon: '📓', desc: 'Hardcover 200-page lined notebook.' },
-  { id: 'item_3', name: 'Homework Waiver Pass', category: 'Privileges', cost: 300, stock: 50, is_real: false, icon: '🎟️', desc: '1 homework waiver card approved by your class teacher.' }
+  { id: 'item_3', name: 'Homework Waiver Pass', category: 'Privileges', cost: 300, stock: 50, is_real: false, icon: '🎟️', desc: '1 homework waiver card approved by your class teacher.' },
+  { id: 'item_4', name: 'Color Marker Set (12 Pack)', category: 'School Supplies', cost: 200, stock: 8, is_real: true, icon: '🖍️', desc: 'Highlighter & marker dual-tip set.' },
+  { id: 'item_5', name: '24h Double XP Booster', category: 'Digital Perks', cost: 150, stock: 999, is_real: false, icon: '⚡', desc: 'Earn 2x XP for all quizzes and library reading completed today.' }
 ];
 
 const INITIAL_BOOKS = [
@@ -90,10 +98,12 @@ const INITIAL_BOOKS = [
     author: 'އަލްއުސްތާޛު މުޙައްމަދު ޖަމީލު',
     cover_url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80',
     summary: 'ދިވެހިބަހުގެ އަސާސީ ގަވާއިދުތަކާއި ތާނައަކުރުތަކުގެ ބޭނުންކުރާނެ ގޮތުގެ ތަފްޞީލު.',
-    extract: 'ފުރަތަމަ ބާބު: ތާނަ އަކުރު...',
     reading_hours: 2.5,
     claim_code: 'LIB-DHIV-01',
-    pages: ["ފުރަތަމަ ބާބު: ތާނަ އަކުރު\n\nދިވެހިބަހުން ލިޔުމަށް ބޭނުންކުރަނީ ތާނައަކުރެވެ."]
+    pages: [
+      "ފުރަތަމަ ބާބު: ތާނަ އަކުރު\n\nދިވެހިބަހުން ލިޔުމަށް ބޭނުންކުރަނީ ތާނައަކުރެވެ. ތާނައަކުރުގައި ހިމެނެނީ 24 އަކުރާއި 11 ޒަވިޔަން އަކުރެވެ.",
+      "ދެވަނަ ބާބު: ފިލި\n\nތާނައިގައި 10 ފިލި ބޭނުންކުރެވެއެވެ."
+    ]
   },
   {
     id: 'book_1',
@@ -102,10 +112,12 @@ const INITIAL_BOOKS = [
     author: 'Dr. Marcus Vance',
     cover_url: 'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?auto=format&fit=crop&w=600&q=80',
     summary: 'Explore forces, energy, gravity, thermodynamics, and electromagnetism.',
-    extract: 'CHAPTER 1: THE LAWS OF MOTION...',
     reading_hours: 4.0,
     claim_code: 'LIB-PHYS-101',
-    pages: ["CHAPTER 1: THE LAWS OF MOTION\n\nPhysics is the fundamental science that seeks to understand how the universe behaves."]
+    pages: [
+      "CHAPTER 1: THE LAWS OF MOTION\n\nPhysics is the fundamental science that seeks to understand how the universe behaves.",
+      "CHAPTER 2: ENERGY & WORK\n\nEnergy cannot be created or destroyed, only transformed from one form to another."
+    ]
   }
 ];
 
@@ -122,6 +134,13 @@ const INITIAL_QUIZZES = [
         question_text: 'A car accelerates uniformly from rest to a velocity of 20 m/s in 5 seconds. What is its acceleration?',
         option_a: '2 m/s²', option_b: '4 m/s²', option_c: '5 m/s²', option_d: '100 m/s²',
         correct_option: 'B', explanation: 'Acceleration a = (v - u) / t = (20 - 0) / 5 = 4 m/s².'
+      },
+      {
+        id: 'q1_2',
+        topic: 'Forces & Energy',
+        question_text: 'Which quantity is calculated by multiplying force by distance moved in the direction of the force?',
+        option_a: 'Power', option_b: 'Work done', option_c: 'Pressure', option_d: 'Acceleration',
+        correct_option: 'B', explanation: 'Work done W = Force x Distance.'
       }
     ]
   }
@@ -131,11 +150,11 @@ export default function App() {
   // --- Auth View States ---
   const [authView, setAuthView] = useState('landing'); // 'landing' | 'login' | 'register' | 'forgot_password'
   const [user, setUser] = useState(null);
-  const [role, setRole] = useState('student');
+  const [role, setRole] = useState('student'); // 'student', 'teacher', 'shop_admin', 'super_admin'
   const [userStatus, setUserStatus] = useState('active');
   const [teacherSubject, setTeacherSubject] = useState('Physics');
 
-  // Login & Registration Fields
+  // Login & Registration
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
@@ -143,16 +162,14 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Forgot Password & Reset State
+  // Password Recovery
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
 
-  // Forced First-Time Password Change State
+  // Forced Password Change
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [forcedNewPassword, setForcedNewPassword] = useState('');
   const [confirmForcedPassword, setConfirmForcedPassword] = useState('');
-
-  // Password Change in Profile
   const [profileNewPassword, setProfileNewPassword] = useState('');
 
   // --- Student Metrics ---
@@ -161,11 +178,11 @@ export default function App() {
   const [xp, setXp] = useState(420);
   const [readingHours, setReadingHours] = useState(5.5);
 
-  // --- Decoupled Records ---
+  // --- Decoupled Reading Records ---
   const [onlineReadBookIds, setOnlineReadBookIds] = useState([]);
   const [physicalClaimedBookIds, setPhysicalClaimedBookIds] = useState([]);
 
-  // --- Main Datasets ---
+  // --- Collections ---
   const [quizzes, setQuizzes] = useState(INITIAL_QUIZZES);
   const [books, setBooks] = useState(INITIAL_BOOKS);
   const [shopItems, setShopItems] = useState(INITIAL_SHOP_ITEMS);
@@ -177,13 +194,14 @@ export default function App() {
   const [selectedSubject, setSelectedSubject] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // --- E-Reader Auto-Timer ---
+  // --- Live E-Reader ---
   const [selectedBook, setSelectedBook] = useState(null);
   const [bookPageIndex, setBookPageIndex] = useState(0);
   const [activeReadingSeconds, setActiveReadingSeconds] = useState(0);
   const [claimingBook, setClaimingBook] = useState(null);
+  const [physicalClaimInput, setPhysicalClaimInput] = useState('');
 
-  // --- Quiz Engine ---
+  // --- Quiz Runner ---
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [quizMode, setQuizMode] = useState('practice');
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
@@ -192,7 +210,40 @@ export default function App() {
   const [score, setScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
 
-  // --- Super Admin Provisioning Teacher State ---
+  // --- Teacher Quiz Studio ---
+  const [studioGrade, setStudioGrade] = useState(7);
+  const [studioSubject, setStudioSubject] = useState('Physics');
+  const [jsonInputText, setJsonInputText] = useState(`[
+  {
+    "topic": "Kinematics & Motion",
+    "question_text": "What does the gradient of a distance-time graph represent?",
+    "option_a": "Acceleration",
+    "option_b": "Speed",
+    "option_c": "Displacement",
+    "option_d": "Force",
+    "correct_option": "B",
+    "explanation": "Speed is given by the gradient (change in distance over time)."
+  }
+]`);
+
+  // --- New Book Creation Modal (Super Admin / Teacher) ---
+  const [showNewBookModal, setShowNewBookModal] = useState(false);
+  const [newBookTitle, setNewBookTitle] = useState('');
+  const [newBookAuthor, setNewBookAuthor] = useState('');
+  const [newBookSubject, setNewBookSubject] = useState('Physics');
+  const [newBookHours, setNewBookHours] = useState(2.0);
+  const [newBookSummary, setNewBookSummary] = useState('');
+  const [newBookPageText, setNewBookPageText] = useState('');
+
+  // --- New Shop Item Modal (Super Admin / Shop Admin) ---
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemCategory, setNewItemCategory] = useState('Stationery');
+  const [newItemCost, setNewItemCost] = useState(150);
+  const [newItemStock, setNewItemStock] = useState(10);
+  const [newItemIcon, setNewItemIcon] = useState('📓');
+  const [newItemDesc, setNewItemDesc] = useState('');
+
+  // --- Super Admin Staff Provisioning ---
   const [newStaffEmail, setNewStaffEmail] = useState('');
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffPass, setNewStaffPass] = useState('Teacher2026!');
@@ -204,7 +255,7 @@ export default function App() {
     setActiveTab(tabName);
   };
 
-  // --- Supabase Session Sync ---
+  // --- Supabase Profiles Sync ---
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -261,7 +312,7 @@ export default function App() {
     }
   };
 
-  // --- E-Reader Auto-Timer Effect ---
+  // --- E-Reader Auto-Timer ---
   useEffect(() => {
     let timerInterval = null;
     if (selectedBook) {
@@ -311,7 +362,6 @@ export default function App() {
 
     setAuthLoading(true);
     try {
-      // Public signup is strictly locked to student
       const assignedRole = 'student';
 
       const { data, error } = await supabase.auth.signUp({
@@ -377,7 +427,7 @@ export default function App() {
 
       await supabase.from('profiles').update({ must_change_password: false }).eq('id', user.id);
       setMustChangePassword(false);
-      alert("✅ Password successfully updated! Welcome to your dashboard.");
+      alert("✅ Password updated! Welcome to your dashboard.");
     } catch (err) {
       alert("Failed to update password: " + err.message);
     } finally {
@@ -410,59 +460,7 @@ export default function App() {
     setAuthView('landing');
   };
 
-  // --- Super Admin Staff Provisioning ---
-  const handleSuperAdminProvisionTeacher = async (e) => {
-    e.preventDefault();
-    if (!newStaffEmail || !newStaffName || !newStaffPass) return alert("Please complete teacher provisioning details.");
-
-    try {
-      // 1. Create Auth Account
-      const { data, error } = await supabase.auth.signUp({
-        email: newStaffEmail,
-        password: newStaffPass,
-        options: {
-          data: { full_name: newStaffName, role: 'teacher' }
-        }
-      });
-      if (error) throw error;
-
-      if (data?.user) {
-        // 2. Insert Profile with must_change_password = true
-        await supabase.from('profiles').insert([{
-          id: data.user.id,
-          full_name: newStaffName,
-          index_number: `STAFF-${Math.floor(100 + Math.random() * 900)}`,
-          role: 'teacher',
-          status: 'active',
-          teacher_subject: newStaffSubject,
-          must_change_password: true,
-          coins: 0,
-          xp: 0,
-          reading_hours: 0
-        }]);
-      }
-
-      alert(`✅ Teacher Provisioned Successfully!\n\nEmail: ${newStaffEmail}\nDefault Password: ${newStaffPass}\nSubject: ${newStaffSubject}\n\nThey will be required to change password on first login.`);
-      setNewStaffEmail('');
-      setNewStaffName('');
-      setNewStaffPass('Teacher2026!');
-      fetchAllProfiles();
-    } catch (err) {
-      alert("Provisioning Error: " + err.message);
-    }
-  };
-
-  const handleUpdateUserByAdmin = async (targetUserId, updates) => {
-    try {
-      await supabase.from('profiles').update(updates).eq('id', targetUserId);
-      setAllProfiles(allProfiles.map(p => p.id === targetUserId ? { ...p, ...updates } : p));
-      alert("✅ User profile updated!");
-    } catch (err) {
-      alert("Update failed: " + err.message);
-    }
-  };
-
-  // --- E-Book Reader Finish ---
+  // --- E-Book Online Reading Finish ---
   const handleFinishOnlineReading = (book) => {
     const elapsedMinutes = Math.max(1, Math.round(activeReadingSeconds / 60));
     const hoursEarned = Math.round((elapsedMinutes / 60) * 100) / 100;
@@ -483,14 +481,127 @@ export default function App() {
     playSound('coin');
     confetti({ particleCount: 80, spread: 60 });
 
-    supabase.from('profiles').update({
-      reading_hours: newReadingHours,
-      coins: newCoins,
-      xp: newXp,
-      online_read_book_ids: newOnlineReads
-    }).eq('id', user.id);
+    if (user) {
+      supabase.from('profiles').update({
+        reading_hours: newReadingHours,
+        coins: newCoins,
+        xp: newXp,
+        online_read_book_ids: newOnlineReads
+      }).eq('id', user.id);
+    }
 
     alert(`🎉 Reading Session Logged!\n• Time Read: ${elapsedMinutes} mins (+${hoursEarned} hrs)\n• Earned: +${coinsEarned} EduCoins & +${xpEarned} XP!`);
+  };
+
+  // --- Physical Book Claim Verification ---
+  const handleClaimPhysicalBook = (e, book) => {
+    e.preventDefault();
+    const targetCode = (book.claim_code || 'LIB-2026').trim().toUpperCase();
+    if (physicalClaimInput.trim().toUpperCase() !== targetCode) {
+      alert(`❌ Invalid Code for "${book.title}". Ask your librarian for this book's official claim code.`);
+      return;
+    }
+
+    const hours = parseFloat(book.reading_hours) || 2.0;
+    const coinsGained = Math.round(hours * 15);
+    const newHours = Math.round((readingHours + hours) * 10) / 10;
+    const newCoins = coins + coinsGained;
+    const newPhysicalReads = Array.from(new Set([...physicalClaimedBookIds, book.id]));
+
+    setReadingHours(newHours);
+    setCoins(newCoins);
+    setPhysicalClaimedBookIds(newPhysicalReads);
+    setClaimingBook(null);
+    setPhysicalClaimInput('');
+
+    playSound('coin');
+    confetti({ particleCount: 100, spread: 70 });
+
+    if (user) {
+      supabase.from('profiles').update({
+        reading_hours: newHours,
+        coins: newCoins,
+        physical_claimed_book_ids: newPhysicalReads
+      }).eq('id', user.id);
+    }
+
+    alert(`🎉 Physical Book Verified!\n• Added +${hours} Reading Hours\n• Earned +${coinsGained} EduCoins!`);
+  };
+
+  // --- Add New Book (Super Admin / Teacher) ---
+  const handleCreateNewBook = (e) => {
+    e.preventDefault();
+    if (!newBookTitle.trim()) return alert("Please enter a book title.");
+
+    const generatedCode = `LIB-${newBookSubject.substring(0, 3).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
+    const newBook = {
+      id: `book_${Date.now()}`,
+      title: newBookTitle,
+      subject: newBookSubject,
+      author: newBookAuthor || 'School Library',
+      cover_url: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80',
+      summary: newBookSummary || 'Interactive school reading book.',
+      reading_hours: parseFloat(newBookHours) || 2.0,
+      claim_code: generatedCode,
+      pages: [newBookPageText || 'Page 1 content...']
+    };
+
+    setBooks([newBook, ...books]);
+    setShowNewBookModal(false);
+    setNewBookTitle('');
+    setNewBookPageText('');
+    alert(`✅ New book published to library! Physical Claim Code: ${generatedCode}`);
+  };
+
+  // --- Student Gift Shop Purchase ---
+  const handlePurchaseItem = (item) => {
+    if (coins < item.cost) {
+      alert(`❌ You need ${item.cost - coins} more EduCoins to purchase this item.`);
+      return;
+    }
+    const claimCode = `ES-SHOP-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newOrder = {
+      id: `ord_${Date.now()}`,
+      student_name: authName,
+      item_name: item.name,
+      cost: item.cost,
+      status: 'Pending',
+      claim_code: claimCode,
+      date: new Date().toLocaleDateString()
+    };
+    setCoins(c => c - item.cost);
+    setOrders([newOrder, ...orders]);
+    playSound('coin');
+    confetti({ particleCount: 90, spread: 60 });
+    alert(`🎉 Purchase Successful!\n\nItem: ${item.name}\nClaim Code: ${claimCode}\nShow this claim code to the school store manager to receive your item.`);
+  };
+
+  // --- Add New Store Item (Super Admin / Shop Admin) ---
+  const handleCreateShopItem = (e) => {
+    e.preventDefault();
+    if (!newItemName.trim()) return alert("Please enter item name.");
+
+    const newItem = {
+      id: `item_${Date.now()}`,
+      name: newItemName,
+      category: newItemCategory,
+      cost: parseInt(newItemCost) || 100,
+      stock: parseInt(newItemStock) || 10,
+      is_real: true,
+      icon: newItemIcon || '📦',
+      desc: newItemDesc || 'School shop reward item.'
+    };
+
+    setShopItems([...shopItems, newItem]);
+    setNewItemName('');
+    setNewItemDesc('');
+    alert("✅ New store item added to Student Gift Shop!");
+  };
+
+  // --- Order Status Fulfillment ---
+  const handleFulfillOrder = (orderId) => {
+    setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'Fulfilled' } : o));
+    alert("✅ Order status updated to Fulfilled!");
   };
 
   // --- Quiz Engine ---
@@ -526,8 +637,90 @@ export default function App() {
       setQuizFinished(true);
       playSound('coin');
       confetti({ particleCount: 100 });
-      setCoins(c => c + score * 15);
-      setXp(x => x + score * 30);
+      const earnedCoins = score * 15;
+      const earnedXp = score * 30;
+      setCoins(c => c + earnedCoins);
+      setXp(x => x + earnedXp);
+
+      if (user) {
+        supabase.from('profiles').update({
+          coins: coins + earnedCoins,
+          xp: xp + earnedXp
+        }).eq('id', user.id);
+      }
+    }
+  };
+
+  // --- Teacher Quiz Creation ---
+  const handleTeacherCreateQuiz = (e) => {
+    e.preventDefault();
+    if (role === 'teacher' && studioSubject !== teacherSubject) {
+      alert(`⚠️ Teachers can only create quizzes for their assigned subject (${teacherSubject}).`);
+      return;
+    }
+
+    try {
+      const parsedQuestions = JSON.parse(jsonInputText);
+      const newQuiz = {
+        id: `quiz_${Date.now()}`,
+        title: `Grade ${studioGrade} ${studioSubject} Quiz`,
+        subject: studioSubject,
+        grade: parseInt(studioGrade),
+        questions: parsedQuestions
+      };
+
+      setQuizzes([newQuiz, ...quizzes]);
+      alert(`✅ Quiz successfully published under ${studioSubject}!`);
+    } catch (err) {
+      alert("Invalid JSON format for questions: " + err.message);
+    }
+  };
+
+  // --- Staff Provisioning (Super Admin) ---
+  const handleSuperAdminProvisionTeacher = async (e) => {
+    e.preventDefault();
+    if (!newStaffEmail || !newStaffName || !newStaffPass) return alert("Please complete teacher details.");
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: newStaffEmail,
+        password: newStaffPass,
+        options: { data: { full_name: newStaffName, role: 'teacher' } }
+      });
+      if (error) throw error;
+
+      if (data?.user) {
+        await supabase.from('profiles').insert([{
+          id: data.user.id,
+          full_name: newStaffName,
+          index_number: `STAFF-${Math.floor(100 + Math.random() * 900)}`,
+          role: 'teacher',
+          status: 'active',
+          teacher_subject: newStaffSubject,
+          must_change_password: true,
+          coins: 0,
+          xp: 0,
+          reading_hours: 0
+        }]);
+      }
+
+      alert(`✅ Teacher Provisioned Successfully!\n\nEmail: ${newStaffEmail}\nDefault Password: ${newStaffPass}\nSubject: ${newStaffSubject}\n\nThey will be required to change their password on first login.`);
+      setNewStaffEmail('');
+      setNewStaffName('');
+      setNewStaffPass('Teacher2026!');
+      fetchAllProfiles();
+    } catch (err) {
+      alert("Provisioning Error: " + err.message);
+    }
+  };
+
+  const handleUpdateUserByAdmin = async (targetUserId, updates) => {
+    try {
+      await supabase.from('profiles').update(updates).eq('id', targetUserId);
+      setAllProfiles(allProfiles.map(p => p.id === targetUserId ? { ...p, ...updates } : p));
+      alert("✅ User profile updated!");
+    } catch (err) {
+      alert("Update failed: " + err.message);
     }
   };
 
@@ -536,7 +729,7 @@ export default function App() {
   const currentRank = getStudentRank(xp);
 
   // =========================================================================
-  // --- AUTHENTICATION & LANDING VIEWS (UNAUTHENTICATED) ---
+  // --- LANDING & AUTHENTICATION (UNAUTHENTICATED) ---
   // =========================================================================
   if (!user) {
     return (
@@ -627,7 +820,7 @@ export default function App() {
           </main>
         )}
 
-        {/* CLEAN PROFESSIONAL LOGIN VIEW */}
+        {/* LOGIN VIEW */}
         {authView === 'login' && (
           <main className="max-w-md w-full mx-auto px-6 py-8 z-10 flex-1 flex flex-col justify-center">
             <div className="bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-2xl space-y-6">
@@ -742,7 +935,7 @@ export default function App() {
                 <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-2xl text-center space-y-2">
                   <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
                   <h3 className="text-sm font-bold text-emerald-300">Reset Email Sent!</h3>
-                  <p className="text-xs text-slate-300">Please check your inbox at <strong>{resetEmail}</strong> for the password reset instructions.</p>
+                  <p className="text-xs text-slate-300">Please check your inbox at <strong>{resetEmail}</strong> for the reset link.</p>
                 </div>
               )}
 
@@ -755,7 +948,7 @@ export default function App() {
           </main>
         )}
 
-        {/* PUBLIC REGISTER VIEW (STUDENT-ONLY) */}
+        {/* PUBLIC REGISTER VIEW */}
         {authView === 'register' && (
           <main className="max-w-md w-full mx-auto px-6 py-8 z-10 flex-1 flex flex-col justify-center">
             <div className="bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-2xl space-y-5">
@@ -913,6 +1106,7 @@ export default function App() {
         </div>
       )}
 
+      {/* HEADER BAR */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div onClick={() => navigateToTab('dashboard')} className="flex items-center space-x-3 cursor-pointer">
@@ -964,7 +1158,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Navigation Bar */}
+        {/* NAVIGATION TABS (SUPER ADMIN ACCESSIBLE TO ALL) */}
         <div className="max-w-7xl mx-auto px-4 flex items-center space-x-2 overflow-x-auto text-xs border-t border-slate-100 py-1.5 scrollbar-none">
           <button
             onClick={() => navigateToTab('dashboard')}
@@ -990,7 +1184,7 @@ export default function App() {
           {(role === 'shop_admin' || role === 'super_admin') && (
             <button
               onClick={() => navigateToTab('shop_management')}
-              className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'shop_management' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-800'}`}
+              className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'shop_management' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-800 hover:bg-slate-200'}`}
             >
               <Settings className="w-3.5 h-3.5 text-amber-400" /> <span>🏬 Store Sales CP</span>
             </button>
@@ -1016,7 +1210,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* MAIN CONTENT AREA */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
 
         {/* TAB 1: PRACTICE VAULT */}
@@ -1036,6 +1230,17 @@ export default function App() {
                   placeholder="Search quizzes..."
                   className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800"
                 />
+                {(role === 'teacher' || role === 'super_admin') && (
+                  <select
+                    value={studentGrade}
+                    onChange={(e) => setStudentGrade(parseInt(e.target.value))}
+                    className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-indigo-600"
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => (
+                      <option key={g} value={g}>Grade {g}</option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
 
@@ -1064,48 +1269,346 @@ export default function App() {
           </div>
         )}
 
-        {/* PROFILE & PASSWORD CHANGE TAB */}
-        {activeTab === 'profile' && (
-          <div className="max-w-2xl mx-auto space-y-6">
-            <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
-              <div className="flex items-center space-x-3 pb-4 border-b">
-                <div className="w-12 h-12 bg-indigo-100 text-indigo-700 rounded-2xl flex items-center justify-center font-black text-lg">
-                  {authName.charAt(0)}
+        {/* TAB 2: E-LIBRARY & SCHOOL BOOKS */}
+        {activeTab === 'library' && (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-emerald-800 via-teal-700 to-cyan-800 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="space-y-2 max-w-xl">
+                <div className="flex items-center space-x-2">
+                  <Library className="w-6 h-6 text-emerald-300" />
+                  <h2 className="text-2xl sm:text-3xl font-black">Interactive E-Library & Reading Hub</h2>
                 </div>
-                <div>
-                  <h3 className="text-lg font-black text-slate-900">{authName}</h3>
-                  <p className="text-xs text-slate-500">Role: <strong className="capitalize">{role}</strong> • Email: {user.email}</p>
-                </div>
+                <p className="text-xs text-emerald-100">
+                  Read online with **auto-time tracking** OR claim physical copies borrowed from the school library!
+                </p>
               </div>
 
-              <div className="space-y-4 pt-2">
-                <h4 className="font-bold text-slate-900 text-sm">Security & Password Management</h4>
-                <form onSubmit={handleUserSelfChangePassword} className="space-y-3">
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">New Password</label>
-                    <input
-                      type="password"
-                      value={profileNewPassword}
-                      onChange={(e) => setProfileNewPassword(e.target.value)}
-                      placeholder="Enter new password"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800"
-                      required
-                    />
-                  </div>
+              <div className="flex items-center space-x-3">
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-center space-y-1">
+                  <span className="text-[10px] text-emerald-200 block uppercase font-bold">Total Reading Hours</span>
+                  <span className="text-2xl font-black text-amber-300">{readingHours} Hours</span>
+                </div>
+
+                {(role === 'super_admin' || role === 'teacher') && (
                   <button
-                    type="submit"
-                    disabled={authLoading}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-xs"
+                    onClick={() => setShowNewBookModal(true)}
+                    className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold px-4 py-3 rounded-2xl text-xs shadow-md transition flex items-center space-x-1"
                   >
-                    {authLoading ? 'Updating...' : 'Update Password'}
+                    <Plus className="w-4 h-4" />
+                    <span>Add New Book</span>
                   </button>
-                </form>
+                )}
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {filteredLibraryBooks.map((book) => {
+                const isOnlineRead = onlineReadBookIds.includes(book.id);
+                const isPhysicalClaimed = physicalClaimedBookIds.includes(book.id);
+
+                return (
+                  <div key={book.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between">
+                    <div>
+                      <div className="relative h-48 w-full bg-slate-100 overflow-hidden">
+                        <img
+                          src={book.cover_url}
+                          alt={book.title}
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                        />
+                        <span className="absolute top-3 left-3 bg-emerald-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-xl">
+                          {book.subject}
+                        </span>
+                        {role === 'super_admin' && (
+                          <span className="absolute top-3 right-3 bg-slate-900/80 backdrop-blur-xs text-amber-300 text-[10px] font-mono px-2 py-0.5 rounded-md">
+                            Code: {book.claim_code}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="p-5 space-y-3">
+                        <h4 className="font-black text-slate-900 text-base">{book.title}</h4>
+                        <p className="text-xs text-slate-400">By {book.author}</p>
+                        <p className="text-xs text-slate-600 italic bg-slate-50 p-2.5 rounded-xl">"{book.summary}"</p>
+                      </div>
+                    </div>
+
+                    <div className="p-5 pt-0 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => { setSelectedBook(book); setBookPageIndex(0); }}
+                          className={`w-full font-bold py-2.5 rounded-2xl text-xs flex items-center justify-center space-x-1 transition ${
+                            isOnlineRead ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                          }`}
+                        >
+                          <BookOpen className="w-3.5 h-3.5" />
+                          <span>{isOnlineRead ? '✓ Read Online' : 'Read Online'}</span>
+                        </button>
+
+                        <button
+                          onClick={() => { setClaimingBook(book); setPhysicalClaimInput(''); }}
+                          className={`w-full font-bold py-2.5 rounded-2xl text-xs flex items-center justify-center space-x-1 transition ${
+                            isPhysicalClaimed ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                          }`}
+                        >
+                          <Award className="w-3.5 h-3.5" />
+                          <span>{isPhysicalClaimed ? '✓ Physical Claimed' : 'Claim Physical'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* TAB: SUPER ADMIN CONSOLE */}
+        {/* TAB 3: STUDENT GIFT SHOP */}
+        {activeTab === 'shop' && (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-600 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="space-y-2 max-w-xl">
+                <div className="flex items-center space-x-2">
+                  <ShoppingBag className="w-6 h-6 text-yellow-200" />
+                  <h2 className="text-2xl sm:text-3xl font-black">Student Rewards Gift Shop</h2>
+                </div>
+                <p className="text-xs text-amber-100">
+                  Spend your hard-earned **EduCoins** on stationery, homework passes, and school store items!
+                </p>
+              </div>
+
+              <div className="bg-white/20 backdrop-blur-md border border-white/30 p-4 rounded-2xl text-center space-y-1">
+                <span className="text-[10px] text-amber-100 block uppercase font-bold">Your Balance</span>
+                <span className="text-2xl font-black text-white flex items-center justify-center space-x-1">
+                  <Coins className="w-5 h-5 text-amber-200" />
+                  <span>{coins} EduCoins</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {shopItems.map((item) => (
+                <div key={item.id} className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs hover:shadow-md transition flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-3xl">{item.icon}</span>
+                      <span className="text-xs font-black text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full flex items-center space-x-1">
+                        <Coins className="w-3.5 h-3.5" />
+                        <span>{item.cost} Coins</span>
+                      </span>
+                    </div>
+
+                    <h4 className="font-black text-slate-900 text-base">{item.name}</h4>
+                    <p className="text-xs text-slate-500">{item.desc}</p>
+                    <span className="inline-block text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-md">
+                      Category: {item.category}
+                    </span>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 mt-4">
+                    <button
+                      onClick={() => handlePurchaseItem(item)}
+                      className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-xs shadow-xs transition"
+                    >
+                      Purchase Item ({item.cost} Coins)
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ORDER HISTORY FOR STUDENT */}
+            {orders.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
+                <h3 className="font-black text-slate-900 text-base">Your Active Claim Codes & Order History</h3>
+                <div className="divide-y divide-slate-100">
+                  {orders.map((ord) => (
+                    <div key={ord.id} className="py-3 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="font-bold text-slate-900">{ord.item_name}</span>
+                        <span className="block text-[10px] font-mono text-indigo-600">Claim Code: <strong>{ord.claim_code}</strong></span>
+                      </div>
+                      <div className="text-right">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
+                          ord.status === 'Fulfilled' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {ord.status}
+                        </span>
+                        <span className="block text-[10px] text-slate-400 mt-0.5">{ord.date}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 4: STORE SALES CP (SUPER ADMIN / SHOP ADMIN) */}
+        {activeTab === 'shop_management' && (role === 'shop_admin' || role === 'super_admin') && (
+          <div className="space-y-6 max-w-5xl mx-auto">
+            <div className="bg-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg space-y-2">
+              <h2 className="text-2xl font-black">🏬 Store Sales & Order Fulfillment Console</h2>
+              <p className="text-xs text-slate-400">
+                Process student purchases, check claim codes, and manage physical store inventory.
+              </p>
+            </div>
+
+            {/* ADD NEW ITEM FORM */}
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
+              <h3 className="font-bold text-slate-900 text-base">Add New Shop Inventory Item</h3>
+              <form onSubmit={handleCreateShopItem} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Item Name</label>
+                  <input
+                    type="text"
+                    value={newItemName}
+                    onChange={(e) => setNewItemName(e.target.value)}
+                    placeholder="e.g. Dual-Tip Highlighters"
+                    className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Cost (EduCoins)</label>
+                  <input
+                    type="number"
+                    value={newItemCost}
+                    onChange={(e) => setNewItemCost(e.target.value)}
+                    className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs font-bold text-amber-600"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Icon Emoji</label>
+                  <select
+                    value={newItemIcon}
+                    onChange={(e) => setNewItemIcon(e.target.value)}
+                    className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs font-bold"
+                  >
+                    {QUICK_EMOJIS.map(em => <option key={em} value={em}>{em} Emoji</option>)}
+                  </select>
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Description</label>
+                  <input
+                    type="text"
+                    value={newItemDesc}
+                    onChange={(e) => setNewItemDesc(e.target.value)}
+                    placeholder="Short item description for students..."
+                    className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs"
+                  />
+                </div>
+
+                <div className="sm:col-span-3 pt-2">
+                  <button type="submit" className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-xs">
+                    Add Item to Shop
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* FULFILLMENT LEDGER */}
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
+              <h3 className="font-bold text-slate-900 text-base">Student Orders & Handover Ledger</h3>
+              {orders.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">No orders logged yet.</p>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {orders.map((ord) => (
+                    <div key={ord.id} className="py-3 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="font-bold text-slate-900">{ord.student_name}</span> — {ord.item_name}
+                        <span className="block text-[10px] font-mono text-indigo-600">Claim Code: <strong>{ord.claim_code}</strong></span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
+                          ord.status === 'Fulfilled' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {ord.status}
+                        </span>
+                        {ord.status === 'Pending' && (
+                          <button
+                            onClick={() => handleFulfillOrder(ord.id)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1 rounded-xl text-[10px]"
+                          >
+                            Mark Fulfilled
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: TEACHER QUIZ STUDIO (SUPER ADMIN / TEACHERS) */}
+        {activeTab === 'studio' && (role === 'teacher' || role === 'super_admin') && (
+          <div className="max-w-5xl mx-auto space-y-6">
+            <div className="bg-purple-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg space-y-2">
+              <h2 className="text-2xl font-black">👨‍🏫 Teacher Subject Quiz Studio</h2>
+              <p className="text-xs text-purple-200">
+                {role === 'teacher'
+                  ? `Assigned Subject: ${teacherSubject}. Quizzes will be created under ${teacherSubject}.`
+                  : 'Super Admin Mode: Full Subject Creation & Editing Unlocked.'}
+              </p>
+            </div>
+
+            <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Teaching Subject</label>
+                  <select
+                    value={studioSubject}
+                    disabled={role === 'teacher'}
+                    onChange={(e) => setStudioSubject(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800"
+                  >
+                    {ALL_SUBJECTS.map(subj => (
+                      <option key={subj} value={subj}>{subj}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Grade Level</label>
+                  <select
+                    value={studioGrade}
+                    onChange={(e) => setStudioGrade(parseInt(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800"
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => (
+                      <option key={g} value={g}>Grade {g}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Questions JSON Format</label>
+                <textarea
+                  rows={8}
+                  value={jsonInputText}
+                  onChange={(e) => setJsonInputText(e.target.value)}
+                  className="w-full bg-slate-50 border rounded-xl p-3 text-xs font-mono"
+                />
+              </div>
+
+              <button
+                onClick={handleTeacherCreateQuiz}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-2xl text-xs shadow-md transition"
+              >
+                Publish {studioSubject} Quiz
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: SUPER ADMIN CONSOLE */}
         {activeTab === 'super_admin_console' && role === 'super_admin' && (
           <div className="space-y-6 max-w-5xl mx-auto">
             <div className="bg-rose-950 text-white p-6 sm:p-8 rounded-3xl shadow-lg space-y-3">
@@ -1119,12 +1622,12 @@ export default function App() {
               </p>
             </div>
 
-            {/* PROVISION NEW TEACHER FORM */}
+            {/* STAFF PROVISIONING FORM */}
             <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
-              <h3 className="font-bold text-slate-900 text-base">Provision New Teacher Account</h3>
+              <h3 className="font-bold text-slate-900 text-base">Provision New Staff Account</h3>
               <form onSubmit={handleSuperAdminProvisionTeacher} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Teacher Full Name</label>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Full Name</label>
                   <input
                     type="text"
                     value={newStaffName}
@@ -1230,7 +1733,192 @@ export default function App() {
           </div>
         )}
 
+        {/* TAB 7: PROFILE & PASSWORD CHANGE */}
+        {activeTab === 'profile' && (
+          <div className="max-w-2xl mx-auto space-y-6">
+            <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
+              <div className="flex items-center space-x-3 pb-4 border-b">
+                <div className="w-12 h-12 bg-indigo-100 text-indigo-700 rounded-2xl flex items-center justify-center font-black text-lg">
+                  {authName.charAt(0)}
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">{authName}</h3>
+                  <p className="text-xs text-slate-500">Role: <strong className="capitalize">{role}</strong> • Email: {user.email}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-2">
+                <h4 className="font-bold text-slate-900 text-sm">Security & Password Management</h4>
+                <form onSubmit={handleUserSelfChangePassword} className="space-y-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">New Password</label>
+                    <input
+                      type="password"
+                      value={profileNewPassword}
+                      onChange={(e) => setProfileNewPassword(e.target.value)}
+                      placeholder="Enter new password"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={authLoading}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-xs"
+                  >
+                    {authLoading ? 'Updating...' : 'Update Password'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
+
+      {/* NEW BOOK MODAL (SUPER ADMIN / TEACHER) */}
+      {showNewBookModal && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h3 className="font-black text-slate-900 text-base">Add New Library Book</h3>
+              <button onClick={() => setShowNewBookModal(false)} className="text-slate-400 font-bold">✕</button>
+            </div>
+
+            <form onSubmit={handleCreateNewBook} className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Book Title</label>
+                <input
+                  type="text"
+                  value={newBookTitle}
+                  onChange={(e) => setNewBookTitle(e.target.value)}
+                  placeholder="Book Title"
+                  className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Subject</label>
+                  <select
+                    value={newBookSubject}
+                    onChange={(e) => setNewBookSubject(e.target.value)}
+                    className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs font-bold"
+                  >
+                    {ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Author</label>
+                  <input
+                    type="text"
+                    value={newBookAuthor}
+                    onChange={(e) => setNewBookAuthor(e.target.value)}
+                    placeholder="Author Name"
+                    className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Summary</label>
+                <input
+                  type="text"
+                  value={newBookSummary}
+                  onChange={(e) => setNewBookSummary(e.target.value)}
+                  placeholder="Short overview..."
+                  className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Page 1 Content</label>
+                <textarea
+                  rows={4}
+                  value={newBookPageText}
+                  onChange={(e) => setNewBookPageText(e.target.value)}
+                  placeholder="Enter book text..."
+                  className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs font-serif"
+                />
+              </div>
+
+              <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md">
+                Publish Book
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* PHYSICAL BOOK CLAIM CODE VERIFICATION MODAL */}
+      {claimingBook && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h3 className="font-black text-slate-900 text-base">Claim Physical Library Book</h3>
+              <button onClick={() => setClaimingBook(null)} className="text-slate-400 font-bold">✕</button>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Enter the official verification code printed inside <strong>"{claimingBook.title}"</strong> or provided by your school librarian.
+            </p>
+
+            <form onSubmit={(e) => handleClaimPhysicalBook(e, claimingBook)} className="space-y-3">
+              <input
+                type="text"
+                value={physicalClaimInput}
+                onChange={(e) => setPhysicalClaimInput(e.target.value)}
+                placeholder="e.g. LIB-PHYS-101"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono font-bold text-center text-slate-800"
+                required
+              />
+
+              <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-xs shadow-md">
+                Verify & Claim +{claimingBook.reading_hours} Hours
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ONLINE E-READER MODAL */}
+      {selectedBook && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b pb-3">
+              <div>
+                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-md">{selectedBook.subject}</span>
+                <h3 className="font-black text-slate-900 text-lg mt-1">{selectedBook.title}</h3>
+              </div>
+              <div className="flex items-center space-x-3">
+                <span className="text-xs font-mono font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full flex items-center space-x-1">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Time Read: {Math.floor(activeReadingSeconds / 60)}m {activeReadingSeconds % 60}s</span>
+                </span>
+                <button onClick={() => setSelectedBook(null)} className="text-slate-400 font-bold text-lg">✕</button>
+              </div>
+            </div>
+
+            <div className={`bg-slate-50 border border-slate-200 p-6 rounded-2xl min-h-[220px] text-xs leading-relaxed whitespace-pre-line font-serif text-slate-800 ${
+              isRTLSubject(selectedBook.subject) ? 'text-right dir-rtl font-thana' : ''
+            }`}>
+              {Array.isArray(selectedBook.pages) ? selectedBook.pages[bookPageIndex] : selectedBook.pages}
+            </div>
+
+            <div className="flex justify-between items-center border-t pt-3">
+              <span className="text-xs font-bold text-slate-500">Auto-Detecting Reading Time...</span>
+              <button
+                onClick={() => handleFinishOnlineReading(selectedBook)}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md transition"
+              >
+                Finish & Save Reading Time
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* QUIZ RUNNER OVERLAY */}
       {activeQuiz && (
@@ -1281,7 +1969,7 @@ export default function App() {
               <div className="text-center py-6 space-y-4">
                 <Trophy className="w-12 h-12 text-amber-500 mx-auto" />
                 <h3 className="text-xl font-black text-slate-900">Quiz Completed!</h3>
-                <p className="text-xs text-slate-500">Score: {score} / {activeQuiz.questions.length} • +{score * 15} EduCoins</p>
+                <p className="text-xs text-slate-500">Score: {score} / {activeQuiz.questions.length} • Earned +{score * 15} EduCoins & +{score * 30} XP</p>
                 <button onClick={() => setActiveQuiz(null)} className="bg-indigo-600 text-white font-bold px-6 py-2 rounded-xl text-xs">
                   Return to Dashboard
                 </button>
