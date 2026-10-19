@@ -38,6 +38,17 @@ const isRTLSubject = (subject) => {
   return subject === 'Dhivehi' || subject === 'Islam' || subject === 'ދިވެހި' || subject === 'އިސްލާމް';
 };
 
+const getQuizTimeLimit = (quiz) => {
+  if (!quiz) return 60;
+  if (quiz.time_limit) return quiz.time_limit;
+
+  const subj = (quiz.subject || '').toLowerCase();
+  if (['maths', 'physics', 'chemistry', 'accounting', 'economics'].includes(subj)) {
+    return 120;
+  }
+  return 60;
+};
+
 const playSound = (type) => {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -127,6 +138,11 @@ const INITIAL_QUIZZES = [
     title: 'Cambridge O-Level Physics 0625 - Mechanics & Motion',
     subject: 'Physics',
     grade: 10,
+    subject_code: '0625',
+    exam_year: 2024,
+    variant: 'Paper 12',
+    is_past_paper: true,
+    time_limit: 120,
     questions: [
       {
         id: 'q1_1',
@@ -143,14 +159,34 @@ const INITIAL_QUIZZES = [
         correct_option: 'B', explanation: 'Work done W = Force x Distance.'
       }
     ]
+  },
+  {
+    id: 'olevel_2',
+    title: 'Cambridge O-Level Computer Science 2210 - Algorithms',
+    subject: 'Computer Science',
+    grade: 10,
+    subject_code: '2210',
+    exam_year: 2024,
+    variant: 'Paper 22',
+    is_past_paper: true,
+    time_limit: 90,
+    questions: [
+      {
+        id: 'q2_1',
+        topic: 'Data Types',
+        question_text: 'Which data type is best suited to store a true/false condition in pseudocode?',
+        option_a: 'Integer', option_b: 'Boolean', option_c: 'String', option_d: 'Real',
+        correct_option: 'B', explanation: 'A Boolean variable holds binary logical states (TRUE or FALSE).'
+      }
+    ]
   }
 ];
 
 export default function App() {
   // --- Auth View States ---
-  const [authView, setAuthView] = useState('landing'); // 'landing' | 'login' | 'register' | 'forgot_password'
+  const [authView, setAuthView] = useState('landing');
   const [user, setUser] = useState(null);
-  const [role, setRole] = useState('student'); // 'student', 'teacher', 'shop_admin', 'super_admin'
+  const [role, setRole] = useState('student');
   const [userStatus, setUserStatus] = useState('active');
   const [teacherSubject, setTeacherSubject] = useState('Physics');
 
@@ -178,11 +214,11 @@ export default function App() {
   const [xp, setXp] = useState(420);
   const [readingHours, setReadingHours] = useState(5.5);
 
-  // --- Decoupled Reading Records ---
+  // --- Decoupled Records ---
   const [onlineReadBookIds, setOnlineReadBookIds] = useState([]);
   const [physicalClaimedBookIds, setPhysicalClaimedBookIds] = useState([]);
 
-  // --- Collections ---
+  // --- Datasets ---
   const [quizzes, setQuizzes] = useState(INITIAL_QUIZZES);
   const [books, setBooks] = useState(INITIAL_BOOKS);
   const [shopItems, setShopItems] = useState(INITIAL_SHOP_ITEMS);
@@ -190,8 +226,9 @@ export default function App() {
   const [allProfiles, setAllProfiles] = useState([]);
 
   // --- Navigation & View Controls ---
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'olevel', 'library', 'shop', 'shop_management', 'studio', 'super_admin_console', 'profile'
   const [selectedSubject, setSelectedSubject] = useState('All');
+  const [olevelSubjectFilter, setOlevelSubjectFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
   // --- Live E-Reader ---
@@ -201,14 +238,18 @@ export default function App() {
   const [claimingBook, setClaimingBook] = useState(null);
   const [physicalClaimInput, setPhysicalClaimInput] = useState('');
 
-  // --- Quiz Runner ---
+  // --- Interactive Quiz Runner with Hearts & Timer ---
   const [activeQuiz, setActiveQuiz] = useState(null);
-  const [quizMode, setQuizMode] = useState('practice');
+  const [quizMode, setQuizMode] = useState('practice'); // 'practice', 'challenge', 'olevel'
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [showExplanation, setShowExplanation] = useState(false);
   const [score, setScore] = useState(0);
+  const [hearts, setHearts] = useState(3);
+  const [streak, setStreak] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(60);
   const [quizFinished, setQuizFinished] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
 
   // --- Teacher Quiz Studio ---
   const [studioGrade, setStudioGrade] = useState(7);
@@ -226,7 +267,7 @@ export default function App() {
   }
 ]`);
 
-  // --- New Book Creation Modal (Super Admin / Teacher) ---
+  // --- Modals ---
   const [showNewBookModal, setShowNewBookModal] = useState(false);
   const [newBookTitle, setNewBookTitle] = useState('');
   const [newBookAuthor, setNewBookAuthor] = useState('');
@@ -235,7 +276,6 @@ export default function App() {
   const [newBookSummary, setNewBookSummary] = useState('');
   const [newBookPageText, setNewBookPageText] = useState('');
 
-  // --- New Shop Item Modal (Super Admin / Shop Admin) ---
   const [newItemName, setNewItemName] = useState('');
   const [newItemCategory, setNewItemCategory] = useState('Stationery');
   const [newItemCost, setNewItemCost] = useState(150);
@@ -243,7 +283,6 @@ export default function App() {
   const [newItemIcon, setNewItemIcon] = useState('📓');
   const [newItemDesc, setNewItemDesc] = useState('');
 
-  // --- Super Admin Staff Provisioning ---
   const [newStaffEmail, setNewStaffEmail] = useState('');
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffPass, setNewStaffPass] = useState('Teacher2026!');
@@ -255,7 +294,7 @@ export default function App() {
     setActiveTab(tabName);
   };
 
-  // --- Supabase Profiles Sync ---
+  // --- Supabase Session & Profiles Sync ---
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -312,7 +351,7 @@ export default function App() {
     }
   };
 
-  // --- E-Reader Auto-Timer ---
+  // --- E-Reader Auto-Timer Effect ---
   useEffect(() => {
     let timerInterval = null;
     if (selectedBook) {
@@ -324,6 +363,24 @@ export default function App() {
     }
     return () => clearInterval(timerInterval);
   }, [selectedBook]);
+
+  // --- Quiz Live Countdown Timer Effect ---
+  useEffect(() => {
+    let countdownInterval = null;
+    if (activeQuiz && !quizFinished && !gameOver && (quizMode === 'challenge' || quizMode === 'olevel')) {
+      countdownInterval = setInterval(() => {
+        setTimeLeft(t => {
+          if (t <= 1) {
+            clearInterval(countdownInterval);
+            setGameOver(true);
+            return 0;
+          }
+          return t - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(countdownInterval);
+  }, [activeQuiz, quizFinished, gameOver, quizMode]);
 
   // --- Auth Handlers ---
   const handleLogin = async (e) => {
@@ -493,7 +550,7 @@ export default function App() {
     alert(`🎉 Reading Session Logged!\n• Time Read: ${elapsedMinutes} mins (+${hoursEarned} hrs)\n• Earned: +${coinsEarned} EduCoins & +${xpEarned} XP!`);
   };
 
-  // --- Physical Book Claim Verification ---
+  // --- Physical Book Claim Code Verification ---
   const handleClaimPhysicalBook = (e, book) => {
     e.preventDefault();
     const targetCode = (book.claim_code || 'LIB-2026').trim().toUpperCase();
@@ -598,13 +655,12 @@ export default function App() {
     alert("✅ New store item added to Student Gift Shop!");
   };
 
-  // --- Order Status Fulfillment ---
   const handleFulfillOrder = (orderId) => {
     setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'Fulfilled' } : o));
     alert("✅ Order status updated to Fulfilled!");
   };
 
-  // --- Quiz Engine ---
+  // --- Quiz Engine with Hearts & Streaks ---
   const startQuiz = (quiz, mode) => {
     setActiveQuiz(quiz);
     setQuizMode(mode);
@@ -612,7 +668,13 @@ export default function App() {
     setSelectedOption(null);
     setShowExplanation(false);
     setScore(0);
+    setHearts(3);
+    setStreak(0);
     setQuizFinished(false);
+    setGameOver(false);
+
+    const limit = getQuizTimeLimit(quiz);
+    setTimeLeft(limit);
   };
 
   const handleAnswerSubmit = (option) => {
@@ -620,17 +682,32 @@ export default function App() {
     const isCorrect = option === currentQ.correct_option;
     setSelectedOption(option);
     setShowExplanation(true);
+
     if (isCorrect) {
       playSound('correct');
       setScore(s => s + 1);
+      setStreak(st => st + 1);
     } else {
       playSound('wrong');
+      setStreak(0);
+
+      // Heart Loss Mechanic for Timed Challenge / O-Level Arena
+      if (quizMode === 'challenge' || quizMode === 'olevel') {
+        setHearts(h => {
+          const nextHearts = h - 1;
+          if (nextHearts <= 0) {
+            setGameOver(true);
+          }
+          return nextHearts;
+        });
+      }
     }
   };
 
   const nextQuestion = () => {
     setSelectedOption(null);
     setShowExplanation(false);
+
     if (currentQuestionIdx + 1 < activeQuiz.questions.length) {
       setCurrentQuestionIdx(idx => idx + 1);
     } else {
@@ -725,6 +802,7 @@ export default function App() {
   };
 
   const gradePracticeQuizzes = quizzes.filter(q => q.grade === parseInt(studentGrade) && (selectedSubject === 'All' || q.subject === selectedSubject));
+  const olevelPastPapers = quizzes.filter(q => q.is_past_paper && (olevelSubjectFilter === 'All' || q.subject === olevelSubjectFilter));
   const filteredLibraryBooks = books.filter(b => selectedSubject === 'All' || b.subject === selectedSubject);
   const currentRank = getStudentRank(xp);
 
@@ -1158,13 +1236,20 @@ export default function App() {
           </div>
         </div>
 
-        {/* NAVIGATION TABS (SUPER ADMIN ACCESSIBLE TO ALL) */}
+        {/* NAVIGATION TABS */}
         <div className="max-w-7xl mx-auto px-4 flex items-center space-x-2 overflow-x-auto text-xs border-t border-slate-100 py-1.5 scrollbar-none">
           <button
             onClick={() => navigateToTab('dashboard')}
             className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-slate-600 hover:bg-slate-100'}`}
           >
             <BookOpen className="w-3.5 h-3.5 text-indigo-600" /> <span>Grade {studentGrade} Vault</span>
+          </button>
+
+          <button
+            onClick={() => navigateToTab('olevel')}
+            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'olevel' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}`}
+          >
+            <GraduationCap className="w-3.5 h-3.5" /> <span>Cambridge O-Level Arena</span>
           </button>
 
           <button
@@ -1269,7 +1354,89 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 2: E-LIBRARY & SCHOOL BOOKS */}
+        {/* TAB 2: CAMBRIDGE O-LEVEL ARENA */}
+        {activeTab === 'olevel' && !activeQuiz && (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="space-y-2 max-w-xl">
+                <div className="flex items-center space-x-2">
+                  <GraduationCap className="w-6 h-6 text-purple-400" />
+                  <h2 className="text-2xl sm:text-3xl font-black">Cambridge O-Level Exam Arena</h2>
+                </div>
+                <p className="text-xs text-purple-200">
+                  Real timed past paper practice sessions (0625 Physics, 2210 Computer Science, etc.) with 3-Hearts mechanic ($\text{❤️ ❤️ ❤️}$) and detailed mark scheme explanations.
+                </p>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl flex items-center space-x-3">
+                <Trophy className="w-8 h-8 text-amber-400" />
+                <div>
+                  <span className="text-[10px] text-purple-200 block font-bold uppercase">Target Exam Grade</span>
+                  <span className="text-xl font-black text-white">Grade 8 – 10 O-Level</span>
+                </div>
+              </div>
+            </div>
+
+            {/* SUBJECT FILTER TABS */}
+            <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
+              <span className="text-xs font-bold text-slate-500 mr-2">Subject Filter:</span>
+              {['All', 'Physics', 'Computer Science', 'Maths', 'Chemistry', 'Biology'].map((subj) => (
+                <button
+                  key={subj}
+                  onClick={() => setOlevelSubjectFilter(subj)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+                    olevelSubjectFilter === subj ? 'bg-purple-600 text-white shadow-xs' : 'bg-white border text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {subj}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {olevelPastPapers.map((paper) => (
+                <div key={paper.id} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:shadow-md transition space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="bg-purple-100 text-purple-800 text-[10px] font-black px-2.5 py-1 rounded-md font-mono">
+                          Code: {paper.subject_code}
+                        </span>
+                        <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-2.5 py-1 rounded-md">
+                          {paper.exam_year} • {paper.variant}
+                        </span>
+                      </div>
+                      <h3 className="font-black text-slate-900 text-base pt-1">{paper.title}</h3>
+                    </div>
+
+                    <div className="flex items-center space-x-1 text-rose-500 bg-rose-50 px-2.5 py-1 rounded-full text-xs font-bold">
+                      <Heart className="w-3.5 h-3.5 fill-rose-500" />
+                      <span>3 Lives</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t">
+                    <span className="flex items-center space-x-1">
+                      <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>Time Limit: {getQuizTimeLimit(paper)} Mins</span>
+                    </span>
+                    <span>{paper.questions.length} Exam Questions</span>
+                  </div>
+
+                  <button
+                    onClick={() => startQuiz(paper, 'olevel')}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-2xl text-xs shadow-md transition flex items-center justify-center space-x-2"
+                  >
+                    <Play className="w-4 h-4 fill-white" />
+                    <span>Begin Timed Cambridge Exam</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: E-LIBRARY & SCHOOL BOOKS */}
         {activeTab === 'library' && (
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-emerald-800 via-teal-700 to-cyan-800 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -1279,7 +1446,7 @@ export default function App() {
                   <h2 className="text-2xl sm:text-3xl font-black">Interactive E-Library & Reading Hub</h2>
                 </div>
                 <p className="text-xs text-emerald-100">
-                  Read online with **auto-time tracking** OR claim physical copies borrowed from the school library!
+                  Read online with **auto-time tracking** OR enter physical claim codes borrowed from the school library!
                 </p>
               </div>
 
@@ -1318,11 +1485,9 @@ export default function App() {
                         <span className="absolute top-3 left-3 bg-emerald-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-xl">
                           {book.subject}
                         </span>
-                        {role === 'super_admin' && (
-                          <span className="absolute top-3 right-3 bg-slate-900/80 backdrop-blur-xs text-amber-300 text-[10px] font-mono px-2 py-0.5 rounded-md">
-                            Code: {book.claim_code}
-                          </span>
-                        )}
+                        <span className="absolute top-3 right-3 bg-slate-900/80 backdrop-blur-xs text-amber-300 text-[10px] font-mono px-2 py-0.5 rounded-md">
+                          Code: {book.claim_code}
+                        </span>
                       </div>
 
                       <div className="p-5 space-y-3">
@@ -1351,7 +1516,7 @@ export default function App() {
                           }`}
                         >
                           <Award className="w-3.5 h-3.5" />
-                          <span>{isPhysicalClaimed ? '✓ Physical Claimed' : 'Claim Physical'}</span>
+                          <span>{isPhysicalClaimed ? '✓ Claimed' : 'Claim Physical'}</span>
                         </button>
                       </div>
                     </div>
@@ -1362,7 +1527,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 3: STUDENT GIFT SHOP */}
+        {/* TAB 4: STUDENT GIFT SHOP */}
         {activeTab === 'shop' && (
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-600 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -1443,7 +1608,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 4: STORE SALES CP (SUPER ADMIN / SHOP ADMIN) */}
+        {/* TAB 5: STORE SALES CP (SUPER ADMIN / SHOP ADMIN) */}
         {activeTab === 'shop_management' && (role === 'shop_admin' || role === 'super_admin') && (
           <div className="space-y-6 max-w-5xl mx-auto">
             <div className="bg-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg space-y-2">
@@ -1453,7 +1618,6 @@ export default function App() {
               </p>
             </div>
 
-            {/* ADD NEW ITEM FORM */}
             <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <h3 className="font-bold text-slate-900 text-base">Add New Shop Inventory Item</h3>
               <form onSubmit={handleCreateShopItem} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1510,7 +1674,6 @@ export default function App() {
               </form>
             </div>
 
-            {/* FULFILLMENT LEDGER */}
             <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <h3 className="font-bold text-slate-900 text-base">Student Orders & Handover Ledger</h3>
               {orders.length === 0 ? (
@@ -1546,7 +1709,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 5: TEACHER QUIZ STUDIO (SUPER ADMIN / TEACHERS) */}
+        {/* TAB 6: TEACHER QUIZ STUDIO (SUPER ADMIN / TEACHERS) */}
         {activeTab === 'studio' && (role === 'teacher' || role === 'super_admin') && (
           <div className="max-w-5xl mx-auto space-y-6">
             <div className="bg-purple-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg space-y-2">
@@ -1608,7 +1771,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 6: SUPER ADMIN CONSOLE */}
+        {/* TAB 7: SUPER ADMIN CONSOLE */}
         {activeTab === 'super_admin_console' && role === 'super_admin' && (
           <div className="space-y-6 max-w-5xl mx-auto">
             <div className="bg-rose-950 text-white p-6 sm:p-8 rounded-3xl shadow-lg space-y-3">
@@ -1622,7 +1785,6 @@ export default function App() {
               </p>
             </div>
 
-            {/* STAFF PROVISIONING FORM */}
             <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <h3 className="font-bold text-slate-900 text-base">Provision New Staff Account</h3>
               <form onSubmit={handleSuperAdminProvisionTeacher} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1680,7 +1842,6 @@ export default function App() {
               </form>
             </div>
 
-            {/* ALL USERS MATRIX */}
             <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
               <h3 className="text-base font-black text-slate-900">User Login & Role Matrix ({allProfiles.length})</h3>
               <div className="overflow-x-auto">
@@ -1733,7 +1894,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 7: PROFILE & PASSWORD CHANGE */}
+        {/* TAB 8: PROFILE & PASSWORD CHANGE */}
         {activeTab === 'profile' && (
           <div className="max-w-2xl mx-auto space-y-6">
             <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
@@ -1776,7 +1937,7 @@ export default function App() {
 
       </main>
 
-      {/* NEW BOOK MODAL (SUPER ADMIN / TEACHER) */}
+      {/* NEW BOOK MODAL */}
       {showNewBookModal && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
@@ -1862,7 +2023,7 @@ export default function App() {
             </div>
 
             <p className="text-xs text-slate-500">
-              Enter the official verification code printed inside <strong>"{claimingBook.title}"</strong> or provided by your school librarian.
+              Enter the official verification claim code printed inside <strong>"{claimingBook.title}"</strong> or provided by your school librarian.
             </p>
 
             <form onSubmit={(e) => handleClaimPhysicalBook(e, claimingBook)} className="space-y-3">
@@ -1920,15 +2081,50 @@ export default function App() {
         </div>
       )}
 
-      {/* QUIZ RUNNER OVERLAY */}
+      {/* QUIZ RUNNER OVERLAY WITH HEARTS & TIMER */}
       {activeQuiz && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-xl w-full p-6 space-y-5 shadow-2xl">
-            {!quizFinished ? (
+            {!quizFinished && !gameOver ? (
               <>
+                {/* TOP BAR: TIMER, LIVES & SCORE */}
                 <div className="flex justify-between items-center border-b pb-3">
-                  <span className="text-xs font-bold text-slate-500">Question {currentQuestionIdx + 1} / {activeQuiz.questions.length}</span>
-                  <button onClick={() => setActiveQuiz(null)} className="text-slate-400 font-bold">✕</button>
+                  <div className="flex items-center space-x-3">
+                    <span className="text-xs font-bold text-slate-500">
+                      Q {currentQuestionIdx + 1} / {activeQuiz.questions.length}
+                    </span>
+
+                    {(quizMode === 'challenge' || quizMode === 'olevel') && (
+                      <div className="flex items-center space-x-1">
+                        {[...Array(3)].map((_, i) => (
+                          <Heart
+                            key={i}
+                            className={`w-4 h-4 transition-transform ${
+                              i < hearts ? 'text-rose-500 fill-rose-500 scale-100' : 'text-slate-200 fill-slate-200 scale-90'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    {(quizMode === 'challenge' || quizMode === 'olevel') && (
+                      <span className="text-xs font-mono font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full flex items-center space-x-1">
+                        <Clock className="w-3.5 h-3.5 text-amber-500" />
+                        <span>{Math.floor(timeLeft / 60)}m {timeLeft % 60}s</span>
+                      </span>
+                    )}
+
+                    {streak > 1 && (
+                      <span className="text-xs font-black text-purple-600 bg-purple-50 px-2.5 py-1 rounded-full flex items-center space-x-1">
+                        <Flame className="w-3.5 h-3.5 fill-purple-600" />
+                        <span>{streak}x Streak!</span>
+                      </span>
+                    )}
+
+                    <button onClick={() => setActiveQuiz(null)} className="text-slate-400 font-bold">✕</button>
+                  </div>
                 </div>
 
                 <h3 className="font-black text-slate-900 text-base leading-relaxed">
@@ -1960,11 +2156,27 @@ export default function App() {
                 </div>
 
                 {showExplanation && (
-                  <button onClick={nextQuestion} className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl text-xs">
-                    Next Question →
-                  </button>
+                  <div className="space-y-3 pt-2">
+                    <div className="bg-slate-50 p-3 rounded-xl text-xs text-slate-600 border border-slate-200">
+                      <strong>Explanation:</strong> {activeQuiz.questions[currentQuestionIdx].explanation || 'Correct answer verified by subject mark scheme.'}
+                    </div>
+                    <button onClick={nextQuestion} className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl text-xs">
+                      Next Question →
+                    </button>
+                  </div>
                 )}
               </>
+            ) : gameOver ? (
+              <div className="text-center py-6 space-y-4">
+                <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+                  <XCircle className="w-10 h-10" />
+                </div>
+                <h3 className="text-xl font-black text-slate-900">Session Ended</h3>
+                <p className="text-xs text-slate-500">You ran out of lives or time limit expired during this exam.</p>
+                <button onClick={() => setActiveQuiz(null)} className="bg-indigo-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs">
+                  Return to Dashboard
+                </button>
+              </div>
             ) : (
               <div className="text-center py-6 space-y-4">
                 <Trophy className="w-12 h-12 text-amber-500 mx-auto" />
