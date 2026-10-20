@@ -662,7 +662,7 @@ export default function App() {
   const [claimingBook, setClaimingBook] = useState(null);
   const [physicalClaimInput, setPhysicalClaimInput] = useState('');
 
-  // --- Redesigned Quiz Runner States ---
+  // --- Quiz Runner States ---
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [quizMode, setQuizMode] = useState('practice');
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
@@ -755,6 +755,13 @@ export default function App() {
 
         if (data.must_change_password) {
           setMustChangePassword(true);
+        }
+
+        // Auto-route Teachers & Shop Admins to their respective management hubs
+        if (data.role === 'teacher') {
+          setActiveTab('studio');
+        } else if (data.role === 'shop_admin') {
+          setActiveTab('shop_management');
         }
       }
       if (data?.role === 'super_admin') {
@@ -1599,7 +1606,7 @@ export default function App() {
       {/* HEADER BAR */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div onClick={() => navigateToTab('dashboard')} className="flex items-center space-x-3 cursor-pointer">
+          <div onClick={() => navigateToTab(role === 'teacher' ? 'studio' : 'dashboard')} className="flex items-center space-x-3 cursor-pointer">
             <div className="bg-gradient-to-tr from-indigo-600 to-purple-600 p-2 rounded-xl shadow-md">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
@@ -1622,14 +1629,18 @@ export default function App() {
                  role === 'teacher' ? `👨‍🏫 ${teacherSubject} Teacher` :
                  role === 'shop_admin' ? '🏬 Shop CP' : currentRank.title}
               </span>
-              <div className="flex items-center space-x-1 text-emerald-700">
-                <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                <span>{readingHours} Read Hrs</span>
-              </div>
-              <div className="flex items-center space-x-1 text-amber-600">
-                <Coins className="w-3.5 h-3.5" />
-                <span>{coins} Coins</span>
-              </div>
+              {role === 'student' && (
+                <>
+                  <div className="flex items-center space-x-1 text-emerald-700">
+                    <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>{readingHours} Read Hrs</span>
+                  </div>
+                  <div className="flex items-center space-x-1 text-amber-600">
+                    <Coins className="w-3.5 h-3.5" />
+                    <span>{coins} Coins</span>
+                  </div>
+                </>
+              )}
             </div>
 
             <button
@@ -1648,36 +1659,47 @@ export default function App() {
           </div>
         </div>
 
-        {/* NAVIGATION TABS */}
+        {/* ROLE-RESTRICTED NAVIGATION TABS */}
         <div className="max-w-7xl mx-auto px-4 flex items-center space-x-2 overflow-x-auto text-xs border-t border-slate-100 py-1.5 scrollbar-none">
-          <button
-            onClick={() => navigateToTab('dashboard')}
-            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <BookOpen className="w-3.5 h-3.5 text-indigo-600" /> <span>Grade {studentGrade} Vault</span>
-          </button>
+          
+          {/* STUDENT / SUPER ADMIN ONLY TABS */}
+          {(role === 'student' || role === 'super_admin') && (
+            <button
+              onClick={() => navigateToTab('dashboard')}
+              className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+              <BookOpen className="w-3.5 h-3.5 text-indigo-600" /> <span>Grade {studentGrade} Vault</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => navigateToTab('olevel')}
-            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'olevel' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <GraduationCap className="w-3.5 h-3.5" /> <span>Cambridge O-Level Arena</span>
-          </button>
+          {(role === 'student' || role === 'super_admin') && (
+            <button
+              onClick={() => navigateToTab('olevel')}
+              className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'olevel' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+              <GraduationCap className="w-3.5 h-3.5" /> <span>Cambridge O-Level Arena</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => navigateToTab('library')}
-            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'library' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <Library className="w-3.5 h-3.5 text-emerald-600" /> <span>E-Library & School Books</span>
-          </button>
+          {(role === 'student' || role === 'super_admin') && (
+            <button
+              onClick={() => navigateToTab('library')}
+              className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'library' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+              <Library className="w-3.5 h-3.5 text-emerald-600" /> <span>E-Library & School Books</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => navigateToTab('shop')}
-            className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'shop' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
-            <ShoppingBag className="w-3.5 h-3.5" /> <span>Student Gift Shop</span>
-          </button>
+          {(role === 'student' || role === 'super_admin') && (
+            <button
+              onClick={() => navigateToTab('shop')}
+              className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'shop' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+              <ShoppingBag className="w-3.5 h-3.5" /> <span>Student Gift Shop</span>
+            </button>
+          )}
 
+          {/* SHOP ADMIN & SUPER ADMIN TAB */}
           {(role === 'shop_admin' || role === 'super_admin') && (
             <button
               onClick={() => navigateToTab('shop_management')}
@@ -1687,6 +1709,7 @@ export default function App() {
             </button>
           )}
 
+          {/* TEACHER & SUPER ADMIN TAB */}
           {(role === 'teacher' || role === 'super_admin') && (
             <button
               onClick={() => navigateToTab('studio')}
@@ -1696,6 +1719,7 @@ export default function App() {
             </button>
           )}
 
+          {/* SUPER ADMIN MASTER TAB */}
           {role === 'super_admin' && (
             <button
               onClick={() => navigateToTab('super_admin_console')}
@@ -1710,13 +1734,13 @@ export default function App() {
       {/* MAIN CONTENT */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
 
-        {/* PRACTICE VAULT */}
-        {activeTab === 'dashboard' && !activeQuiz && (
+        {/* PRACTICE VAULT (STUDENT / SUPER ADMIN) */}
+        {activeTab === 'dashboard' && (role === 'student' || role === 'super_admin') && !activeQuiz && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-xl font-black text-slate-900">Grade {studentGrade} Practice Vault</h3>
-                <p className="text-xs text-slate-500 font-medium">Students and teachers can test knowledge across all grade quizzes.</p>
+                <p className="text-xs text-slate-500 font-medium">Test your knowledge across grade curriculum quizzes.</p>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -1727,7 +1751,7 @@ export default function App() {
                   placeholder="Search quizzes..."
                   className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800"
                 />
-                {(role === 'teacher' || role === 'super_admin') && (
+                {role === 'super_admin' && (
                   <select
                     value={studentGrade}
                     onChange={(e) => setStudentGrade(parseInt(e.target.value))}
@@ -1766,8 +1790,8 @@ export default function App() {
           </div>
         )}
 
-        {/* CAMBRIDGE O-LEVEL ARENA */}
-        {activeTab === 'olevel' && !activeQuiz && (
+        {/* CAMBRIDGE O-LEVEL ARENA (STUDENT / SUPER ADMIN) */}
+        {activeTab === 'olevel' && (role === 'student' || role === 'super_admin') && !activeQuiz && (
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div className="space-y-2 max-w-xl">
@@ -1847,8 +1871,8 @@ export default function App() {
           </div>
         )}
 
-        {/* E-LIBRARY */}
-        {activeTab === 'library' && (
+        {/* E-LIBRARY (STUDENT / SUPER ADMIN) */}
+        {activeTab === 'library' && (role === 'student' || role === 'super_admin') && (
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-emerald-800 via-teal-700 to-cyan-800 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div className="space-y-2 max-w-xl">
@@ -1867,7 +1891,7 @@ export default function App() {
                   <span className="text-2xl font-black text-amber-300">{readingHours} Hours</span>
                 </div>
 
-                {(role === 'super_admin' || role === 'teacher') && (
+                {role === 'super_admin' && (
                   <button
                     onClick={() => setShowNewBookModal(true)}
                     className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold px-4 py-3 rounded-2xl text-xs shadow-md transition flex items-center space-x-1"
@@ -1938,8 +1962,8 @@ export default function App() {
           </div>
         )}
 
-        {/* STUDENT GIFT SHOP */}
-        {activeTab === 'shop' && (
+        {/* STUDENT GIFT SHOP (STUDENT / SUPER ADMIN) */}
+        {activeTab === 'shop' && (role === 'student' || role === 'super_admin') && (
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-600 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div className="space-y-2 max-w-xl">
@@ -2018,7 +2042,7 @@ export default function App() {
           </div>
         )}
 
-        {/* STORE SALES CP */}
+        {/* STORE SALES CP (SHOP ADMIN / SUPER ADMIN) */}
         {activeTab === 'shop_management' && (role === 'shop_admin' || role === 'super_admin') && (
           <div className="space-y-6 max-w-5xl mx-auto">
             <div className="bg-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg space-y-2">
@@ -2119,7 +2143,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TEACHER QUIZ STUDIO */}
+        {/* TEACHER QUIZ STUDIO (TEACHERS / SUPER ADMIN) */}
         {activeTab === 'studio' && (role === 'teacher' || role === 'super_admin') && (
           <div className="max-w-5xl mx-auto space-y-6">
             <div className="bg-purple-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg space-y-2">
@@ -2132,591 +2156,4 @@ export default function App() {
             </div>
 
             <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Teaching Subject</label>
-                  <select
-                    value={studioSubject}
-                    disabled={role === 'teacher'}
-                    onChange={(e) => setStudioSubject(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800"
-                  >
-                    {ALL_SUBJECTS.map(subj => (
-                      <option key={subj} value={subj}>{subj}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Grade Level</label>
-                  <select
-                    value={studioGrade}
-                    onChange={(e) => setStudioGrade(parseInt(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800"
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => (
-                      <option key={g} value={g}>Grade {g}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Questions JSON Format</label>
-                <textarea
-                  rows={8}
-                  value={jsonInputText}
-                  onChange={(e) => setJsonInputText(e.target.value)}
-                  className="w-full bg-slate-50 border rounded-xl p-3 text-xs font-mono"
-                />
-              </div>
-
-              <button
-                onClick={handleTeacherCreateQuiz}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-2xl text-xs shadow-md transition"
-              >
-                Publish {studioSubject} Quiz
-              </button>
-            </div>
-
-            <TeacherStudentTracker subjects={ALL_SUBJECTS} />
-          </div>
-        )}
-
-        {/* SUPER ADMIN CONSOLE */}
-        {activeTab === 'super_admin_console' && role === 'super_admin' && (
-          <div className="space-y-6 max-w-5xl mx-auto">
-            <div className="bg-rose-950 text-white p-6 sm:p-8 rounded-3xl shadow-lg space-y-3">
-              <div className="flex items-center space-x-2 text-rose-400">
-                <Shield className="w-6 h-6" />
-                <span className="text-xs font-bold uppercase tracking-wider">Super Admin Master Controls</span>
-              </div>
-              <h2 className="text-2xl font-black">User Accounts & Staff Provisioning</h2>
-              <p className="text-xs text-rose-200">
-                Provision new Teacher/Shop Admin staff accounts with temporary default passwords.
-              </p>
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
-              <h3 className="font-bold text-slate-900 text-base">Provision New Staff Account</h3>
-              <form onSubmit={handleSuperAdminProvisionTeacher} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Full Name</label>
-                  <input
-                    type="text"
-                    value={newStaffName}
-                    onChange={(e) => setNewStaffName(e.target.value)}
-                    placeholder="e.g. Ms. Sarah Ahmed"
-                    className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">School Email Address</label>
-                  <input
-                    type="email"
-                    value={newStaffEmail}
-                    onChange={(e) => setNewStaffEmail(e.target.value)}
-                    placeholder="sarah@school.edu"
-                    className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Assigned Subject</label>
-                  <select
-                    value={newStaffSubject}
-                    onChange={(e) => setNewStaffSubject(e.target.value)}
-                    className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs font-bold text-slate-800"
-                  >
-                    {ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Default Temporary Password</label>
-                  <input
-                    type="text"
-                    value={newStaffPass}
-                    onChange={(e) => setNewStaffPass(e.target.value)}
-                    className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs font-mono font-bold"
-                    required
-                  />
-                </div>
-
-                <div className="sm:col-span-2 pt-2">
-                  <button type="submit" className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-xs">
-                    Provision Teacher Account
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
-              <h3 className="text-base font-black text-slate-900">User Login & Role Matrix ({allProfiles.length})</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b text-slate-400 font-bold uppercase text-[10px]">
-                      <th className="py-2.5 px-3">User</th>
-                      <th className="py-2.5 px-3">Role</th>
-                      <th className="py-2.5 px-3">Subject</th>
-                      <th className="py-2.5 px-3">Status</th>
-                      <th className="py-2.5 px-3 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {allProfiles.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-50">
-                        <td className="py-3 px-3 font-bold text-slate-900">{p.full_name}</td>
-                        <td className="py-3 px-3">
-                          <select
-                            value={p.role || 'student'}
-                            onChange={(e) => handleUpdateUserByAdmin(p.id, { role: e.target.value })}
-                            className="bg-slate-50 border rounded-xl px-2 py-1 text-xs font-bold text-indigo-700"
-                          >
-                            <option value="student">Student</option>
-                            <option value="teacher">Teacher</option>
-                            <option value="shop_admin">Shop Admin</option>
-                            <option value="super_admin">Super Admin</option>
-                          </select>
-                        </td>
-                        <td className="py-3 px-3">{p.teacher_subject || '—'}</td>
-                        <td className="py-3 px-3">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${p.status === 'disabled' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                            {p.status === 'disabled' ? '🔒 Disabled' : '✓ Active'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          <button
-                            onClick={() => handleUpdateUserByAdmin(p.id, { status: p.status === 'disabled' ? 'active' : 'disabled' })}
-                            className={`px-3 py-1 rounded-xl text-[11px] font-bold ${p.status === 'disabled' ? 'bg-emerald-600 text-white' : 'bg-rose-100 text-rose-800'}`}
-                          >
-                            {p.status === 'disabled' ? 'Enable' : 'Disable'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* PROFILE */}
-        {activeTab === 'profile' && (
-          <div className="max-w-2xl mx-auto space-y-6">
-            <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
-              <div className="flex items-center space-x-3 pb-4 border-b">
-                <div className="w-12 h-12 bg-indigo-100 text-indigo-700 rounded-2xl flex items-center justify-center font-black text-lg">
-                  {authName.charAt(0)}
-                </div>
-                <div>
-                  <h3 className="text-lg font-black text-slate-900">{authName}</h3>
-                  <p className="text-xs text-slate-500">Role: <strong className="capitalize">{role}</strong> • Email: {user.email}</p>
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-2">
-                <h4 className="font-bold text-slate-900 text-sm">Security & Password Management</h4>
-                <form onSubmit={handleUserSelfChangePassword} className="space-y-3">
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">New Password</label>
-                    <input
-                      type="password"
-                      value={profileNewPassword}
-                      onChange={(e) => setProfileNewPassword(e.target.value)}
-                      placeholder="Enter new password"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800"
-                      required
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={authLoading}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-xs"
-                  >
-                    {authLoading ? 'Updating...' : 'Update Password'}
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
-
-      </main>
-
-      {/* NEW BOOK MODAL */}
-      {showNewBookModal && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="font-black text-slate-900 text-base">Add New Library Book</h3>
-              <button onClick={() => setShowNewBookModal(false)} className="text-slate-400 font-bold">✕</button>
-            </div>
-
-            <form onSubmit={handleCreateNewBook} className="space-y-3">
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Book Title</label>
-                <input
-                  type="text"
-                  value={newBookTitle}
-                  onChange={(e) => setNewBookTitle(e.target.value)}
-                  placeholder="Book Title"
-                  className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Subject</label>
-                  <select
-                    value={newBookSubject}
-                    onChange={(e) => setNewBookSubject(e.target.value)}
-                    className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs font-bold"
-                  >
-                    {ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Author</label>
-                  <input
-                    type="text"
-                    value={newBookAuthor}
-                    onChange={(e) => setNewBookAuthor(e.target.value)}
-                    placeholder="Author Name"
-                    className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Summary</label>
-                <input
-                  type="text"
-                  value={newBookSummary}
-                  onChange={(e) => setNewBookSummary(e.target.value)}
-                  placeholder="Short overview..."
-                  className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Page 1 Content</label>
-                <textarea
-                  rows={4}
-                  value={newBookPageText}
-                  onChange={(e) => setNewBookPageText(e.target.value)}
-                  placeholder="Enter book text..."
-                  className="w-full bg-slate-50 border rounded-xl p-2.5 text-xs font-serif"
-                />
-              </div>
-
-              <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md">
-                Publish Book
-              </button>
-            </form>
-          </div>
-        )}
-
-      {/* PHYSICAL BOOK CLAIM CODE VERIFICATION MODAL */}
-      {claimingBook && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="font-black text-slate-900 text-base">Claim Physical Library Book</h3>
-              <button onClick={() => setClaimingBook(null)} className="text-slate-400 font-bold">✕</button>
-            </div>
-
-            <p className="text-xs text-slate-500">
-              Enter the official verification claim code printed inside <strong>"{claimingBook.title}"</strong> or provided by your school librarian.
-            </p>
-
-            <form onSubmit={(e) => handleClaimPhysicalBook(e, claimingBook)} className="space-y-3">
-              <input
-                type="text"
-                value={physicalClaimInput}
-                onChange={(e) => setPhysicalClaimInput(e.target.value)}
-                placeholder="e.g. LIB-PHYS-101"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono font-bold text-center text-slate-800"
-                required
-              />
-
-              <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-xs shadow-md">
-                Verify & Claim +{claimingBook.reading_hours} Hours
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ONLINE E-READER MODAL */}
-      {selectedBook && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center border-b pb-3">
-              <div>
-                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-md">{selectedBook.subject}</span>
-                <h3 className="font-black text-slate-900 text-lg mt-1">{selectedBook.title}</h3>
-              </div>
-              <div className="flex items-center space-x-3">
-                <span className="text-xs font-mono font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full flex items-center space-x-1">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>Time Read: {Math.floor(activeReadingSeconds / 60)}m {activeReadingSeconds % 60}s</span>
-                </span>
-                <button onClick={() => setSelectedBook(null)} className="text-slate-400 font-bold text-lg">✕</button>
-              </div>
-            </div>
-
-            <div className={`bg-slate-50 border border-slate-200 p-6 rounded-2xl min-h-[220px] text-xs leading-relaxed whitespace-pre-line font-serif text-slate-800 ${
-              isRTLSubject(selectedBook.subject) ? 'text-right dir-rtl font-thana' : ''
-            }`}>
-              {Array.isArray(selectedBook.pages) ? selectedBook.pages[bookPageIndex] : selectedBook.pages}
-            </div>
-
-            <div className="flex justify-between items-center border-t pt-3">
-              <span className="text-xs font-bold text-slate-500">Auto-Detecting Reading Time...</span>
-              <button
-                onClick={() => handleFinishOnlineReading(selectedBook)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md transition"
-              >
-                Finish & Save Reading Time
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ENHANCED & BEAUTIFIED QUIZ RUNNER OVERLAY */}
-      {activeQuiz && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 transition-all duration-300">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl border border-slate-100 relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-
-            {!quizFinished && !gameOver ? (
-              <>
-                {/* HEADER BAR: LIVES, PROGRESS, STREAK, TIMER */}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                  <div className="flex items-center space-x-3">
-                    <span className="bg-slate-100 text-slate-700 font-extrabold text-xs px-3 py-1.5 rounded-xl border border-slate-200/80">
-                      Q {currentQuestionIdx + 1} / {activeQuiz.questions.length}
-                    </span>
-
-                    {(quizMode === 'challenge' || quizMode === 'olevel') && (
-                      <div className="flex items-center space-x-1.5 bg-rose-50 border border-rose-200/60 px-3 py-1.5 rounded-xl">
-                        {[...Array(3)].map((_, i) => (
-                          <Heart
-                            key={i}
-                            className={`w-4 h-4 transition-all duration-300 ${
-                              i < hearts
-                                ? 'text-rose-500 fill-rose-500 scale-100 drop-shadow-xs'
-                                : 'text-slate-300 fill-slate-200 scale-90 opacity-40'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center space-x-2.5">
-                    {(quizMode === 'challenge' || quizMode === 'olevel') && (
-                      <div className={`flex items-center space-x-1.5 font-mono font-bold text-xs px-3 py-1.5 rounded-xl border transition-colors ${
-                        timeLeft < 15
-                          ? 'bg-rose-50 border-rose-300 text-rose-600 animate-pulse'
-                          : 'bg-amber-50 border-amber-200 text-amber-700'
-                      }`}>
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{Math.floor(timeLeft / 60)}m {String(timeLeft % 60).padStart(2, '0')}s</span>
-                      </div>
-                    )}
-
-                    {streak > 1 && (
-                      <div className="flex items-center space-x-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-xs px-3 py-1.5 rounded-xl shadow-xs">
-                        <Flame className="w-3.5 h-3.5 fill-white" />
-                        <span>{streak}x Streak</span>
-                      </div>
-                    )}
-
-                    <button
-                      onClick={() => setActiveQuiz(null)}
-                      className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* QUESTION HEADER */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold tracking-wider uppercase text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg">
-                      {activeQuiz.questions[currentQuestionIdx].topic || activeQuiz.subject}
-                    </span>
-                    <span className="text-xs text-slate-400 font-medium">{activeQuiz.title}</span>
-                  </div>
-
-                  <h3 className={`text-lg sm:text-xl font-black text-slate-900 leading-snug pt-1 ${
-                    isRTLSubject(activeQuiz.subject) ? 'text-right dir-rtl font-thana' : ''
-                  }`}>
-                    {activeQuiz.questions[currentQuestionIdx].question_text}
-                  </h3>
-                </div>
-
-                {/* OPTIONS GRID */}
-                <div className="space-y-2.5">
-                  {['A', 'B', 'C', 'D'].map((opt) => {
-                    const optionText = activeQuiz.questions[currentQuestionIdx][`option_${opt.toLowerCase()}`];
-                    if (!optionText) return null;
-
-                    const isCorrectOpt = opt === activeQuiz.questions[currentQuestionIdx].correct_option;
-                    const isSelectedOpt = selectedOption === opt;
-
-                    let btnStyle = "bg-slate-50 border-slate-200 text-slate-800 hover:bg-indigo-50/50 hover:border-indigo-300";
-                    let badgeStyle = "bg-white text-slate-700 border-slate-300";
-
-                    if (showExplanation) {
-                      if (isCorrectOpt) {
-                        btnStyle = "bg-emerald-50 border-emerald-400 text-emerald-950 font-bold shadow-xs ring-2 ring-emerald-400/20";
-                        badgeStyle = "bg-emerald-600 text-white border-emerald-600";
-                      } else if (isSelectedOpt) {
-                        btnStyle = "bg-rose-50 border-rose-400 text-rose-950 font-bold shadow-xs";
-                        badgeStyle = "bg-rose-600 text-white border-rose-600";
-                      } else {
-                        btnStyle = "bg-slate-50/50 border-slate-200 text-slate-400 opacity-50";
-                        badgeStyle = "bg-slate-100 text-slate-400 border-slate-200";
-                      }
-                    }
-
-                    return (
-                      <button
-                        key={opt}
-                        onClick={() => handleAnswerSubmit(opt)}
-                        disabled={showExplanation}
-                        className={`w-full p-3.5 sm:p-4 rounded-2xl border-2 text-left text-xs sm:text-sm font-medium transition-all duration-200 flex items-center space-x-3 group ${btnStyle}`}
-                      >
-                        <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl border flex items-center justify-center font-black text-xs shrink-0 transition-colors ${badgeStyle}`}>
-                          {opt}
-                        </span>
-                        <span className="flex-1 leading-normal">{optionText}</span>
-                        {showExplanation && isCorrectOpt && (
-                          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                        )}
-                        {showExplanation && isSelectedOpt && !isCorrectOpt && (
-                          <XCircle className="w-5 h-5 text-rose-600 shrink-0" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* EXPLANATION & ACTION BUTTON */}
-                {showExplanation && (
-                  <div className="space-y-4 pt-1">
-                    <div className="bg-gradient-to-r from-slate-50 to-indigo-50/30 border border-slate-200 p-4 rounded-2xl space-y-1">
-                      <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-wide flex items-center space-x-1">
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                        <span>Mark Scheme & Concept Breakdown</span>
-                      </span>
-                      <p className="text-xs text-slate-700 leading-relaxed font-normal">
-                        {activeQuiz.questions[currentQuestionIdx].explanation || 'Option verified against subject mark scheme.'}
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={nextQuestion}
-                      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black py-3.5 rounded-2xl text-xs sm:text-sm shadow-md transition flex items-center justify-center space-x-2"
-                    >
-                      <span>{currentQuestionIdx + 1 < activeQuiz.questions.length ? 'Next Question' : 'View Quiz Summary'}</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : gameOver ? (
-              /* GAME OVER SCREEN */
-              <div className="text-center py-8 space-y-5">
-                <div className="w-20 h-20 bg-rose-100 text-rose-600 rounded-3xl flex items-center justify-center mx-auto border border-rose-200">
-                  <Heart className="w-10 h-10 text-rose-500" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-2xl font-black text-slate-900">Session Ended</h3>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                    You ran out of lives or time during this session. Review your weak topics to strengthen your performance!
-                  </p>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl max-w-sm mx-auto flex justify-around text-center text-xs">
-                  <div>
-                    <span className="text-slate-400 text-[10px] uppercase font-bold block">Questions Attempted</span>
-                    <span className="text-base font-black text-slate-800">{currentQuestionIdx} / {activeQuiz.questions.length}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 text-[10px] uppercase font-bold block">Correct Answers</span>
-                    <span className="text-base font-black text-emerald-600">{score}</span>
-                  </div>
-                </div>
-
-                <div className="flex justify-center space-x-3 pt-2">
-                  <button
-                    onClick={() => startQuiz(activeQuiz, quizMode)}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-2xl text-xs shadow-md transition flex items-center space-x-1.5"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    <span>Try Again</span>
-                  </button>
-                  <button
-                    onClick={() => setActiveQuiz(null)}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-6 py-3 rounded-2xl text-xs transition"
-                  >
-                    Return to Vault
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* SUCCESS SCREEN */
-              <div className="text-center py-6 space-y-6">
-                <div className="w-20 h-20 bg-gradient-to-tr from-amber-400 to-yellow-300 text-amber-900 rounded-3xl flex items-center justify-center mx-auto shadow-lg border-2 border-amber-200">
-                  <Trophy className="w-10 h-10 text-amber-900" />
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-full">
-                    Quiz Completed!
-                  </span>
-                  <h3 className="text-2xl font-black text-slate-900 pt-1">{activeQuiz.title}</h3>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3 max-w-md mx-auto">
-                  <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl text-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Score</span>
-                    <span className="text-lg font-black text-slate-900">{score} / {activeQuiz.questions.length}</span>
-                  </div>
-                  <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-center">
-                    <span className="text-[10px] font-bold text-amber-700 uppercase block">+Coins</span>
-                    <span className="text-lg font-black text-amber-600">+{score * 15}</span>
-                  </div>
-                  <div className="bg-purple-50 border border-purple-200 p-3 rounded-2xl text-center">
-                    <span className="text-[10px] font-bold text-purple-700 uppercase block">+XP Gained</span>
-                    <span className="text-lg font-black text-purple-600">+{score * 30}</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setActiveQuiz(null)}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3.5 rounded-2xl text-xs shadow-md transition"
-                >
-                  Return to Dashboard
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+              <div className="grid grid-cols-1 sm:grid-
