@@ -12,7 +12,7 @@ import {
   Settings, Edit3, Sliders, Layers, Save, X, TrendingUp, Languages,
   AlertTriangle, Printer, ArrowRight, Mail, HelpCircle, Eye, EyeOff,
   Package, ShoppingCart, DollarSign, PiggyBank, History, Box,
-  AlertCircle, CheckCircle, UserCheck, UserX, Shield
+  AlertCircle, CheckCircle, UserCheck, UserX, Shield, Image as ImageIcon
 } from 'lucide-react';
 
 // --- Standardized Core Subjects ---
@@ -34,7 +34,7 @@ const ALL_SUBJECTS = [
 
 const QUICK_EMOJIS = ['🎒', '📓', '📐', '🖍️', '🎨', '🎟️', '⚡', '🎁', '⚽', '🏆', '📱', '📚', '🧩', '🎮', '🎧', '✏️'];
 
-// --- Role-Based Navigation Permissions ---
+// --- Strict Role Navigation Matrix ---
 const ROLE_TABS = {
   student: ['dashboard', 'olevel', 'library', 'shop', 'profile'],
   teacher: ['studio', 'profile'],
@@ -575,6 +575,36 @@ const INITIAL_BOOKS = [
 
 const INITIAL_QUIZZES = [
   {
+    id: 'olevel_diagram_1',
+    title: 'Cambridge O-Level Physics 0625 - Ray & Optics Diagrams',
+    subject: 'Physics',
+    grade: 10,
+    subject_code: '0625',
+    exam_year: 2024,
+    variant: 'Paper 12 (Diagram Special)',
+    is_past_paper: true,
+    has_diagrams: true,
+    time_limit: 120,
+    questions: [
+      {
+        id: 'qd1_1',
+        topic: 'Optics & Lenses',
+        diagram_url: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=800&q=80',
+        question_text: 'Study the optical ray diagram shown above. What phenomenon is represented when light passes through the boundary?',
+        option_a: 'Total Internal Reflection', option_b: 'Refraction and Dispersion', option_c: 'Diffraction', option_d: 'Polarization',
+        correct_option: 'B', explanation: 'The diagram illustrates refraction and color dispersion as white light passes through a glass prism.'
+      },
+      {
+        id: 'qd1_2',
+        topic: 'Vectors & Forces',
+        diagram_url: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=800&q=80',
+        question_text: 'Based on the force vector diagram above, if $F_1 = 30\\text{ N}$ to the right and $F_2 = 10\\text{ N}$ to the left, what is the resultant force?',
+        option_a: '40 N to the right', option_b: '20 N to the right', option_c: '20 N to the left', option_d: '300 N',
+        correct_option: 'B', explanation: 'Resultant force $F_{\\text{net}} = 30\\text{ N} - 10\\text{ N} = 20\\text{ N}$ acting in the direction of the larger force.'
+      }
+    ]
+  },
+  {
     id: 'olevel_1',
     title: 'Cambridge O-Level Physics 0625 - Mechanics & Motion',
     subject: 'Physics',
@@ -583,21 +613,22 @@ const INITIAL_QUIZZES = [
     exam_year: 2024,
     variant: 'Paper 12',
     is_past_paper: true,
+    has_diagrams: false,
     time_limit: 120,
     questions: [
       {
         id: 'q1_1',
         topic: 'Kinematics & Motion',
-        question_text: 'A car accelerates uniformly from rest to a velocity of 20 m/s in 5 seconds. What is its acceleration?',
+        question_text: 'A car accelerates uniformly from rest to a velocity of $20\\text{ m/s}$ in $5\\text{ seconds}$. What is its acceleration?',
         option_a: '2 m/s²', option_b: '4 m/s²', option_c: '5 m/s²', option_d: '100 m/s²',
-        correct_option: 'B', explanation: 'Acceleration a = (v - u) / t = (20 - 0) / 5 = 4 m/s².'
+        correct_option: 'B', explanation: 'Acceleration $a = \\frac{v - u}{t} = \\frac{20 - 0}{5} = 4\\text{ m/s}^2$.'
       },
       {
         id: 'q1_2',
         topic: 'Forces & Energy',
         question_text: 'Which quantity is calculated by multiplying force by distance moved in the direction of the force?',
         option_a: 'Power', option_b: 'Work done', option_c: 'Pressure', option_d: 'Acceleration',
-        correct_option: 'B', explanation: 'Work done W = Force x Distance.'
+        correct_option: 'B', explanation: 'Work done $W = \\text{Force} \\times \\text{Distance}$.'
       }
     ]
   },
@@ -610,6 +641,7 @@ const INITIAL_QUIZZES = [
     exam_year: 2024,
     variant: 'Paper 22',
     is_past_paper: true,
+    has_diagrams: false,
     time_limit: 90,
     questions: [
       {
@@ -702,14 +734,15 @@ export default function App() {
   const [studioSubject, setStudioSubject] = useState('Physics');
   const [jsonInputText, setJsonInputText] = useState(`[
   {
-    "topic": "Kinematics & Motion",
-    "question_text": "What does the gradient of a distance-time graph represent?",
-    "option_a": "Acceleration",
-    "option_b": "Speed",
-    "option_c": "Displacement",
-    "option_d": "Force",
-    "correct_option": "B",
-    "explanation": "Speed is given by the gradient (change in distance over time)."
+    "topic": "Optics & Light Rays",
+    "diagram_url": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=800&q=80",
+    "question_text": "Study the optics diagram above. What phenomenon takes place when light enters the prism?",
+    "option_a": "Refraction & Dispersion",
+    "option_b": "Total Internal Reflection",
+    "option_c": "Diffraction",
+    "option_d": "Polarization",
+    "correct_option": "A",
+    "explanation": "White light separates into spectral colors through refraction and dispersion in glass."
   }
 ]`);
 
@@ -792,14 +825,11 @@ export default function App() {
       const metadataRole = authUser?.user_metadata?.role;
       const dbRole = data?.role;
 
-      // Ensure DB profile or metadata role takes precedence over default fallback
-      let effectiveRole = dbRole || metadataRole || 'student';
-      if (dbRole === 'super_admin' || metadataRole === 'super_admin') {
-        effectiveRole = 'super_admin';
-      } else if (dbRole === 'teacher' || metadataRole === 'teacher') {
-        effectiveRole = 'teacher';
-      } else if (dbRole === 'shop_admin' || metadataRole === 'shop_admin') {
-        effectiveRole = 'shop_admin';
+      let effectiveRole = 'student';
+      if (metadataRole && metadataRole !== 'student') {
+        effectiveRole = metadataRole;
+      } else if (dbRole) {
+        effectiveRole = dbRole;
       }
 
       setAuthName(data?.full_name || authUser?.user_metadata?.full_name || 'User');
@@ -889,7 +919,7 @@ export default function App() {
       }
     } catch (err) {
       alert("Login Error: " + err.message);
-    } finally {
+    } => {
       setAuthLoading(false);
     }
   };
@@ -1253,16 +1283,19 @@ export default function App() {
 
     try {
       const parsedQuestions = JSON.parse(jsonInputText);
+      const hasDiagrams = parsedQuestions.some(q => !!q.diagram_url);
+
       const newQuiz = {
         id: `quiz_${Date.now()}`,
         title: `Grade ${studioGrade} ${studioSubject} Quiz`,
         subject: studioSubject,
         grade: parseInt(studioGrade),
+        has_diagrams: hasDiagrams,
         questions: parsedQuestions
       };
 
       setQuizzes([newQuiz, ...quizzes]);
-      alert(`✅ Quiz successfully published under ${studioSubject}!`);
+      alert(`✅ Quiz successfully published under ${studioSubject}! ${hasDiagrams ? '(Includes Diagram MCQs)' : ''}`);
     } catch (err) {
       alert("Invalid JSON format for questions: " + err.message);
     }
@@ -1317,7 +1350,15 @@ export default function App() {
   };
 
   const gradePracticeQuizzes = quizzes.filter(q => q.grade === parseInt(studentGrade) && (selectedSubject === 'All' || q.subject === selectedSubject));
-  const olevelPastPapers = quizzes.filter(q => q.is_past_paper && (olevelSubjectFilter === 'All' || q.subject === olevelSubjectFilter));
+  
+  const olevelPastPapers = quizzes.filter(q => {
+    if (!q.is_past_paper) return false;
+    if (olevelSubjectFilter === 'Diagrams') {
+      return q.has_diagrams || q.questions?.some(item => !!item.diagram_url);
+    }
+    return olevelSubjectFilter === 'All' || q.subject === olevelSubjectFilter;
+  });
+
   const filteredLibraryBooks = books.filter(b => selectedSubject === 'All' || b.subject === selectedSubject);
   const currentRank = getStudentRank(xp);
 
@@ -1412,7 +1453,7 @@ export default function App() {
                 Empowering Students with <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">Smart Topic Diagnostics</span>
               </h1>
               <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
-                Access Cambridge O-Level past papers, grade practice vaults, bilingual Dhivehi and Islam library e-books, physical library reading hour logging, and kids cash management gift shop.
+                Access Cambridge O-Level past papers, diagram-based MCQs, grade practice vaults, bilingual Dhivehi and Islam library e-books, and kids cash gift shop.
               </p>
             </div>
 
@@ -1807,42 +1848,42 @@ export default function App() {
         </div>
       )}
 
-      {/* HEADER BAR */}
+      {/* RESPONSIVE HEADER BAR */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div onClick={() => navigateToTab(getDefaultTabForRole(role))} className="flex items-center space-x-3 cursor-pointer">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+          <div onClick={() => navigateToTab(getDefaultTabForRole(role))} className="flex items-center space-x-2.5 cursor-pointer shrink-0">
             <div className="bg-gradient-to-tr from-indigo-600 to-purple-600 p-2 rounded-xl shadow-md">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-black tracking-tight text-slate-900">
+              <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 leading-tight">
                 EduSpark <span className="text-indigo-600">IQ</span>
               </h1>
-              <p className="text-[11px] text-slate-500 font-medium">School Portal & Analytics</p>
+              <p className="text-[10px] text-slate-500 font-medium hidden sm:block">School Portal & Analytics</p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2.5 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold text-slate-700">
-              <span className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
+          <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+            <div className="flex items-center space-x-2 bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-full text-xs font-bold text-slate-700">
+              <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black whitespace-nowrap ${
                 role === 'super_admin' ? 'bg-rose-100 text-rose-800' :
                 role === 'teacher' ? 'bg-purple-100 text-purple-800' :
                 role === 'shop_admin' ? 'bg-amber-100 text-amber-800' : currentRank.bg + ' ' + currentRank.text
               }`}>
-                {role === 'super_admin' ? '👑 Super Admin' :
-                 role === 'teacher' ? `👨‍🏫 ${teacherSubject} Teacher` :
-                 role === 'shop_admin' ? '🏬 Shop CP' : currentRank.title}
+                {role === 'super_admin' ? '👑 Admin' :
+                 role === 'teacher' ? `👨‍🏫 ${teacherSubject}` :
+                 role === 'shop_admin' ? '🏬 Shop' : currentRank.title}
               </span>
 
               {role === 'student' && (
                 <>
-                  <div className="flex items-center space-x-1 text-emerald-700">
+                  <div className="hidden md:flex items-center space-x-1 text-emerald-700">
                     <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>{readingHours} Read Hrs</span>
+                    <span>{readingHours}h</span>
                   </div>
                   <div className="flex items-center space-x-1 text-amber-600">
                     <Coins className="w-3.5 h-3.5" />
-                    <span>{coins} Coins</span>
+                    <span>{coins}</span>
                   </div>
                 </>
               )}
@@ -1850,89 +1891,98 @@ export default function App() {
 
             <button
               onClick={() => navigateToTab('profile')}
-              className={`p-2 rounded-xl border font-bold text-xs flex items-center space-x-1 ${
+              className={`p-2 rounded-xl border font-bold text-xs flex items-center space-x-1 transition ${
                 activeTab === 'profile' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-slate-100 border-slate-200 text-slate-700'
               }`}
             >
               <User className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{authName}</span>
+              <span className="hidden md:inline truncate max-w-[100px]">{authName}</span>
             </button>
 
-            <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-slate-700 rounded-lg">
+            <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-slate-700 rounded-lg transition">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* ROLE-RESTRICTED NAVIGATION TABS */}
-        <div className="max-w-7xl mx-auto px-4 flex items-center space-x-2 overflow-x-auto text-xs border-t border-slate-100 py-1.5 scrollbar-none">
-          
-          {/* STUDENT / SUPER ADMIN ONLY TABS */}
-          {(role === 'student' || role === 'super_admin') && (
-            <button
-              onClick={() => navigateToTab('dashboard')}
-              className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-slate-600 hover:bg-slate-100'}`}
-            >
-              <BookOpen className="w-3.5 h-3.5 text-indigo-600" /> <span>Grade {studentGrade} Vault</span>
-            </button>
-          )}
+        {/* RESPONSIVE SCROLLABLE NAVIGATION SUB-BAR */}
+        <div className="bg-slate-50/80 border-t border-slate-100">
+          <div className="max-w-7xl mx-auto px-4 flex items-center space-x-1.5 overflow-x-auto py-2 scrollbar-none whitespace-nowrap">
+            
+            {/* STUDENT / SUPER ADMIN ONLY TABS */}
+            {(role === 'student' || role === 'super_admin') && (
+              <button
+                onClick={() => navigateToTab('dashboard')}
+                className={`px-3 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 text-xs ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'}`}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Grade {studentGrade} Vault</span>
+              </button>
+            )}
 
-          {(role === 'student' || role === 'super_admin') && (
-            <button
-              onClick={() => navigateToTab('olevel')}
-              className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'olevel' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}`}
-            >
-              <GraduationCap className="w-3.5 h-3.5" /> <span>Cambridge O-Level Arena</span>
-            </button>
-          )}
+            {(role === 'student' || role === 'super_admin') && (
+              <button
+                onClick={() => navigateToTab('olevel')}
+                className={`px-3 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 text-xs ${activeTab === 'olevel' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'}`}
+              >
+                <GraduationCap className="w-3.5 h-3.5" />
+                <span>O-Level Arena</span>
+              </button>
+            )}
 
-          {(role === 'student' || role === 'super_admin') && (
-            <button
-              onClick={() => navigateToTab('library')}
-              className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'library' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-slate-600 hover:bg-slate-100'}`}
-            >
-              <Library className="w-3.5 h-3.5 text-emerald-600" /> <span>E-Library & School Books</span>
-            </button>
-          )}
+            {(role === 'student' || role === 'super_admin') && (
+              <button
+                onClick={() => navigateToTab('library')}
+                className={`px-3 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 text-xs ${activeTab === 'library' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'}`}
+              >
+                <Library className="w-3.5 h-3.5" />
+                <span>E-Library</span>
+              </button>
+            )}
 
-          {(role === 'student' || role === 'super_admin') && (
-            <button
-              onClick={() => navigateToTab('shop')}
-              className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'shop' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}`}
-            >
-              <ShoppingBag className="w-3.5 h-3.5" /> <span>Student Gift Shop</span>
-            </button>
-          )}
+            {(role === 'student' || role === 'super_admin') && (
+              <button
+                onClick={() => navigateToTab('shop')}
+                className={`px-3 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 text-xs ${activeTab === 'shop' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'}`}
+              >
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>Student Gift Shop</span>
+              </button>
+            )}
 
-          {/* SHOP ADMIN & SUPER ADMIN TAB */}
-          {(role === 'shop_admin' || role === 'super_admin') && (
-            <button
-              onClick={() => navigateToTab('shop_management')}
-              className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'shop_management' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-800 hover:bg-slate-200'}`}
-            >
-              <Settings className="w-3.5 h-3.5 text-amber-400" /> <span>🏬 Store Sales CP</span>
-            </button>
-          )}
+            {/* SHOP ADMIN & SUPER ADMIN TAB */}
+            {(role === 'shop_admin' || role === 'super_admin') && (
+              <button
+                onClick={() => navigateToTab('shop_management')}
+                className={`px-3 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 text-xs ${activeTab === 'shop_management' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-200/80 text-slate-800 hover:bg-slate-300'}`}
+              >
+                <Settings className="w-3.5 h-3.5 text-amber-400" />
+                <span>🏬 Store Sales CP</span>
+              </button>
+            )}
 
-          {/* TEACHER & SUPER ADMIN TAB */}
-          {(role === 'teacher' || role === 'super_admin') && (
-            <button
-              onClick={() => navigateToTab('studio')}
-              className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'studio' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'text-slate-600 hover:bg-slate-100'}`}
-            >
-              <BrainCircuit className="w-3.5 h-3.5 text-purple-600" /> <span>Teacher Quiz Studio</span>
-            </button>
-          )}
+            {/* TEACHER & SUPER ADMIN TAB */}
+            {(role === 'teacher' || role === 'super_admin') && (
+              <button
+                onClick={() => navigateToTab('studio')}
+                className={`px-3 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 text-xs ${activeTab === 'studio' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'}`}
+              >
+                <BrainCircuit className="w-3.5 h-3.5" />
+                <span>Teacher Quiz Studio</span>
+              </button>
+            )}
 
-          {/* SUPER ADMIN MASTER TAB */}
-          {role === 'super_admin' && (
-            <button
-              onClick={() => navigateToTab('super_admin_console')}
-              className={`px-3.5 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 ${activeTab === 'super_admin_console' ? 'bg-rose-600 text-white shadow-xs' : 'bg-rose-50 text-rose-800 hover:bg-rose-100'}`}
-            >
-              <Shield className="w-3.5 h-3.5" /> <span>👑 Super Admin Console</span>
-            </button>
-          )}
+            {/* SUPER ADMIN MASTER TAB */}
+            {role === 'super_admin' && (
+              <button
+                onClick={() => navigateToTab('super_admin_console')}
+                className={`px-3 py-1.5 font-bold flex items-center space-x-1.5 rounded-xl transition shrink-0 text-xs ${activeTab === 'super_admin_console' ? 'bg-rose-600 text-white shadow-xs' : 'bg-rose-100 text-rose-800 hover:bg-rose-200'}`}
+              >
+                <Shield className="w-3.5 h-3.5" />
+                <span>👑 Admin Controls</span>
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -1974,9 +2024,17 @@ export default function App() {
               {gradePracticeQuizzes.map((quiz) => (
                 <div key={quiz.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex flex-col justify-between hover:border-indigo-300 transition shadow-xs">
                   <div>
-                    <span className="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg font-bold">
-                      {quiz.subject}
-                    </span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg font-bold">
+                        {quiz.subject}
+                      </span>
+                      {quiz.has_diagrams && (
+                        <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md font-bold flex items-center space-x-1">
+                          <ImageIcon className="w-3 h-3" />
+                          <span>Diagrams</span>
+                        </span>
+                      )}
+                    </div>
                     <h3 className="text-base font-bold text-slate-900 mt-2 mb-1">{quiz.title}</h3>
                     <p className="text-xs text-slate-500 mb-4">{quiz.questions.length} Questions</p>
                   </div>
@@ -2005,7 +2063,7 @@ export default function App() {
                   <h2 className="text-2xl sm:text-3xl font-black">Cambridge O-Level Exam Arena</h2>
                 </div>
                 <p className="text-xs text-purple-200">
-                  Real timed past paper practice sessions (0625 Physics, 2210 Computer Science, etc.) with 3-Hearts mechanic ($\text{❤️ ❤️ ❤️}$) and detailed mark scheme explanations.
+                  Timed past paper exam sessions with **Ray, Optical, Circuit & Graph Diagram MCQs**, 3-Hearts mechanic ($\text{❤️ ❤️ ❤️}$), and detailed mark schemes.
                 </p>
               </div>
 
@@ -2018,13 +2076,33 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
-              <span className="text-xs font-bold text-slate-500 mr-2">Subject Filter:</span>
-              {['All', 'Physics', 'Computer Science', 'Maths', 'Chemistry', 'Biology'].map((subj) => (
+            {/* O-LEVEL ARENA DIAGRAM & SUBJECT FILTER BAR */}
+            <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none whitespace-nowrap">
+              <span className="text-xs font-bold text-slate-500 mr-2 shrink-0">Filter Arena:</span>
+              <button
+                onClick={() => setOlevelSubjectFilter('All')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 ${
+                  olevelSubjectFilter === 'All' ? 'bg-purple-600 text-white shadow-xs' : 'bg-white border text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                All Papers
+              </button>
+
+              <button
+                onClick={() => setOlevelSubjectFilter('Diagrams')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center space-x-1.5 ${
+                  olevelSubjectFilter === 'Diagrams' ? 'bg-amber-500 text-white shadow-xs' : 'bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100'
+                }`}
+              >
+                <ImageIcon className="w-3.5 h-3.5" />
+                <span>📐 Diagram MCQs Tab</span>
+              </button>
+
+              {['Physics', 'Computer Science', 'Maths', 'Chemistry', 'Biology'].map((subj) => (
                 <button
                   key={subj}
                   onClick={() => setOlevelSubjectFilter(subj)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 ${
                     olevelSubjectFilter === subj ? 'bg-purple-600 text-white shadow-xs' : 'bg-white border text-slate-600 hover:bg-slate-100'
                   }`}
                 >
@@ -2038,18 +2116,24 @@ export default function App() {
                 <div key={paper.id} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs hover:shadow-md transition space-y-4">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <span className="bg-purple-100 text-purple-800 text-[10px] font-black px-2.5 py-1 rounded-md font-mono">
                           Code: {paper.subject_code}
                         </span>
                         <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-2.5 py-1 rounded-md">
                           {paper.exam_year} • {paper.variant}
                         </span>
+                        {(paper.has_diagrams || paper.questions?.some(q => !!q.diagram_url)) && (
+                          <span className="bg-indigo-100 text-indigo-800 text-[10px] font-black px-2 py-0.5 rounded-md flex items-center space-x-1">
+                            <ImageIcon className="w-3 h-3" />
+                            <span>Diagrams Included</span>
+                          </span>
+                        )}
                       </div>
                       <h3 className="font-black text-slate-900 text-base pt-1">{paper.title}</h3>
                     </div>
 
-                    <div className="flex items-center space-x-1 text-rose-500 bg-rose-50 px-2.5 py-1 rounded-full text-xs font-bold">
+                    <div className="flex items-center space-x-1 text-rose-500 bg-rose-50 px-2.5 py-1 rounded-full text-xs font-bold shrink-0">
                       <Heart className="w-3.5 h-3.5 fill-rose-500" />
                       <span>3 Lives</span>
                     </div>
@@ -2391,9 +2475,12 @@ export default function App() {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Questions JSON Format</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-xs font-bold text-slate-700">Questions JSON Format</label>
+                  <span className="text-[10px] text-indigo-600 font-bold">Supports "diagram_url" parameter</span>
+                </div>
                 <textarea
-                  rows={8}
+                  rows={9}
                   value={jsonInputText}
                   onChange={(e) => setJsonInputText(e.target.value)}
                   className="w-full bg-slate-50 border rounded-xl p-3 text-xs font-mono"
@@ -2785,10 +2872,10 @@ export default function App() {
         </div>
       )}
 
-      {/* QUIZ RUNNER OVERLAY */}
+      {/* QUIZ RUNNER OVERLAY WITH DIAGRAM SUPPORT */}
       {activeQuiz && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 transition-all duration-300">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl border border-slate-100 relative overflow-hidden">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 transition-all duration-300">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-8 space-y-5 shadow-2xl border border-slate-100 relative overflow-hidden max-h-[95vh] overflow-y-auto">
             <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
 
             {!quizFinished && !gameOver ? (
@@ -2843,6 +2930,21 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* DIAGRAM DISPLAY AREA */}
+                {activeQuiz.questions[currentQuestionIdx].diagram_url && (
+                  <div className="w-full bg-slate-900/5 border border-slate-200 rounded-2xl p-2.5 flex flex-col justify-center items-center space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1 self-start px-1">
+                      <ImageIcon className="w-3 h-3 text-indigo-600" />
+                      <span>Question Reference Diagram</span>
+                    </span>
+                    <img
+                      src={activeQuiz.questions[currentQuestionIdx].diagram_url}
+                      alt="Question Diagram"
+                      className="max-h-56 sm:max-h-64 w-auto object-contain rounded-xl shadow-xs border border-white"
+                    />
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold tracking-wider uppercase text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg">
@@ -2851,7 +2953,7 @@ export default function App() {
                     <span className="text-xs text-slate-400 font-medium">{activeQuiz.title}</span>
                   </div>
 
-                  <h3 className={`text-lg sm:text-xl font-black text-slate-900 leading-snug pt-1 ${
+                  <h3 className={`text-base sm:text-lg font-black text-slate-900 leading-snug pt-1 ${
                     isRTLSubject(activeQuiz.subject) ? 'text-right dir-rtl font-thana' : ''
                   }`}>
                     {activeQuiz.questions[currentQuestionIdx].question_text}
@@ -2887,9 +2989,9 @@ export default function App() {
                         key={opt}
                         onClick={() => handleAnswerSubmit(opt)}
                         disabled={showExplanation}
-                        className={`w-full p-3.5 sm:p-4 rounded-2xl border-2 text-left text-xs sm:text-sm font-medium transition-all duration-200 flex items-center space-x-3 group ${btnStyle}`}
+                        className={`w-full p-3.5 rounded-2xl border-2 text-left text-xs sm:text-sm font-medium transition-all duration-200 flex items-center space-x-3 group ${btnStyle}`}
                       >
-                        <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl border flex items-center justify-center font-black text-xs shrink-0 transition-colors ${badgeStyle}`}>
+                        <span className={`w-7 h-7 rounded-xl border flex items-center justify-center font-black text-xs shrink-0 transition-colors ${badgeStyle}`}>
                           {opt}
                         </span>
                         <span className="flex-1 leading-normal">{optionText}</span>
