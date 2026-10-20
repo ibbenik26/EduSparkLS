@@ -34,6 +34,23 @@ const ALL_SUBJECTS = [
 
 const QUICK_EMOJIS = ['🎒', '📓', '📐', '🖍️', '🎨', '🎟️', '⚡', '🎁', '⚽', '🏆', '📱', '📚', '🧩', '🎮', '🎧', '✏️'];
 
+// --- Role-Based Strict Navigation Matrix ---
+const ROLE_TABS = {
+  student: ['dashboard', 'olevel', 'library', 'shop', 'profile'],
+  teacher: ['studio', 'profile'],
+  shop_admin: ['shop_management', 'profile'],
+  super_admin: ['dashboard', 'olevel', 'library', 'shop', 'shop_management', 'studio', 'super_admin_console', 'profile']
+};
+
+const getDefaultTabForRole = (userRole) => {
+  switch (userRole) {
+    case 'teacher': return 'studio';
+    case 'shop_admin': return 'shop_management';
+    case 'super_admin': return 'super_admin_console';
+    default: return 'dashboard';
+  }
+};
+
 const isRTLSubject = (subject) => {
   return subject === 'Dhivehi' || subject === 'Islam' || subject === 'ދިވެހި' || subject === 'އިސްލާމް';
 };
@@ -608,7 +625,7 @@ const INITIAL_QUIZZES = [
 
 export default function App() {
   // --- Auth View States ---
-  const [authView, setAuthView] = useState('landing'); // 'landing' | 'login' | 'register' | 'forgot_password'
+  const [authView, setAuthView] = useState('landing');
   const [isPasswordResetFlow, setIsPasswordResetFlow] = useState(false);
   const [user, setUser] = useState(null);
   const [role, setRole] = useState('student');
@@ -616,7 +633,7 @@ export default function App() {
   const [teacherSubject, setTeacherSubject] = useState('Physics');
 
   // Multi-Role Registration States
-  const [registerRole, setRegisterRole] = useState('student'); // 'student' | 'teacher' | 'shop_admin'
+  const [registerRole, setRegisterRole] = useState('student');
   const [adminPasscode, setAdminPasscode] = useState('');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
@@ -717,14 +734,24 @@ export default function App() {
   const [newStaffPass, setNewStaffPass] = useState('Teacher2026!');
   const [newStaffSubject, setNewStaffSubject] = useState('Physics');
 
+  // --- Automatic Role Tab Enforcer ---
+  useEffect(() => {
+    const allowedTabs = ROLE_TABS[role] || ROLE_TABS.student;
+    if (!allowedTabs.includes(activeTab)) {
+      setActiveTab(getDefaultTabForRole(role));
+    }
+  }, [role, activeTab]);
+
   const navigateToTab = (tabName) => {
+    const allowed = ROLE_TABS[role] || ROLE_TABS.student;
+    if (!allowed.includes(tabName)) return;
+
     setActiveQuiz(null);
     setSelectedBook(null);
     setActiveTab(tabName);
   };
 
   useEffect(() => {
-    // Check if URL hash contains recovery token
     if (window.location.hash && window.location.hash.includes('type=recovery')) {
       setIsPasswordResetFlow(true);
     }
@@ -760,7 +787,6 @@ export default function App() {
       const metadataRole = authUser?.user_metadata?.role;
       const dbRole = data?.role;
 
-      // Determine effective role (checking DB profile AND metadata)
       let effectiveRole = 'student';
       if (dbRole === 'super_admin' || metadataRole === 'super_admin') {
         effectiveRole = 'super_admin';
@@ -785,13 +811,10 @@ export default function App() {
         setMustChangePassword(true);
       }
 
-      // Default tab routing based on effective role
+      setActiveTab(getDefaultTabForRole(effectiveRole));
+
       if (effectiveRole === 'super_admin') {
         fetchAllProfiles();
-      } else if (effectiveRole === 'teacher') {
-        setActiveTab('studio');
-      } else if (effectiveRole === 'shop_admin') {
-        setActiveTab('shop_management');
       }
     } catch (e) {
       console.warn("Profile fetch error:", e);
@@ -800,10 +823,7 @@ export default function App() {
 
   const fetchAllProfiles = async () => {
     try {
-      const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-      if (error) {
-        console.error("Error fetching all profiles:", error);
-      }
+      const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
       if (data) setAllProfiles(data);
     } catch (e) {
       console.warn("Profiles list error:", e);
@@ -996,7 +1016,7 @@ export default function App() {
       alert("✅ Password updated successfully!");
     } catch (err) {
       alert("Error updating password: " + err.message);
-    } finally {
+    } fontally {
       setAuthLoading(false);
     }
   };
@@ -1294,7 +1314,7 @@ export default function App() {
   const currentRank = getStudentRank(xp);
 
   // =========================================================================
-  // --- PASSWORD RECOVERY RESET OVERLAY (Renders on Top if Active) ---
+  // --- PASSWORD RECOVERY RESET OVERLAY ---
   // =========================================================================
   if (isPasswordResetFlow) {
     return (
@@ -1782,7 +1802,7 @@ export default function App() {
       {/* HEADER BAR */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div onClick={() => navigateToTab(role === 'teacher' ? 'studio' : 'dashboard')} className="flex items-center space-x-3 cursor-pointer">
+          <div onClick={() => navigateToTab(getDefaultTabForRole(role))} className="flex items-center space-x-3 cursor-pointer">
             <div className="bg-gradient-to-tr from-indigo-600 to-purple-600 p-2 rounded-xl shadow-md">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
@@ -1790,7 +1810,7 @@ export default function App() {
               <h1 className="text-lg font-black tracking-tight text-slate-900">
                 EduSpark <span className="text-indigo-600">IQ</span>
               </h1>
-              <p className="text-[11px] text-slate-500 font-medium">School Student Portal & E-Library</p>
+              <p className="text-[11px] text-slate-500 font-medium">School Portal & Analytics</p>
             </div>
           </div>
 
@@ -1805,6 +1825,7 @@ export default function App() {
                  role === 'teacher' ? `👨‍🏫 ${teacherSubject} Teacher` :
                  role === 'shop_admin' ? '🏬 Shop CP' : currentRank.title}
               </span>
+
               {role === 'student' && (
                 <>
                   <div className="flex items-center space-x-1 text-emerald-700">
@@ -1910,7 +1931,7 @@ export default function App() {
       {/* MAIN CONTENT */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
 
-        {/* PRACTICE VAULT (STUDENT / SUPER ADMIN) */}
+        {/* PRACTICE VAULT (STUDENT / SUPER ADMIN ONLY) */}
         {activeTab === 'dashboard' && (role === 'student' || role === 'super_admin') && !activeQuiz && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1966,7 +1987,7 @@ export default function App() {
           </div>
         )}
 
-        {/* CAMBRIDGE O-LEVEL ARENA (STUDENT / SUPER ADMIN) */}
+        {/* CAMBRIDGE O-LEVEL ARENA (STUDENT / SUPER ADMIN ONLY) */}
         {activeTab === 'olevel' && (role === 'student' || role === 'super_admin') && !activeQuiz && (
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -2047,7 +2068,7 @@ export default function App() {
           </div>
         )}
 
-        {/* E-LIBRARY (STUDENT / SUPER ADMIN) */}
+        {/* E-LIBRARY (STUDENT / SUPER ADMIN ONLY) */}
         {activeTab === 'library' && (role === 'student' || role === 'super_admin') && (
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-emerald-800 via-teal-700 to-cyan-800 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -2138,7 +2159,7 @@ export default function App() {
           </div>
         )}
 
-        {/* STUDENT GIFT SHOP (STUDENT / SUPER ADMIN) */}
+        {/* STUDENT GIFT SHOP (STUDENT / SUPER ADMIN ONLY) */}
         {activeTab === 'shop' && (role === 'student' || role === 'super_admin') && (
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-600 text-white p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -2218,7 +2239,7 @@ export default function App() {
           </div>
         )}
 
-        {/* STORE SALES CP (SHOP ADMIN / SUPER ADMIN) */}
+        {/* STORE SALES CP (SHOP ADMIN / SUPER ADMIN ONLY) */}
         {activeTab === 'shop_management' && (role === 'shop_admin' || role === 'super_admin') && (
           <div className="space-y-6 max-w-5xl mx-auto">
             <div className="bg-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg space-y-2">
@@ -2319,7 +2340,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TEACHER QUIZ STUDIO (TEACHERS / SUPER ADMIN) */}
+        {/* TEACHER QUIZ STUDIO (TEACHER / SUPER ADMIN ONLY) */}
         {activeTab === 'studio' && (role === 'teacher' || role === 'super_admin') && (
           <div className="max-w-5xl mx-auto space-y-6">
             <div className="bg-purple-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg space-y-2">
@@ -2506,30 +2527,59 @@ export default function App() {
           </div>
         )}
 
-        {/* PROFILE */}
+        {/* PROFILE (ROLE-TAILORED) */}
         {activeTab === 'profile' && (
           <div className="max-w-2xl mx-auto space-y-6">
-            <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-4">
+            <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs space-y-5">
               <div className="flex items-center space-x-3 pb-4 border-b">
                 <div className="w-12 h-12 bg-indigo-100 text-indigo-700 rounded-2xl flex items-center justify-center font-black text-lg">
                   {authName.charAt(0)}
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-slate-900">{authName}</h3>
-                  <p className="text-xs text-slate-500">Role: <strong className="capitalize">{role}</strong> • Email: {user.email}</p>
+                  <p className="text-xs text-slate-500">Email: {user.email}</p>
                 </div>
               </div>
 
-              <div className="space-y-4 pt-2">
-                <h4 className="font-bold text-slate-900 text-sm">Security & Password Management</h4>
+              {/* Role-Specific Overview */}
+              <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-2xl space-y-2 text-xs">
+                <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Account Credentials</h4>
+                
+                {role === 'teacher' ? (
+                  <div className="grid grid-cols-2 gap-2 text-slate-700">
+                    <div><span className="text-slate-400">Role:</span> <strong>👨‍🏫 Teacher</strong></div>
+                    <div><span className="text-slate-400">Subject:</span> <strong className="text-purple-700">{teacherSubject}</strong></div>
+                  </div>
+                ) : role === 'shop_admin' ? (
+                  <div className="grid grid-cols-2 gap-2 text-slate-700">
+                    <div><span className="text-slate-400">Role:</span> <strong>🏬 Store CP Manager</strong></div>
+                    <div><span className="text-slate-400">Permissions:</span> <strong>Store & Order Handover</strong></div>
+                  </div>
+                ) : role === 'super_admin' ? (
+                  <div className="grid grid-cols-2 gap-2 text-slate-700">
+                    <div><span className="text-slate-400">Role:</span> <strong>👑 Super Admin</strong></div>
+                    <div><span className="text-slate-400">Permissions:</span> <strong>Master Universal Access</strong></div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 text-slate-700">
+                    <div><span className="text-slate-400">Role:</span> <strong>🎓 Student</strong></div>
+                    <div><span className="text-slate-400">Grade:</span> <strong>Grade {studentGrade}</strong></div>
+                    <div><span className="text-slate-400">EduCoins:</span> <strong>{coins} Coins</strong></div>
+                    <div><span className="text-slate-400">Reading Hours:</span> <strong>{readingHours} Hours</strong></div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3 pt-1">
+                <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Update Account Password</h4>
                 <form onSubmit={handleUserSelfChangePassword} className="space-y-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">New Password</label>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">New Secure Password</label>
                     <input
                       type="password"
                       value={profileNewPassword}
                       onChange={(e) => setProfileNewPassword(e.target.value)}
-                      placeholder="Enter new password"
+                      placeholder="Enter new password (min 6 characters)"
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800"
                       required
                     />
@@ -2539,7 +2589,7 @@ export default function App() {
                     disabled={authLoading}
                     className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-xs"
                   >
-                    {authLoading ? 'Updating...' : 'Update Password'}
+                    {authLoading ? 'Updating Password...' : 'Save Password'}
                   </button>
                 </form>
               </div>
