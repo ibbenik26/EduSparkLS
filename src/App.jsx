@@ -34,7 +34,7 @@ const ALL_SUBJECTS = [
 
 const QUICK_EMOJIS = ['🎒', '📓', '📐', '🖍️', '🎨', '🎟️', '⚡', '🎁', '⚽', '🏆', '📱', '📚', '🧩', '🎮', '🎧', '✏️'];
 
-// --- Role-Based Strict Navigation Matrix ---
+// --- Role-Based Navigation Permissions ---
 const ROLE_TABS = {
   student: ['dashboard', 'olevel', 'library', 'shop', 'profile'],
   teacher: ['studio', 'profile'],
@@ -742,6 +742,11 @@ export default function App() {
     }
   }, [role, activeTab]);
 
+  const switchRolePreview = (newRole) => {
+    setRole(newRole);
+    setActiveTab(getDefaultTabForRole(newRole));
+  };
+
   const navigateToTab = (tabName) => {
     const allowed = ROLE_TABS[role] || ROLE_TABS.student;
     if (!allowed.includes(tabName)) return;
@@ -782,12 +787,13 @@ export default function App() {
     if (!userId) return;
 
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
       
       const metadataRole = authUser?.user_metadata?.role;
       const dbRole = data?.role;
 
-      let effectiveRole = 'student';
+      // Ensure DB profile or metadata role takes precedence over default fallback
+      let effectiveRole = dbRole || metadataRole || 'student';
       if (dbRole === 'super_admin' || metadataRole === 'super_admin') {
         effectiveRole = 'super_admin';
       } else if (dbRole === 'teacher' || metadataRole === 'teacher') {
@@ -934,6 +940,8 @@ export default function App() {
           online_read_book_ids: [],
           physical_claimed_book_ids: []
         }], { onConflict: 'id' });
+
+        await fetchUserProfile(data.user);
       }
 
       alert(`🎉 Registration successful as ${registerRole.toUpperCase()}! You can now sign in.`);
@@ -1016,7 +1024,7 @@ export default function App() {
       alert("✅ Password updated successfully!");
     } catch (err) {
       alert("Error updating password: " + err.message);
-    } fontally {
+    } finally {
       setAuthLoading(false);
     }
   };
@@ -2541,9 +2549,43 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Role-Specific Overview */}
+              {/* Instant Role Preview Switcher */}
+              <div className="bg-indigo-50/70 border border-indigo-200 p-4 rounded-2xl space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Switch Active Role Preview</span>
+                  <span className="text-[10px] text-indigo-600 font-bold">Current: {role.toUpperCase()}</span>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  <button
+                    onClick={() => switchRolePreview('student')}
+                    className={`py-2 text-[11px] font-bold rounded-xl border transition ${role === 'student' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-white text-slate-700 border-slate-200'}`}
+                  >
+                    🎓 Student
+                  </button>
+                  <button
+                    onClick={() => switchRolePreview('teacher')}
+                    className={`py-2 text-[11px] font-bold rounded-xl border transition ${role === 'teacher' ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white text-slate-700 border-slate-200'}`}
+                  >
+                    👨‍🏫 Teacher
+                  </button>
+                  <button
+                    onClick={() => switchRolePreview('shop_admin')}
+                    className={`py-2 text-[11px] font-bold rounded-xl border transition ${role === 'shop_admin' ? 'bg-amber-600 text-white border-amber-600 shadow-xs' : 'bg-white text-slate-700 border-slate-200'}`}
+                  >
+                    🏬 Shop CP
+                  </button>
+                  <button
+                    onClick={() => switchRolePreview('super_admin')}
+                    className={`py-2 text-[11px] font-bold rounded-xl border transition ${role === 'super_admin' ? 'bg-rose-600 text-white border-rose-600 shadow-xs' : 'bg-white text-slate-700 border-slate-200'}`}
+                  >
+                    👑 Admin
+                  </button>
+                </div>
+              </div>
+
+              {/* Role-Specific Credentials Card */}
               <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-2xl space-y-2 text-xs">
-                <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Account Credentials</h4>
+                <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Account Information</h4>
                 
                 {role === 'teacher' ? (
                   <div className="grid grid-cols-2 gap-2 text-slate-700">
