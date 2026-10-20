@@ -608,7 +608,8 @@ const INITIAL_QUIZZES = [
 
 export default function App() {
   // --- Auth View States ---
-  const [authView, setAuthView] = useState('landing'); // 'landing' | 'login' | 'register' | 'forgot_password' | 'reset_password_modal'
+  const [authView, setAuthView] = useState('landing'); // 'landing' | 'login' | 'register' | 'forgot_password'
+  const [isPasswordResetFlow, setIsPasswordResetFlow] = useState(false);
   const [user, setUser] = useState(null);
   const [role, setRole] = useState('student');
   const [userStatus, setUserStatus] = useState('active');
@@ -723,19 +724,24 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Check if URL hash contains recovery token
+    if (window.location.hash && window.location.hash.includes('type=recovery')) {
+      setIsPasswordResetFlow(true);
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        fetchUserProfile(session.user.id);
+        fetchUserProfile(session.user);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
-        setAuthView('reset_password_modal');
+        setIsPasswordResetFlow(true);
       } else if (session?.user) {
         setUser(session.user);
-        fetchUserProfile(session.user.id);
+        fetchUserProfile(session.user);
       } else {
         setUser(null);
       }
@@ -744,34 +750,48 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserProfile = async (userId) => {
+  const fetchUserProfile = async (authUser) => {
+    const userId = authUser?.id;
+    if (!userId) return;
+
     try {
       const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
-      if (data) {
-        const uRole = (data.role || 'student').toLowerCase();
-        setAuthName(data.full_name || 'User');
-        setRole(uRole);
-        setUserStatus(data.status || 'active');
-        setTeacherSubject(data.teacher_subject || 'Physics');
-        setStudentGrade(data.grade || 7);
-        setCoins(data.coins ?? 350);
-        setXp(data.xp ?? 420);
-        setReadingHours(data.reading_hours ?? 5.5);
-        setOnlineReadBookIds(data.online_read_book_ids || []);
-        setPhysicalClaimedBookIds(data.physical_claimed_book_ids || []);
+      
+      const metadataRole = authUser?.user_metadata?.role;
+      const dbRole = data?.role;
 
-        if (data.must_change_password) {
-          setMustChangePassword(true);
-        }
+      // Determine effective role (checking DB profile AND metadata)
+      let effectiveRole = 'student';
+      if (dbRole === 'super_admin' || metadataRole === 'super_admin') {
+        effectiveRole = 'super_admin';
+      } else if (dbRole === 'teacher' || metadataRole === 'teacher') {
+        effectiveRole = 'teacher';
+      } else if (dbRole === 'shop_admin' || metadataRole === 'shop_admin') {
+        effectiveRole = 'shop_admin';
+      }
 
-        // Default routing by role
-        if (uRole === 'teacher') {
-          setActiveTab('studio');
-        } else if (uRole === 'shop_admin') {
-          setActiveTab('shop_management');
-        } else if (uRole === 'super_admin') {
-          fetchAllProfiles();
-        }
+      setAuthName(data?.full_name || authUser?.user_metadata?.full_name || 'User');
+      setRole(effectiveRole);
+      setUserStatus(data?.status || 'active');
+      setTeacherSubject(data?.teacher_subject || authUser?.user_metadata?.teacher_subject || 'Physics');
+      setStudentGrade(data?.grade || authUser?.user_metadata?.grade || 7);
+      setCoins(data?.coins ?? 350);
+      setXp(data?.xp ?? 420);
+      setReadingHours(data?.reading_hours ?? 5.5);
+      setOnlineReadBookIds(data?.online_read_book_ids || []);
+      setPhysicalClaimedBookIds(data?.physical_claimed_book_ids || []);
+
+      if (data?.must_change_password) {
+        setMustChangePassword(true);
+      }
+
+      // Default tab routing based on effective role
+      if (effectiveRole === 'super_admin') {
+        fetchAllProfiles();
+      } else if (effectiveRole === 'teacher') {
+        setActiveTab('studio');
+      } else if (effectiveRole === 'shop_admin') {
+        setActiveTab('shop_management');
       }
     } catch (e) {
       console.warn("Profile fetch error:", e);
@@ -780,7 +800,10 @@ export default function App() {
 
   const fetchAllProfiles = async () => {
     try {
-      const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      if (error) {
+        console.error("Error fetching all profiles:", error);
+      }
       if (data) setAllProfiles(data);
     } catch (e) {
       console.warn("Profiles list error:", e);
@@ -854,7 +877,7 @@ export default function App() {
     if (registerRole !== 'student') {
       const passcode = adminPasscode.trim().toUpperCase();
       if (passcode !== 'ADMIN2026' && passcode !== 'EDUSPARK2026' && passcode !== 'SUPER2026') {
-        return alert('❌ Invalid Admin Passcode! Contact system admin for the registration passcode.');
+        return alert('❌ Invalid Admin Passcode! Use ADMIN2026 or EDUSPARK2026 for staff registration.');
       }
     }
 
@@ -893,7 +916,7 @@ export default function App() {
         }], { onConflict: 'id' });
       }
 
-      alert(`🎉 Registration successful as ${registerRole.toUpperCase()}! Please sign in.`);
+      alert(`🎉 Registration successful as ${registerRole.toUpperCase()}! You can now sign in.`);
       setAuthView('login');
     } catch (err) {
       alert("Registration Error: " + err.message);
@@ -929,9 +952,10 @@ export default function App() {
       const { error } = await supabase.auth.updateUser({ password: newRecoveryPassword });
       if (error) throw error;
 
-      alert("✅ Password updated successfully! Redirecting to dashboard...");
-      setAuthView('landing');
+      alert("✅ Password updated successfully! You can now log in with your new password.");
+      setIsPasswordResetFlow(false);
       setNewRecoveryPassword('');
+      setAuthView('login');
     } catch (err) {
       alert("Failed to update password: " + err.message);
     } finally {
@@ -1270,6 +1294,47 @@ export default function App() {
   const currentRank = getStudentRank(xp);
 
   // =========================================================================
+  // --- PASSWORD RECOVERY RESET OVERLAY (Renders on Top if Active) ---
+  // =========================================================================
+  if (isPasswordResetFlow) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-center items-center p-4">
+        <div className="bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-2xl max-w-md w-full space-y-6">
+          <div className="text-center space-y-2">
+            <div className="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto">
+              <KeyRound className="w-6 h-6" />
+            </div>
+            <h2 className="text-2xl font-black text-white">Reset Your Password</h2>
+            <p className="text-xs text-slate-400">Enter a new secure password for your account</p>
+          </div>
+
+          <form onSubmit={handleSetNewPasswordFromRecovery} className="space-y-4">
+            <div>
+              <label className="text-xs font-bold text-slate-300 block mb-1.5">New Password</label>
+              <input
+                type="password"
+                value={newRecoveryPassword}
+                onChange={(e) => setNewRecoveryPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={authLoading}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-xs transition shadow-md"
+            >
+              {authLoading ? 'Updating Password...' : 'Save New Password & Continue'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
   // --- LANDING & AUTHENTICATION (UNAUTHENTICATED) ---
   // =========================================================================
   if (!user) {
@@ -1302,7 +1367,7 @@ export default function App() {
               onClick={() => setAuthView('register')}
               className="bg-white hover:bg-slate-100 text-slate-900 px-5 py-2 rounded-xl text-xs font-bold shadow-md transition"
             >
-              Register Account
+              Create Account
             </button>
           </div>
         </header>
@@ -1486,42 +1551,7 @@ export default function App() {
           </main>
         )}
 
-        {/* PASSWORD RESET RECOVERY FORM */}
-        {authView === 'reset_password_modal' && (
-          <main className="max-w-md w-full mx-auto px-6 py-8 z-10 flex-1 flex flex-col justify-center">
-            <div className="bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-2xl space-y-6">
-              <div className="text-center space-y-1">
-                <KeyRound className="w-8 h-8 text-indigo-400 mx-auto" />
-                <h2 className="text-2xl font-black text-white">Set New Password</h2>
-                <p className="text-xs text-slate-400">Enter your new secure account password below</p>
-              </div>
-
-              <form onSubmit={handleSetNewPasswordFromRecovery} className="space-y-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1.5">New Password</label>
-                  <input
-                    type="password"
-                    value={newRecoveryPassword}
-                    onChange={(e) => setNewRecoveryPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white"
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={authLoading}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-xs transition shadow-md"
-                >
-                  {authLoading ? 'Updating Password...' : 'Save New Password & Log In'}
-                </button>
-              </form>
-            </div>
-          </main>
-        )}
-
-        {/* UPDATED ROLE-BASED REGISTRATION FORM */}
+        {/* ROLE-BASED REGISTRATION FORM */}
         {authView === 'register' && (
           <main className="max-w-md w-full mx-auto px-6 py-8 z-10 flex-1 flex flex-col justify-center">
             <div className="bg-slate-800 border border-slate-700 p-8 rounded-3xl shadow-2xl space-y-5">
@@ -1645,7 +1675,7 @@ export default function App() {
                         type="password"
                         value={adminPasscode}
                         onChange={(e) => setAdminPasscode(e.target.value)}
-                        placeholder="Enter Staff Passcode"
+                        placeholder="Enter ADMIN2026 or EDUSPARK2026"
                         className="w-full bg-slate-900 border border-amber-500/50 rounded-xl px-3 py-2 text-xs text-white"
                         required
                       />
@@ -1658,7 +1688,7 @@ export default function App() {
                       type="password"
                       value={adminPasscode}
                       onChange={(e) => setAdminPasscode(e.target.value)}
-                      placeholder="Enter Staff Passcode"
+                      placeholder="Enter ADMIN2026 or EDUSPARK2026"
                       className="w-full bg-slate-900 border border-amber-500/50 rounded-xl px-3 py-2 text-xs text-white"
                       required
                     />
