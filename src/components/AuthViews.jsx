@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, ArrowRight, ShieldCheck, GraduationCap, CheckCircle } from 'lucide-react';
+import { Sparkles, ArrowRight, ShieldCheck, GraduationCap } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { ALL_SUBJECTS } from '../utils/helpers';
 
@@ -81,7 +81,7 @@ export function AuthForm({ authView, setAuthView }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [registerRole, setRegisterRole] = useState('student');
+  const [registerRole, setRegisterRole] = useState('student'); // Only Student or Teacher
   const [grade, setGrade] = useState(7);
   const [indexNumber, setIndexNumber] = useState('');
   const [teacherSubject, setTeacherSubject] = useState('Physics');
@@ -97,7 +97,7 @@ export function AuthForm({ authView, setAuthView }) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else if (authView === 'register') {
-        if ((registerRole === 'teacher' || registerRole === 'super_admin' || registerRole === 'shop_admin') && adminPasscode !== 'ADMIN2026') {
+        if (registerRole === 'teacher' && adminPasscode !== 'ADMIN2026') {
           alert('❌ Invalid Staff Passcode! Use passcode: ADMIN2026');
           setLoading(false);
           return;
@@ -156,16 +156,14 @@ export function AuthForm({ authView, setAuthView }) {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Role</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Select Role</label>
                 <select
                   value={registerRole}
                   onChange={(e) => setRegisterRole(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold text-indigo-700"
                 >
                   <option value="student">Student</option>
-                  <option value="teacher">Teacher (Can CRUD Quizzes)</option>
-                  <option value="shop_admin">Shop Admin</option>
-                  <option value="super_admin">Super Admin</option>
+                  <option value="teacher">Teacher</option>
                 </select>
               </div>
 
@@ -198,30 +196,29 @@ export function AuthForm({ authView, setAuthView }) {
               )}
 
               {registerRole === 'teacher' && (
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Subject Lead</label>
-                  <select
-                    value={teacherSubject}
-                    onChange={(e) => setTeacherSubject(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 font-medium"
-                  >
-                    {ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              )}
-
-              {registerRole !== 'student' && (
-                <div>
-                  <label className="text-xs font-bold text-amber-700 block mb-1">Staff Security Passcode</label>
-                  <input
-                    type="password"
-                    value={adminPasscode}
-                    onChange={(e) => setAdminPasscode(e.target.value)}
-                    placeholder="Enter ADMIN2026"
-                    className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-3 text-xs text-slate-900"
-                    required
-                  />
-                </div>
+                <>
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Subject Lead</label>
+                    <select
+                      value={teacherSubject}
+                      onChange={(e) => setTeacherSubject(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 font-medium"
+                    >
+                      {ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-amber-700 block mb-1">Teacher Staff Passcode</label>
+                    <input
+                      type="password"
+                      value={adminPasscode}
+                      onChange={(e) => setAdminPasscode(e.target.value)}
+                      placeholder="Enter ADMIN2026"
+                      className="w-full bg-amber-50/50 border border-amber-300 rounded-xl p-3 text-xs text-slate-900"
+                      required
+                    />
+                  </div>
+                </>
               )}
             </>
           )}
