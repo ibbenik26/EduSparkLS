@@ -1,17 +1,7 @@
 export const ALL_SUBJECTS = [
-  'Dhivehi',
-  'Islam',
-  'English',
-  'Maths',
-  'Physics',
-  'Chemistry',
-  'Biology',
-  'Economics',
-  'Business Studies',
-  'Accounting',
-  'Computer Science',
-  'Social Studies',
-  'Science'
+  'Dhivehi', 'Islam', 'English', 'Maths', 'Physics',
+  'Chemistry', 'Biology', 'Economics', 'Business Studies',
+  'Accounting', 'Computer Science', 'Social Studies', 'Science'
 ];
 
 export const QUICK_EMOJIS = ['🎒', '📓', '📐', '🖍️', '🎨', '🎟️', '⚡', '🎁', '⚽', '🏆', '📱', '📚', '🧩', '🎮', '🎧', '✏️'];
@@ -39,12 +29,8 @@ export const isRTLSubject = (subject) => {
 export const getQuizTimeLimit = (quiz) => {
   if (!quiz) return 60;
   if (quiz.time_limit) return quiz.time_limit;
-
   const subj = (quiz.subject || '').toLowerCase();
-  if (['maths', 'physics', 'chemistry', 'accounting', 'economics'].includes(subj)) {
-    return 120;
-  }
-  return 60;
+  return ['maths', 'physics', 'chemistry', 'accounting', 'economics'].includes(subj) ? 120 : 60;
 };
 
 export const playSound = (type) => {
@@ -93,31 +79,22 @@ export const getStudentRank = (xp) => {
 
 export const generateSubjectAnalytics = (subject, attempts = []) => {
   const subjectAttempts = attempts.filter(a => (a.subject || '').toLowerCase() === subject.toLowerCase());
-  const completedCount = subjectAttempts.length;
-
-  if (completedCount === 0) return null;
+  if (subjectAttempts.length === 0) return null;
 
   let totalScore = 0;
   let totalQuestions = 0;
-  let totalTimeSeconds = 0;
-
   const topicStats = {};
 
   subjectAttempts.forEach(a => {
     totalScore += a.score || 0;
     totalQuestions += a.total || 0;
-    totalTimeSeconds += a.timeSpentSeconds || (a.total * 30);
-
     if (a.questionDetails && Array.isArray(a.questionDetails)) {
       a.questionDetails.forEach(qd => {
         const topicName = qd.topic || qd.question_text || 'General Concept';
-        if (!topicStats[topicName]) {
-          topicStats[topicName] = { correct: 0, total: 0, explanations: [] };
-        }
+        if (!topicStats[topicName]) topicStats[topicName] = { correct: 0, total: 0, explanations: [] };
         topicStats[topicName].total += 1;
-        if (qd.is_correct) {
-          topicStats[topicName].correct += 1;
-        } else if (qd.explanation && !topicStats[topicName].explanations.includes(qd.explanation)) {
+        if (qd.is_correct) topicStats[topicName].correct += 1;
+        else if (qd.explanation && !topicStats[topicName].explanations.includes(qd.explanation)) {
           topicStats[topicName].explanations.push(qd.explanation);
         }
       });
@@ -125,7 +102,6 @@ export const generateSubjectAnalytics = (subject, attempts = []) => {
   });
 
   const accuracy = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
-
   let predictedGrade = 'F';
   let gradeColor = 'text-rose-600';
   let gradeBg = 'bg-rose-50 border-rose-200';
@@ -141,29 +117,12 @@ export const generateSubjectAnalytics = (subject, attempts = []) => {
 
   Object.entries(topicStats).forEach(([topic, stat]) => {
     const topicAcc = Math.round((stat.correct / stat.total) * 100);
-    if (topicAcc >= 70) {
-      strongTopics.push({ topic, accuracy: topicAcc, totalAttempted: stat.total });
-    } else {
-      weakTopics.push({
-        topic,
-        accuracy: topicAcc,
-        totalAttempted: stat.total,
-        explanation: stat.explanations.join(' • ') || 'Needs foundational review.'
-      });
-    }
+    if (topicAcc >= 70) strongTopics.push({ topic, accuracy: topicAcc, totalAttempted: stat.total });
+    else weakTopics.push({ topic, accuracy: topicAcc, totalAttempted: stat.total, explanation: stat.explanations.join(' • ') || 'Needs review.' });
   });
 
   return {
-    subject,
-    completedCount,
-    totalScore,
-    totalQuestions,
-    accuracy,
-    predictedGrade,
-    gradeColor,
-    gradeBg,
-    strongTopics,
-    weakTopics,
-    isCompleteReportUnlocked: completedCount >= 10
+    subject, completedCount: subjectAttempts.length, totalScore, totalQuestions, accuracy,
+    predictedGrade, gradeColor, gradeBg, strongTopics, weakTopics
   };
 };
