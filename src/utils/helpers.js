@@ -4,22 +4,23 @@ export const ALL_SUBJECTS = [
   'Accounting', 'Computer Science', 'Social Studies', 'Science'
 ];
 
-export const QUICK_EMOJIS = ['🎒', '📓', '📐', '🖍️', '🎨', '🎟️', '⚡', '🎁', '⚽', '🏆', '📱', '📚', '🧩', '🎮', '🎧', '✏️'];
-
 export const ROLE_TABS = {
-  student: ['dashboard', 'olevel', 'library', 'shop', 'profile'],
-  teacher: ['studio', 'profile'],
+  student: ['dashboard', 'olevel', 'leaderboard', 'library', 'shop', 'profile'],
+  teacher: ['dashboard', 'olevel', 'leaderboard', 'library', 'studio', 'profile'],
   shop_admin: ['shop_management', 'profile'],
-  super_admin: ['dashboard', 'olevel', 'library', 'shop', 'shop_management', 'studio', 'super_admin_console', 'profile']
+  super_admin: ['dashboard', 'olevel', 'leaderboard', 'library', 'shop', 'studio', 'profile']
 };
 
 export const getDefaultTabForRole = (userRole) => {
   switch (userRole) {
     case 'teacher': return 'studio';
     case 'shop_admin': return 'shop_management';
-    case 'super_admin': return 'super_admin_console';
     default: return 'dashboard';
   }
+};
+
+export const canUserCRUD = (role) => {
+  return ['teacher', 'shop_admin', 'super_admin'].includes(role);
 };
 
 export const isRTLSubject = (subject) => {
@@ -65,7 +66,7 @@ export const playSound = (type) => {
       osc.stop(ctx.currentTime + 0.2);
     }
   } catch (e) {
-    console.warn("Audio Context error:", e);
+    console.warn("Audio error:", e);
   }
 };
 
@@ -103,14 +104,11 @@ export const generateSubjectAnalytics = (subject, attempts = []) => {
 
   const accuracy = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
   let predictedGrade = 'F';
-  let gradeColor = 'text-rose-600';
-  let gradeBg = 'bg-rose-50 border-rose-200';
-
-  if (accuracy >= 85) { predictedGrade = 'A*'; gradeColor = 'text-purple-600'; gradeBg = 'bg-purple-50 border-purple-200'; }
-  else if (accuracy >= 75) { predictedGrade = 'A'; gradeColor = 'text-indigo-600'; gradeBg = 'bg-indigo-50 border-indigo-200'; }
-  else if (accuracy >= 65) { predictedGrade = 'B'; gradeColor = 'text-emerald-600'; gradeBg = 'bg-emerald-50 border-emerald-200'; }
-  else if (accuracy >= 50) { predictedGrade = 'C'; gradeColor = 'text-amber-600'; gradeBg = 'bg-amber-50 border-amber-200'; }
-  else if (accuracy >= 40) { predictedGrade = 'D'; gradeColor = 'text-orange-600'; gradeBg = 'bg-orange-50 border-orange-200'; }
+  if (accuracy >= 85) predictedGrade = 'A*';
+  else if (accuracy >= 75) predictedGrade = 'A';
+  else if (accuracy >= 65) predictedGrade = 'B';
+  else if (accuracy >= 50) predictedGrade = 'C';
+  else if (accuracy >= 40) predictedGrade = 'D';
 
   const strongTopics = [];
   const weakTopics = [];
@@ -121,8 +119,5 @@ export const generateSubjectAnalytics = (subject, attempts = []) => {
     else weakTopics.push({ topic, accuracy: topicAcc, totalAttempted: stat.total, explanation: stat.explanations.join(' • ') || 'Needs review.' });
   });
 
-  return {
-    subject, completedCount: subjectAttempts.length, totalScore, totalQuestions, accuracy,
-    predictedGrade, gradeColor, gradeBg, strongTopics, weakTopics
-  };
+  return { subject, completedCount: subjectAttempts.length, totalScore, totalQuestions, accuracy, predictedGrade, strongTopics, weakTopics };
 };

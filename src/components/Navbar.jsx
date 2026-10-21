@@ -1,28 +1,28 @@
 import React from 'react';
-import { Sparkles, Coins, Trophy, LogOut, User, BookOpen, ShoppingBag, GraduationCap, Shield } from 'lucide-react';
+import { Sparkles, Coins, Trophy, LogOut, User, BookOpen, ShoppingBag, GraduationCap, Shield, Award } from 'lucide-react';
 import { getStudentRank, ROLE_TABS } from '../utils/helpers';
 
-export default function Navbar({ authName, role, coins, xp, activeTab, navigateToTab, handleLogout }) {
+export default function Navbar({ authName, role, studentGrade, coins, xp, activeTab, navigateToTab, handleLogout }) {
   const rank = getStudentRank(xp);
   const allowedTabs = ROLE_TABS[role] || ROLE_TABS.student;
+  const isGrade8Plus = studentGrade >= 8 || role !== 'student';
 
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigateToTab(allowedTabs[0])}>
-          <div className="bg-gradient-to-tr from-indigo-600 to-purple-600 p-2.5 rounded-2xl shadow-md">
+          <div className="bg-gradient-to-tr from-indigo-600 to-indigo-700 p-2.5 rounded-2xl shadow-sm">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
             <h1 className="text-lg font-black text-slate-900 tracking-tight">EduSpark <span className="text-indigo-600">IQ</span></h1>
-            <p className="text-[10px] text-slate-400 font-mono">School Portal & E-Library</p>
+            <p className="text-[10px] text-slate-400 font-medium">Digital School Portal</p>
           </div>
         </div>
 
-        {/* Currency & Rank Badges */}
         <div className="flex items-center space-x-3">
           {role === 'student' && (
-            <div className="hidden sm:flex items-center space-x-2 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-2xl">
+            <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-2xl">
               <div className="flex items-center space-x-1 text-amber-600 font-black text-xs">
                 <Coins className="w-4 h-4 fill-amber-400 text-amber-600" />
                 <span>{coins}</span>
@@ -50,8 +50,7 @@ export default function Navbar({ authName, role, coins, xp, activeTab, navigateT
         </div>
       </div>
 
-      {/* Navigation Tab Links */}
-      <div className="bg-slate-50/80 border-t border-slate-200/60">
+      <div className="bg-slate-50 border-t border-slate-200/60">
         <div className="max-w-7xl mx-auto px-4 flex items-center space-x-1 overflow-x-auto py-2 scrollbar-none whitespace-nowrap">
           {allowedTabs.includes('dashboard') && (
             <button
@@ -65,7 +64,7 @@ export default function Navbar({ authName, role, coins, xp, activeTab, navigateT
             </button>
           )}
 
-          {allowedTabs.includes('olevel') && (
+          {allowedTabs.includes('olevel') && isGrade8Plus && (
             <button
               onClick={() => navigateToTab('olevel')}
               className={`px-3.5 py-1.5 font-bold rounded-xl text-xs transition flex items-center space-x-1.5 ${
@@ -73,7 +72,19 @@ export default function Navbar({ authName, role, coins, xp, activeTab, navigateT
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>O-Level Arena</span>
+              <span>O-Level Arena (Grade 8+)</span>
+            </button>
+          )}
+
+          {allowedTabs.includes('leaderboard') && (
+            <button
+              onClick={() => navigateToTab('leaderboard')}
+              className={`px-3.5 py-1.5 font-bold rounded-xl text-xs transition flex items-center space-x-1.5 ${
+                activeTab === 'leaderboard' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
+              }`}
+            >
+              <Award className="w-3.5 h-3.5" />
+              <span>Leaderboard</span>
             </button>
           )}
 
@@ -81,7 +92,7 @@ export default function Navbar({ authName, role, coins, xp, activeTab, navigateT
             <button
               onClick={() => navigateToTab('library')}
               className={`px-3.5 py-1.5 font-bold rounded-xl text-xs transition flex items-center space-x-1.5 ${
-                activeTab === 'library' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
+                activeTab === 'library' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
               }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
@@ -97,7 +108,7 @@ export default function Navbar({ authName, role, coins, xp, activeTab, navigateT
               }`}
             >
               <ShoppingBag className="w-3.5 h-3.5" />
-              <span>Reward Shop</span>
+              <span>Reward Store</span>
             </button>
           )}
 
@@ -105,11 +116,11 @@ export default function Navbar({ authName, role, coins, xp, activeTab, navigateT
             <button
               onClick={() => navigateToTab('studio')}
               className={`px-3.5 py-1.5 font-bold rounded-xl text-xs transition flex items-center space-x-1.5 ${
-                activeTab === 'studio' ? 'bg-indigo-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
+                activeTab === 'studio' ? 'bg-indigo-800 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
               }`}
             >
               <Shield className="w-3.5 h-3.5" />
-              <span>Teacher Studio</span>
+              <span>Teacher Studio (CRUD)</span>
             </button>
           )}
         </div>

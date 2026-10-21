@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 
-import {
-  ALL_SUBJECTS, ROLE_TABS, getDefaultTabForRole,
-  getQuizTimeLimit, playSound
-} from './utils/helpers';
-
+import { ALL_SUBJECTS, ROLE_TABS, getDefaultTabForRole, getQuizTimeLimit, playSound } from './utils/helpers';
 import { INITIAL_QUIZZES, INITIAL_BOOKS, INITIAL_SHOP_ITEMS } from './data/initialData';
 
 import Navbar from './components/Navbar';
 import { LandingPage, AuthForm } from './components/AuthViews';
 import StudentDashboard from './components/StudentDashboard';
 import OLevelArena from './components/OLevelArena';
+import LeaderboardTab from './components/LeaderboardTab';
 import LibraryTab from './components/LibraryTab';
 import ShopTab from './components/ShopTab';
 import TeacherStudio from './components/TeacherStudio';
@@ -25,14 +22,17 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState('student');
   const [authName, setAuthName] = useState('User');
+  const [studentGrade, setStudentGrade] = useState(7);
 
   const [coins, setCoins] = useState(350);
   const [xp, setXp] = useState(420);
   const [readingHours, setReadingHours] = useState(5.5);
+  const [claimedCodes, setClaimedCodes] = useState([]);
 
   const [quizzes, setQuizzes] = useState(INITIAL_QUIZZES);
   const [books, setBooks] = useState(INITIAL_BOOKS);
   const [shopItems, setShopItems] = useState(INITIAL_SHOP_ITEMS);
+  const [allProfiles, setAllProfiles] = useState([]);
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedSubject, setSelectedSubject] = useState('All');
@@ -51,7 +51,7 @@ export default function App() {
   const [quizFinished, setQuizFinished] = useState(false);
   const [gameOver, setGameOver] = useState(false);
 
-  // Diagram Upload Modal State
+  // Diagram Modal State
   const [showDiagramUploadModal, setShowDiagramUploadModal] = useState(false);
   const [studioSubject, setStudioSubject] = useState('Physics');
   const [studioVariant, setStudioVariant] = useState('Paper 12');
@@ -81,8 +81,18 @@ export default function App() {
       }
     });
 
+    fetchAllProfiles();
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchAllProfiles = async () => {
+    try {
+      const { data } = await supabase.from('profiles').select('*');
+      if (data) setAllProfiles(data);
+    } catch (e) {
+      console.warn("Profiles fetch error:", e);
+    }
+  };
 
   const fetchUserProfile = async (authUser) => {
     const userId = authUser?.id;
@@ -95,6 +105,7 @@ export default function App() {
 
       setAuthName(data?.full_name || authUser?.user_metadata?.full_name || 'User');
       setRole(effectiveRole);
+      setStudentGrade(data?.grade || authUser?.user_metadata?.grade || 7);
       setCoins(data?.coins ?? 350);
       setXp(data?.xp ?? 420);
       setActiveTab(getDefaultTabForRole(effectiveRole));
@@ -122,7 +133,6 @@ export default function App() {
     setAuthView('landing');
   };
 
-  // Quiz Execution Handlers
   const startQuiz = (quiz, mode) => {
     setActiveQuiz(quiz);
     setQuizMode(mode);
@@ -134,7 +144,6 @@ export default function App() {
     setStreak(0);
     setQuizFinished(false);
     setGameOver(false);
-
     setTimeLeft(getQuizTimeLimit(quiz));
   };
 
@@ -185,7 +194,7 @@ export default function App() {
 
   const handleAddQuestionToStage = (e) => {
     e.preventDefault();
-    if (!draftQuestionText.trim() || !draftOptA || !draftOptB) return alert("Fill in required question fields.");
+    if (!draftQuestionText.trim() || !draftOptA || !draftOptB) return alert("Fill in required fields.");
 
     const newQ = {
       id: `q_${Date.now()}`,
@@ -243,6 +252,7 @@ export default function App() {
       <Navbar
         authName={authName}
         role={role}
+        studentGrade={studentGrade}
         coins={coins}
         xp={xp}
         activeTab={activeTab}
@@ -253,7 +263,7 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
         {activeTab === 'dashboard' && (
           <StudentDashboard
-            grade={7}
+            grade={studentGrade}
             quizzes={quizzes}
             selectedSubject={selectedSubject}
             setSelectedSubject={setSelectedSubject}
@@ -271,8 +281,19 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'leaderboard' && (
+          <LeaderboardTab profiles={allProfiles} />
+        )}
+
         {activeTab === 'library' && (
-          <LibraryTab books={books} coins={coins} setCoins={setCoins} setXp={setXp} />
+          <LibraryTab
+            books={books}
+            coins={coins}
+            setCoins={setCoins}
+            setXp={setXp}
+            claimedCodes={claimedCodes}
+            setClaimedCodes={setClaimedCodes}
+          />
         )}
 
         {activeTab === 'shop' && (
@@ -281,7 +302,9 @@ export default function App() {
 
         {activeTab === 'studio' && (
           <TeacherStudio
+            role={role}
             quizzes={quizzes} setQuizzes={setQuizzes}
+            startQuiz={startQuiz}
             studioSubject={studioSubject} setStudioSubject={setStudioSubject}
             studioVariant={studioVariant} setStudioVariant={setStudioVariant}
             showDiagramUploadModal={showDiagramUploadModal}
