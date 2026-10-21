@@ -7,10 +7,10 @@ export default function StudentDashboard({ grade, quizzes, selectedSubject, setS
     q.grade === parseInt(grade) && (selectedSubject === 'All' || q.subject === selectedSubject)
   );
 
-  // Grade 1 Special 1-Question Card Focus Mode
   const [g1QuestionIdx, setG1QuestionIdx] = useState(0);
   const [g1Selected, setG1Selected] = useState(null);
 
+  // Grade 1 Special Focus Mode
   if (grade === 1) {
     const grade1Questions = quizzes.flatMap(q => q.questions || []);
     const currentQ = grade1Questions[g1QuestionIdx];
@@ -19,8 +19,8 @@ export default function StudentDashboard({ grade, quizzes, selectedSubject, setS
       <div className="max-w-xl mx-auto space-y-6 py-4">
         <div className="bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-3xl p-6 text-center space-y-2 shadow-lg">
           <span className="text-3xl">🌟</span>
-          <h2 className="text-2xl font-black">Grade 1 Fun Practice</h2>
-          <p className="text-xs text-pink-100 font-bold">Answer one question at a time to earn stars!</p>
+          <h2 className="text-2xl font-black">Grade 1 Practice Focus</h2>
+          <p className="text-xs text-pink-100 font-bold">Answer one question at a time!</p>
         </div>
 
         {currentQ ? (
@@ -52,7 +52,7 @@ export default function StudentDashboard({ grade, quizzes, selectedSubject, setS
                         : 'bg-slate-50 border-slate-200 hover:border-indigo-300'
                     }`}
                   >
-                    <span>{optText}</span>
+                    <span className={isRTLSubject(currentQ.topic) ? 'font-dhivehi' : ''}>{optText}</span>
                     {isSelected && (isCorrect ? '✅ Great Job!' : '❌ Try Again')}
                   </button>
                 );
@@ -78,7 +78,7 @@ export default function StudentDashboard({ grade, quizzes, selectedSubject, setS
             </div>
           </div>
         ) : (
-          <div className="text-center py-12 text-slate-400 font-bold">No Grade 1 practice questions loaded yet.</div>
+          <div className="text-center py-12 text-slate-400 font-bold">No Grade 1 practice questions available.</div>
         )}
       </div>
     );
@@ -92,7 +92,7 @@ export default function StudentDashboard({ grade, quizzes, selectedSubject, setS
         </span>
         <h2 className="text-2xl sm:text-3xl font-black">Curriculum Practice Modules</h2>
         <p className="text-indigo-200 text-xs max-w-xl">
-          Choose Practice Mode to review explanations or Challenge Mode to test under timed hearts conditions.
+          Choose Practice Mode for step-by-step guidance or Timed Lives mode for heart-based exam practice.
         </p>
       </div>
 
@@ -125,39 +125,43 @@ export default function StudentDashboard({ grade, quizzes, selectedSubject, setS
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredQuizzes.map((quiz) => (
-            <div key={quiz.id} className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4 hover:shadow-md transition">
-              <div className="flex justify-between items-start">
-                <span className={`text-[10px] font-black uppercase tracking-wider bg-indigo-50 border border-indigo-100 text-indigo-700 px-2.5 py-1 rounded-lg ${
-                  isRTLSubject(quiz.subject) ? 'font-dhivehi' : ''
-                }`}>
-                  {quiz.subject}
-                </span>
-                <span className="text-xs text-slate-400 font-medium">{quiz.questions.length} Qs</span>
-              </div>
+          {filteredQuizzes.map((quiz) => {
+            const isDhivehi = isRTLSubject(quiz.subject);
 
-              <h3 className={`font-black text-slate-900 text-base leading-snug ${isRTLSubject(quiz.subject) ? 'font-dhivehi text-right' : ''}`}>
-                {quiz.title}
-              </h3>
+            return (
+              <div key={quiz.id} className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4 hover:shadow-md transition">
+                <div className="flex justify-between items-start">
+                  <span className={`text-[10px] font-black uppercase tracking-wider bg-indigo-50 border border-indigo-100 text-indigo-700 px-2.5 py-1 rounded-lg ${
+                    isDhivehi ? 'font-dhivehi' : ''
+                  }`}>
+                    {quiz.subject}
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium">{quiz.questions.length} Qs</span>
+                </div>
 
-              <div className="grid grid-cols-2 gap-2 pt-2">
-                <button
-                  onClick={() => startQuiz(quiz, 'practice')}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1"
-                >
-                  <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Practice</span>
-                </button>
-                <button
-                  onClick={() => startQuiz(quiz, 'challenge')}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1 shadow-xs"
-                >
-                  <Play className="w-3.5 h-3.5" />
-                  <span>Timed Lives</span>
-                </button>
+                <h3 className={`font-black text-slate-900 text-base leading-snug ${isDhivehi ? 'font-dhivehi' : ''}`}>
+                  {quiz.title}
+                </h3>
+
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <button
+                    onClick={() => startQuiz(quiz, 'practice')}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Practice Mode</span>
+                  </button>
+                  <button
+                    onClick={() => startQuiz(quiz, 'challenge')}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1 shadow-xs"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    <span>Timed Lives</span>
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

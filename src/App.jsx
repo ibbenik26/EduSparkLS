@@ -54,7 +54,7 @@ export default function App() {
   const [quizFinished, setQuizFinished] = useState(false);
   const [gameOver, setGameOver] = useState(false);
 
-  // Diagram Creator State
+  // Diagram Upload Modal State
   const [showDiagramUploadModal, setShowDiagramUploadModal] = useState(false);
   const [studioSubject, setStudioSubject] = useState('Physics');
   const [studioVariant, setStudioVariant] = useState('Paper 12');
@@ -289,6 +289,8 @@ export default function App() {
             coins={coins}
             setCoins={setCoins}
             setXp={setXp}
+            readingHours={readingHours}
+            setReadingHours={setReadingHours}
             claimedCodes={claimedCodes}
             setClaimedCodes={setClaimedCodes}
           />

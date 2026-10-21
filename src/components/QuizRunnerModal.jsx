@@ -21,6 +21,9 @@ export default function QuizRunnerModal({
 }) {
   if (!activeQuiz) return null;
 
+  const currentQuestion = activeQuiz.questions[currentQuestionIdx];
+  const isDhivehi = isRTLSubject(activeQuiz.subject) || isRTLSubject(currentQuestion?.topic);
+
   return (
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 transition-all duration-300">
       <div className="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-8 space-y-5 shadow-2xl border border-slate-100 relative overflow-hidden max-h-[95vh] overflow-y-auto">
@@ -78,15 +81,15 @@ export default function QuizRunnerModal({
               </div>
             </div>
 
-            {/* DIAGRAM DISPLAY AREA */}
-            {activeQuiz.questions[currentQuestionIdx].diagram_url && (
+            {/* Diagram Display Area */}
+            {currentQuestion.diagram_url && (
               <div className="w-full bg-slate-900/5 border border-slate-200 rounded-2xl p-2.5 flex flex-col justify-center items-center space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1 self-start px-1">
                   <ImageIcon className="w-3 h-3 text-indigo-600" />
                   <span>Question Reference Diagram</span>
                 </span>
                 <img
-                  src={activeQuiz.questions[currentQuestionIdx].diagram_url}
+                  src={currentQuestion.diagram_url}
                   alt="Question Diagram"
                   className="max-h-56 sm:max-h-64 w-auto object-contain rounded-xl shadow-xs border border-white"
                 />
@@ -95,25 +98,24 @@ export default function QuizRunnerModal({
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold tracking-wider uppercase text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg">
-                  {activeQuiz.questions[currentQuestionIdx].topic || activeQuiz.subject}
+                <span className={`text-[11px] font-bold tracking-wider uppercase text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg ${isDhivehi ? 'font-dhivehi' : ''}`}>
+                  {currentQuestion.topic || activeQuiz.subject}
                 </span>
                 <span className="text-xs text-slate-400 font-medium">{activeQuiz.title}</span>
               </div>
 
-              <h3 className={`text-base sm:text-lg font-black text-slate-900 leading-snug pt-1 ${
-                isRTLSubject(activeQuiz.subject) ? 'text-right dir-rtl font-thana' : ''
-              }`}>
-                {activeQuiz.questions[currentQuestionIdx].question_text}
+              <h3 className={`text-base sm:text-lg font-black text-slate-900 leading-snug pt-1 ${isDhivehi ? 'font-dhivehi' : ''}`}>
+                {currentQuestion.question_text}
               </h3>
             </div>
 
+            {/* Options List */}
             <div className="space-y-2.5">
               {['A', 'B', 'C', 'D'].map((opt) => {
-                const optionText = activeQuiz.questions[currentQuestionIdx][`option_${opt.toLowerCase()}`];
+                const optionText = currentQuestion[`option_${opt.toLowerCase()}`];
                 if (!optionText) return null;
 
-                const isCorrectOpt = opt === activeQuiz.questions[currentQuestionIdx].correct_option;
+                const isCorrectOpt = opt === currentQuestion.correct_option;
                 const isSelectedOpt = selectedOption === opt;
 
                 let btnStyle = "bg-slate-50 border-slate-200 text-slate-800 hover:bg-indigo-50/50 hover:border-indigo-300";
@@ -142,13 +144,9 @@ export default function QuizRunnerModal({
                     <span className={`w-7 h-7 rounded-xl border flex items-center justify-center font-black text-xs shrink-0 transition-colors ${badgeStyle}`}>
                       {opt}
                     </span>
-                    <span className="flex-1 leading-normal">{optionText}</span>
-                    {showExplanation && isCorrectOpt && (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                    )}
-                    {showExplanation && isSelectedOpt && !isCorrectOpt && (
-                      <XCircle className="w-5 h-5 text-rose-600 shrink-0" />
-                    )}
+                    <span className={`flex-1 leading-normal ${isDhivehi ? 'font-dhivehi' : ''}`}>{optionText}</span>
+                    {showExplanation && isCorrectOpt && <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />}
+                    {showExplanation && isSelectedOpt && !isCorrectOpt && <XCircle className="w-5 h-5 text-rose-600 shrink-0" />}
                   </button>
                 );
               })}
@@ -159,10 +157,10 @@ export default function QuizRunnerModal({
                 <div className="bg-gradient-to-r from-slate-50 to-indigo-50/30 border border-slate-200 p-4 rounded-2xl space-y-1">
                   <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-wide flex items-center space-x-1">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                    <span>Mark Scheme & Concept Breakdown</span>
+                    <span>Concept Breakdown & Mark Scheme</span>
                   </span>
-                  <p className="text-xs text-slate-700 leading-relaxed font-normal">
-                    {activeQuiz.questions[currentQuestionIdx].explanation || 'Option verified against subject mark scheme.'}
+                  <p className={`text-xs text-slate-700 leading-relaxed font-normal ${isDhivehi ? 'font-dhivehi' : ''}`}>
+                    {currentQuestion.explanation || 'Option verified against subject mark scheme.'}
                   </p>
                 </div>
 
@@ -184,19 +182,8 @@ export default function QuizRunnerModal({
             <div className="space-y-1">
               <h3 className="text-2xl font-black text-slate-900">Session Ended</h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                You ran out of lives or time during this session. Review your weak topics to strengthen your performance!
+                You ran out of lives or time during this session. Review weak topics to boost performance!
               </p>
-            </div>
-
-            <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl max-w-sm mx-auto flex justify-around text-center text-xs">
-              <div>
-                <span className="text-slate-400 text-[10px] uppercase font-bold block">Questions Attempted</span>
-                <span className="text-base font-black text-slate-800">{currentQuestionIdx} / {activeQuiz.questions.length}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 text-[10px] uppercase font-bold block">Correct Answers</span>
-                <span className="text-base font-black text-emerald-600">{score}</span>
-              </div>
             </div>
 
             <div className="flex justify-center space-x-3 pt-2">
@@ -207,11 +194,8 @@ export default function QuizRunnerModal({
                 <RotateCcw className="w-4 h-4" />
                 <span>Try Again</span>
               </button>
-              <button
-                onClick={onClose}
-                className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-6 py-3 rounded-2xl text-xs transition"
-              >
-                Return to Vault
+              <button onClick={onClose} className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-6 py-3 rounded-2xl text-xs transition">
+                Return to Dashboard
               </button>
             </div>
           </div>
@@ -225,7 +209,7 @@ export default function QuizRunnerModal({
               <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-full">
                 Quiz Completed!
               </span>
-              <h3 className="text-2xl font-black text-slate-900 pt-1">{activeQuiz.title}</h3>
+              <h3 className={`text-2xl font-black text-slate-900 pt-1 ${isDhivehi ? 'font-dhivehi' : ''}`}>{activeQuiz.title}</h3>
             </div>
 
             <div className="grid grid-cols-3 gap-3 max-w-md mx-auto">
@@ -243,10 +227,7 @@ export default function QuizRunnerModal({
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3.5 rounded-2xl text-xs shadow-md transition"
-            >
+            <button onClick={onClose} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3.5 rounded-2xl text-xs shadow-md transition">
               Return to Dashboard
             </button>
           </div>
