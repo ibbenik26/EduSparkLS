@@ -1,28 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thaana:wght@400;700;900&display=swap');
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
+/* Faruma Dhivehi Web Font */
 @font-face {
   font-family: 'Faruma';
-  src: local('Faruma'), local('MV Faruma'), local('MV_Faruma');
+  src: url('/Faruma.ttf') format('truetype');
   font-weight: normal;
-  font-style: font-normal;
+  font-style: normal;
+  font-display: swap;
 }
 
-/* Dhivehi Thaana Faruma Utility Classes */
-.font-dhivehi, .font-faruma {
-  font-family: 'Faruma', 'MV Faruma', 'Noto Sans Thaana', sans-serif;
-  direction: rtl;
-  text-align: right;
-  unicode-bidi: isolate;
+.font-faruma {
+  font-family: 'Faruma', 'MV Faruma', 'Ameeru', sans-serif;
 }
 
-/* Hide scrollbar for clean tab carousels */
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
+.portal-nav-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
 }
-.scrollbar-none {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+
+.portal-nav-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.portal-nav-scroll::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.portal-nav-scroll::-webkit-scrollbar-track {
+  background-color: transparent;
 }
