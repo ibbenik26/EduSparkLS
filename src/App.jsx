@@ -919,7 +919,7 @@ export default function App() {
       }
     } catch (err) {
       alert("Login Error: " + err.message);
-    } finally {
+    } => {
       setAuthLoading(false);
     }
   };
