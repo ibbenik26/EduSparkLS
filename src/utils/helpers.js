@@ -6,15 +6,15 @@ export const ALL_SUBJECTS = [
 
 export const ROLE_TABS = {
   student: ['dashboard', 'olevel', 'leaderboard', 'library', 'shop', 'profile'],
-  teacher: ['dashboard', 'olevel', 'leaderboard', 'library', 'studio', 'profile'],
-  shop_admin: ['shop_management', 'profile'],
+  teacher: ['dashboard', 'olevel', 'leaderboard', 'library', 'shop', 'studio', 'profile'],
+  shop_admin: ['shop', 'profile'],
   super_admin: ['dashboard', 'olevel', 'leaderboard', 'library', 'shop', 'studio', 'profile']
 };
 
 export const getDefaultTabForRole = (userRole) => {
   switch (userRole) {
     case 'teacher': return 'studio';
-    case 'shop_admin': return 'shop_management';
+    case 'shop_admin': return 'shop';
     default: return 'dashboard';
   }
 };
@@ -70,12 +70,20 @@ export const playSound = (type) => {
   }
 };
 
+export const BADGES = [
+  { id: 'b1', title: 'Novice Scholar', minXp: 0, icon: '🌱', desc: 'Started your learning journey on EduSpark.' },
+  { id: 'b2', title: 'Bronze Quizzer', minXp: 300, icon: '🥉', desc: 'Earned 300+ XP in curriculum tests.' },
+  { id: 'b3', title: 'Silver Mind', minXp: 700, icon: '🥈', desc: 'Achieved 700+ XP and mastered key topics.' },
+  { id: 'b4', title: 'Gold Academic', minXp: 1200, icon: '🥇', desc: 'Surpassed 1200+ XP across subjects.' },
+  { id: 'b5', title: 'O-Level Legend', minXp: 2000, icon: '👑', desc: 'Reached 2000+ XP and top leaderboard status.' }
+];
+
 export const getStudentRank = (xp) => {
-  if (xp >= 2000) return { title: 'Legend', level: 5, text: 'text-amber-600', bg: 'bg-amber-100' };
-  if (xp >= 1200) return { title: 'Master', level: 4, text: 'text-purple-600', bg: 'bg-purple-100' };
-  if (xp >= 700)  return { title: 'Expert', level: 3, text: 'text-blue-600', bg: 'bg-blue-100' };
-  if (xp >= 300)  return { title: 'Scholar', level: 2, text: 'text-emerald-600', bg: 'bg-emerald-100' };
-  return { title: 'Novice', level: 1, text: 'text-slate-600', bg: 'bg-slate-100' };
+  if (xp >= 2000) return { title: 'Legend', level: 5, text: 'text-amber-600', bg: 'bg-amber-100', icon: '👑' };
+  if (xp >= 1200) return { title: 'Master', level: 4, text: 'text-purple-600', bg: 'bg-purple-100', icon: '🥇' };
+  if (xp >= 700)  return { title: 'Expert', level: 3, text: 'text-blue-600', bg: 'bg-blue-100', icon: '🥈' };
+  if (xp >= 300)  return { title: 'Scholar', level: 2, text: 'text-emerald-600', bg: 'bg-emerald-100', icon: '🥉' };
+  return { title: 'Novice', level: 1, text: 'text-slate-600', bg: 'bg-slate-100', icon: '🌱' };
 };
 
 export const generateSubjectAnalytics = (subject, attempts = []) => {

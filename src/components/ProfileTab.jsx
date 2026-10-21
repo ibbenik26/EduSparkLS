@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { User, Shield, Award, Trophy, KeyRound } from 'lucide-react';
-import { getStudentRank } from '../utils/helpers';
+import { User, Shield, Award, KeyRound, CheckCircle2 } from 'lucide-react';
+import { getStudentRank, BADGES } from '../utils/helpers';
 import { supabase } from '../lib/supabase';
 
-export default function ProfileTab({ authName, role, switchRolePreview, coins, xp, readingHours, user }) {
+export default function ProfileTab({ authName, role, coins, xp, readingHours, user }) {
   const rank = getStudentRank(xp);
   const [newPass, setNewPass] = useState('');
 
@@ -30,48 +30,60 @@ export default function ProfileTab({ authName, role, switchRolePreview, coins, x
           <div>
             <h2 className="text-2xl font-black text-slate-900">{authName}</h2>
             <p className="text-xs font-mono text-slate-500">{user?.email}</p>
-            <span className="inline-block mt-1 bg-indigo-100 text-indigo-800 text-[10px] font-black uppercase px-2 py-0.5 rounded">
+            <span className="inline-block mt-1 bg-indigo-100 text-indigo-800 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md">
               Role: {role}
             </span>
           </div>
         </div>
 
         {role === 'student' && (
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="bg-slate-50 border p-3 rounded-2xl">
-              <span className="text-[10px] font-bold text-slate-400 uppercase block">Total XP</span>
-              <span className="text-lg font-black text-indigo-600">{xp}</span>
+          <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="bg-slate-50 border p-3 rounded-2xl">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Total XP</span>
+                <span className="text-lg font-black text-indigo-600">{xp}</span>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl">
+                <span className="text-[10px] font-bold text-amber-700 uppercase block">Rank</span>
+                <span className="text-lg font-black text-amber-800">{rank.title} {rank.icon}</span>
+              </div>
+              <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl">
+                <span className="text-[10px] font-bold text-emerald-700 uppercase block">Reading Time</span>
+                <span className="text-lg font-black text-emerald-800">{readingHours}h</span>
+              </div>
             </div>
-            <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl">
-              <span className="text-[10px] font-bold text-amber-700 uppercase block">Rank</span>
-              <span className="text-lg font-black text-amber-800">{rank.title}</span>
-            </div>
-            <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl">
-              <span className="text-[10px] font-bold text-emerald-700 uppercase block">Reading Hours</span>
-              <span className="text-lg font-black text-emerald-800">{readingHours}h</span>
+
+            {/* Badges / Milestone Showcase */}
+            <div className="space-y-3 border-t pt-4">
+              <h3 className="font-black text-slate-900 text-sm flex items-center space-x-2">
+                <Award className="w-4 h-4 text-amber-500" />
+                <span>Unlocked Academic Achievement Badges</span>
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {BADGES.map(badge => {
+                  const unlocked = xp >= badge.minXp;
+                  return (
+                    <div
+                      key={badge.id}
+                      className={`p-3 rounded-2xl border flex items-center space-x-3 ${
+                        unlocked ? 'bg-amber-50/60 border-amber-200' : 'bg-slate-50 border-slate-200 opacity-50'
+                      }`}
+                    >
+                      <span className="text-2xl">{badge.icon}</span>
+                      <div>
+                        <h4 className="font-bold text-xs text-slate-900">{badge.title}</h4>
+                        <p className="text-[10px] text-slate-500">{badge.desc}</p>
+                      </div>
+                      {unlocked && <CheckCircle2 className="w-4 h-4 text-emerald-600 ml-auto shrink-0" />}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Role Switcher Sandbox Tool */}
-        <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-2">
-          <span className="text-xs font-bold text-slate-700 block">Preview Role Navigation Switcher</span>
-          <div className="flex flex-wrap gap-2">
-            {['student', 'teacher', 'shop_admin', 'super_admin'].map(r => (
-              <button
-                key={r}
-                onClick={() => switchRolePreview(r)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition ${
-                  role === r ? 'bg-indigo-600 text-white' : 'bg-white border text-slate-700'
-                }`}
-              >
-                {r.replace('_', ' ')}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Change Password */}
+        {/* Change Password Security */}
         <form onSubmit={handleChangePassword} className="space-y-3 border-t pt-6">
           <h3 className="font-black text-slate-900 text-sm flex items-center space-x-1.5">
             <KeyRound className="w-4 h-4 text-indigo-600" />

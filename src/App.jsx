@@ -32,13 +32,16 @@ export default function App() {
   const [quizzes, setQuizzes] = useState(INITIAL_QUIZZES);
   const [books, setBooks] = useState(INITIAL_BOOKS);
   const [shopItems, setShopItems] = useState(INITIAL_SHOP_ITEMS);
+  const [orders, setOrders] = useState([
+    { id: 'ORD-9021', student_name: 'Hassan Ali', name: 'Deluxe Geometry Set', cost: 250, date: '2026-10-18', status: 'Pending Collection', code: 'CLM-GEO-88' }
+  ]);
   const [allProfiles, setAllProfiles] = useState([]);
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedSubject, setSelectedSubject] = useState('All');
   const [olevelSubjectFilter, setOlevelSubjectFilter] = useState('All');
 
-  // Quiz Runner Modal State
+  // Quiz Execution Modal State
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [quizMode, setQuizMode] = useState('practice');
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
@@ -51,7 +54,7 @@ export default function App() {
   const [quizFinished, setQuizFinished] = useState(false);
   const [gameOver, setGameOver] = useState(false);
 
-  // Diagram Modal State
+  // Diagram Creator State
   const [showDiagramUploadModal, setShowDiagramUploadModal] = useState(false);
   const [studioSubject, setStudioSubject] = useState('Physics');
   const [studioVariant, setStudioVariant] = useState('Paper 12');
@@ -112,11 +115,6 @@ export default function App() {
     } catch (e) {
       console.warn("Profile fetch error:", e);
     }
-  };
-
-  const switchRolePreview = (newRole) => {
-    setRole(newRole);
-    setActiveTab(getDefaultTabForRole(newRole));
   };
 
   const navigateToTab = (tabName) => {
@@ -297,7 +295,14 @@ export default function App() {
         )}
 
         {activeTab === 'shop' && (
-          <ShopTab shopItems={shopItems} coins={coins} setCoins={setCoins} />
+          <ShopTab
+            role={role}
+            shopItems={shopItems}
+            coins={coins}
+            setCoins={setCoins}
+            orders={orders}
+            setOrders={setOrders}
+          />
         )}
 
         {activeTab === 'studio' && (
@@ -314,7 +319,7 @@ export default function App() {
 
         {activeTab === 'profile' && (
           <ProfileTab
-            authName={authName} role={role} switchRolePreview={switchRolePreview}
+            authName={authName} role={role}
             coins={coins} xp={xp} readingHours={readingHours} user={user}
           />
         )}
