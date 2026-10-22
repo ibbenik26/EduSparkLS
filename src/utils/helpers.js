@@ -6,7 +6,7 @@ export const ALL_SUBJECTS = [
 
 export const ROLE_TABS = {
   student: ['dashboard', 'olevel', 'leaderboard', 'library', 'shop', 'profile'],
-  teacher: ['dashboard', 'olevel', 'leaderboard', 'library', 'shop', 'studio', 'profile'],
+  teacher: ['studio', 'library', 'shop', 'dashboard', 'olevel', 'leaderboard', 'profile'],
   shop_admin: ['shop', 'profile'],
   super_admin: ['dashboard', 'olevel', 'leaderboard', 'library', 'shop', 'studio', 'profile']
 };
@@ -15,13 +15,14 @@ export const getDefaultTabForRole = (userRole) => {
   switch (userRole) {
     case 'teacher': return 'studio';
     case 'shop_admin': return 'shop';
+    case 'super_admin': return 'studio';
     default: return 'dashboard';
   }
 };
 
-export const canUserCRUD = (role) => {
-  return ['teacher', 'shop_admin', 'super_admin'].includes(role);
-};
+export const canUserCRUDQuizzes = (role) => ['teacher', 'super_admin'].includes(role);
+export const canUserCRUDShop = (role) => ['teacher', 'shop_admin', 'super_admin'].includes(role);
+export const canUserCRUDLibrary = (role) => ['teacher', 'super_admin'].includes(role);
 
 export const isRTLSubject = (subject) => {
   return subject === 'Dhivehi' || subject === 'Islam' || subject === 'ދިވެހި' || subject === 'އިސްލާމް';
@@ -66,17 +67,9 @@ export const playSound = (type) => {
       osc.stop(ctx.currentTime + 0.2);
     }
   } catch (e) {
-    console.warn("Audio error:", e);
+    console.warn("Audio Context error:", e);
   }
 };
-
-export const BADGES = [
-  { id: 'b1', title: 'Novice Scholar', minXp: 0, icon: '🌱', desc: 'Started your learning journey on EduSpark.' },
-  { id: 'b2', title: 'Bronze Quizzer', minXp: 300, icon: '🥉', desc: 'Earned 300+ XP in curriculum tests.' },
-  { id: 'b3', title: 'Silver Mind', minXp: 700, icon: '🥈', desc: 'Achieved 700+ XP and mastered key topics.' },
-  { id: 'b4', title: 'Gold Academic', minXp: 1200, icon: '🥇', desc: 'Surpassed 1200+ XP across subjects.' },
-  { id: 'b5', title: 'O-Level Legend', minXp: 2000, icon: '👑', desc: 'Reached 2000+ XP and top leaderboard status.' }
-];
 
 export const getStudentRank = (xp) => {
   if (xp >= 2000) return { title: 'Legend', level: 5, text: 'text-amber-600', bg: 'bg-amber-100', icon: '👑' };
@@ -84,48 +77,4 @@ export const getStudentRank = (xp) => {
   if (xp >= 700)  return { title: 'Expert', level: 3, text: 'text-blue-600', bg: 'bg-blue-100', icon: '🥈' };
   if (xp >= 300)  return { title: 'Scholar', level: 2, text: 'text-emerald-600', bg: 'bg-emerald-100', icon: '🥉' };
   return { title: 'Novice', level: 1, text: 'text-slate-600', bg: 'bg-slate-100', icon: '🌱' };
-};
-
-export const generateSubjectAnalytics = (subject, attempts = []) => {
-  const subjectAttempts = attempts.filter(a => (a.subject || '').toLowerCase() === subject.toLowerCase());
-  if (subjectAttempts.length === 0) return null;
-
-  let totalScore = 0;
-  let totalQuestions = 0;
-  const topicStats = {};
-
-  subjectAttempts.forEach(a => {
-    totalScore += a.score || 0;
-    totalQuestions += a.total || 0;
-    if (a.questionDetails && Array.isArray(a.questionDetails)) {
-      a.questionDetails.forEach(qd => {
-        const topicName = qd.topic || qd.question_text || 'General Concept';
-        if (!topicStats[topicName]) topicStats[topicName] = { correct: 0, total: 0, explanations: [] };
-        topicStats[topicName].total += 1;
-        if (qd.is_correct) topicStats[topicName].correct += 1;
-        else if (qd.explanation && !topicStats[topicName].explanations.includes(qd.explanation)) {
-          topicStats[topicName].explanations.push(qd.explanation);
-        }
-      });
-    }
-  });
-
-  const accuracy = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
-  let predictedGrade = 'F';
-  if (accuracy >= 85) predictedGrade = 'A*';
-  else if (accuracy >= 75) predictedGrade = 'A';
-  else if (accuracy >= 65) predictedGrade = 'B';
-  else if (accuracy >= 50) predictedGrade = 'C';
-  else if (accuracy >= 40) predictedGrade = 'D';
-
-  const strongTopics = [];
-  const weakTopics = [];
-
-  Object.entries(topicStats).forEach(([topic, stat]) => {
-    const topicAcc = Math.round((stat.correct / stat.total) * 100);
-    if (topicAcc >= 70) strongTopics.push({ topic, accuracy: topicAcc, totalAttempted: stat.total });
-    else weakTopics.push({ topic, accuracy: topicAcc, totalAttempted: stat.total, explanation: stat.explanations.join(' • ') || 'Needs review.' });
-  });
-
-  return { subject, completedCount: subjectAttempts.length, totalScore, totalQuestions, accuracy, predictedGrade, strongTopics, weakTopics };
 };
