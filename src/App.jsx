@@ -33,13 +33,11 @@ export default function App() {
   const [books, setBooks] = useState(INITIAL_BOOKS);
   const [shopItems, setShopItems] = useState(INITIAL_SHOP_ITEMS);
   const [orders, setOrders] = useState([
-    { id: 'ORD-9021', student_name: 'Hassan Ali', name: 'Deluxe Geometry Set', cost: 250, date: '2026-10-18', status: 'Pending Collection', code: 'CLM-GEO-88' }
+    { id: 'ORD-9021', student_name: 'Hassan Ali', name: 'Grade 7 Geometry Kit', cost: 250, date: '2026-10-18', status: 'Pending Teacher Collection', code: 'GR7-8821' }
   ]);
   const [allProfiles, setAllProfiles] = useState([]);
 
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [selectedSubject, setSelectedSubject] = useState('All');
-  const [olevelSubjectFilter, setOlevelSubjectFilter] = useState('All');
 
   // Quiz Execution Modal State
   const [activeQuiz, setActiveQuiz] = useState(null);
@@ -54,18 +52,8 @@ export default function App() {
   const [quizFinished, setQuizFinished] = useState(false);
   const [gameOver, setGameOver] = useState(false);
 
-  // Diagram Upload Modal State
+  // Diagram Builder State
   const [showDiagramUploadModal, setShowDiagramUploadModal] = useState(false);
-  const [studioSubject, setStudioSubject] = useState('Physics');
-  const [studioVariant, setStudioVariant] = useState('Paper 12');
-  const [draftDiagramImage, setDraftDiagramImage] = useState(null);
-  const [draftQuestionText, setDraftQuestionText] = useState('');
-  const [draftOptA, setDraftOptA] = useState('');
-  const [draftOptB, setDraftOptB] = useState('');
-  const [draftOptC, setDraftOptC] = useState('');
-  const [draftOptD, setDraftOptD] = useState('');
-  const [draftCorrectOpt, setDraftCorrectOpt] = useState('A');
-  const [stagedQuestions, setStagedQuestions] = useState([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -182,62 +170,6 @@ export default function App() {
     }
   };
 
-  const handleImageFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (uploadEvent) => setDraftDiagramImage(uploadEvent.target.result);
-    reader.readAsDataURL(file);
-  };
-
-  const handleAddQuestionToStage = (e) => {
-    e.preventDefault();
-    if (!draftQuestionText.trim() || !draftOptA || !draftOptB) return alert("Fill in required fields.");
-
-    const newQ = {
-      id: `q_${Date.now()}`,
-      topic: studioSubject,
-      diagram_url: draftDiagramImage || null,
-      question_text: draftQuestionText,
-      option_a: draftOptA,
-      option_b: draftOptB,
-      option_c: draftOptC || 'None',
-      option_d: draftOptD || 'All',
-      correct_option: draftCorrectOpt,
-      explanation: 'Verified against subject mark scheme.'
-    };
-
-    setStagedQuestions([...stagedQuestions, newQ]);
-    setDraftQuestionText('');
-    setDraftOptA('');
-    setDraftOptB('');
-    setDraftOptC('');
-    setDraftOptD('');
-    setDraftDiagramImage(null);
-  };
-
-  const handlePublishStagedQuiz = () => {
-    if (stagedQuestions.length === 0) return alert("Add at least 1 question first.");
-
-    const newQuiz = {
-      id: `quiz_${Date.now()}`,
-      title: `Grade 10 ${studioSubject} MCQ Paper (${studioVariant})`,
-      subject: studioSubject,
-      grade: 10,
-      subject_code: '0625',
-      exam_year: 2026,
-      variant: studioVariant,
-      is_past_paper: true,
-      has_diagrams: stagedQuestions.some(q => !!q.diagram_url),
-      questions: stagedQuestions
-    };
-
-    setQuizzes([newQuiz, ...quizzes]);
-    setStagedQuestions([]);
-    setShowDiagramUploadModal(false);
-    alert("🎉 Diagram Quiz Published!");
-  };
-
   if (!user) {
     if (authView === 'landing') {
       return <LandingPage onGoLogin={() => setAuthView('login')} onGoRegister={() => setAuthView('register')} />;
@@ -260,23 +192,11 @@ export default function App() {
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
         {activeTab === 'dashboard' && (
-          <StudentDashboard
-            grade={studentGrade}
-            quizzes={quizzes}
-            selectedSubject={selectedSubject}
-            setSelectedSubject={setSelectedSubject}
-            startQuiz={startQuiz}
-          />
+          <StudentDashboard grade={studentGrade} quizzes={quizzes} startQuiz={startQuiz} />
         )}
 
         {activeTab === 'olevel' && (
-          <OLevelArena
-            quizzes={quizzes}
-            olevelSubjectFilter={olevelSubjectFilter}
-            setOlevelSubjectFilter={setOlevelSubjectFilter}
-            startQuiz={startQuiz}
-            onOpenDiagramUpload={() => setShowDiagramUploadModal(true)}
-          />
+          <OLevelArena quizzes={quizzes} startQuiz={startQuiz} onOpenDiagramUpload={() => setShowDiagramUploadModal(true)} />
         )}
 
         {activeTab === 'leaderboard' && (
@@ -285,66 +205,36 @@ export default function App() {
 
         {activeTab === 'library' && (
           <LibraryTab
-            books={books}
-            coins={coins}
-            setCoins={setCoins}
-            setXp={setXp}
-            readingHours={readingHours}
-            setReadingHours={setReadingHours}
-            claimedCodes={claimedCodes}
-            setClaimedCodes={setClaimedCodes}
+            role={role} books={books} setBooks={setBooks}
+            coins={coins} setCoins={setCoins} setXp={setXp}
+            readingHours={readingHours} setReadingHours={setReadingHours}
+            claimedCodes={claimedCodes} setClaimedCodes={setClaimedCodes}
           />
         )}
 
         {activeTab === 'shop' && (
           <ShopTab
-            role={role}
-            shopItems={shopItems}
-            coins={coins}
-            setCoins={setCoins}
-            orders={orders}
-            setOrders={setOrders}
+            role={role} authName={authName} studentGrade={studentGrade}
+            shopItems={shopItems} setShopItems={setShopItems}
+            coins={coins} setCoins={setCoins}
+            orders={orders} setOrders={setOrders}
           />
         )}
 
         {activeTab === 'studio' && (
           <TeacherStudio
-            role={role}
-            quizzes={quizzes} setQuizzes={setQuizzes}
-            startQuiz={startQuiz}
-            studioSubject={studioSubject} setStudioSubject={setStudioSubject}
-            studioVariant={studioVariant} setStudioVariant={setStudioVariant}
-            showDiagramUploadModal={showDiagramUploadModal}
-            setShowDiagramUploadModal={setShowDiagramUploadModal}
+            role={role} quizzes={quizzes} setQuizzes={setQuizzes}
+            showDiagramUploadModal={showDiagramUploadModal} setShowDiagramUploadModal={setShowDiagramUploadModal}
           />
         )}
 
         {activeTab === 'profile' && (
-          <ProfileTab
-            authName={authName} role={role}
-            coins={coins} xp={xp} readingHours={readingHours} user={user}
-          />
+          <ProfileTab authName={authName} role={role} coins={coins} xp={xp} readingHours={readingHours} user={user} />
         )}
       </main>
 
       {showDiagramUploadModal && (
-        <DiagramUploadModal
-          studioSubject={studioSubject} setStudioSubject={setStudioSubject}
-          studioVariant={studioVariant} setStudioVariant={setStudioVariant}
-          draftDiagramImage={draftDiagramImage} setDraftDiagramImage={setDraftDiagramImage}
-          draftQuestionText={draftQuestionText} setDraftQuestionText={setDraftQuestionText}
-          draftOptA={draftOptA} setDraftOptA={setDraftOptA}
-          draftOptB={draftOptB} setDraftOptB={setDraftOptB}
-          draftOptC={draftOptC} setDraftOptC={setDraftOptC}
-          draftOptD={draftOptD} setDraftOptD={setDraftOptD}
-          draftCorrectOpt={draftCorrectOpt} setDraftCorrectOpt={setDraftCorrectOpt}
-          stagedQuestions={stagedQuestions}
-          handleImageFileUpload={handleImageFileUpload}
-          handleAddQuestionToStage={handleAddQuestionToStage}
-          handlePublishStagedQuiz={handlePublishStagedQuiz}
-          allSubjects={ALL_SUBJECTS}
-          onClose={() => setShowDiagramUploadModal(false)}
-        />
+        <DiagramUploadModal quizzes={quizzes} setQuizzes={setQuizzes} onClose={() => setShowDiagramUploadModal(false)} />
       )}
 
       {activeQuiz && (
