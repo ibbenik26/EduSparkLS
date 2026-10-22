@@ -1,108 +1,84 @@
-import React, { useState } from 'react';
-import { User, Shield, Award, KeyRound, CheckCircle2 } from 'lucide-react';
+import React from 'react';
+import { User, Shield, Coins, Award, Clock, Sparkles } from 'lucide-react';
 import { getStudentRank, BADGES } from '../utils/helpers';
-import { supabase } from '../lib/supabase';
 
 export default function ProfileTab({ authName, role, coins, xp, readingHours, user }) {
   const rank = getStudentRank(xp);
-  const [newPass, setNewPass] = useState('');
-
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    if (!newPass) return;
-    try {
-      const { error } = await supabase.auth.updateUser({ password: newPass });
-      if (error) throw error;
-      alert("✅ Password updated successfully!");
-      setNewPass('');
-    } catch (err) {
-      alert("❌ Password update failed: " + err.message);
-    }
-  };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Profile Overview Card */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xs">
-        <div className="flex items-center space-x-4 border-b pb-6">
-          <div className="w-16 h-16 bg-indigo-100 text-indigo-700 rounded-2xl flex items-center justify-center text-2xl font-black">
-            {authName.charAt(0)}
+        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left">
+          <div className="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-purple-600 text-white rounded-3xl flex items-center justify-center font-black text-2xl shadow-md">
+            {authName ? authName[0].toUpperCase() : 'U'}
           </div>
-          <div>
-            <h2 className="text-2xl font-black text-slate-900">{authName}</h2>
-            <p className="text-xs font-mono text-slate-500">{user?.email}</p>
-            <span className="inline-block mt-1 bg-indigo-100 text-indigo-800 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md">
-              Role: {role}
-            </span>
+
+          <div className="space-y-1">
+            <div className="flex items-center justify-center sm:justify-start space-x-2">
+              <h2 className="text-2xl font-black text-slate-900">{authName || 'Student User'}</h2>
+              <span className="bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
+                {role}
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 font-mono">{user?.email || 'user@school.edu'}</p>
           </div>
         </div>
 
-        {role === 'student' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="bg-slate-50 border p-3 rounded-2xl">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Total XP</span>
-                <span className="text-lg font-black text-indigo-600">{xp}</span>
-              </div>
-              <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl">
-                <span className="text-[10px] font-bold text-amber-700 uppercase block">Rank</span>
-                <span className="text-lg font-black text-amber-800">{rank.title} {rank.icon}</span>
-              </div>
-              <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl">
-                <span className="text-[10px] font-bold text-emerald-700 uppercase block">Reading Time</span>
-                <span className="text-lg font-black text-emerald-800">{readingHours}h</span>
+        {/* Academic Stats Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-slate-100">
+          <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl text-center">
+            <span className="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">Rank Level</span>
+            <span className="text-lg font-black text-slate-900 flex items-center justify-center space-x-1">
+              <span>{rank.icon}</span>
+              <span>{rank.title}</span>
+            </span>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-center">
+            <span className="text-[10px] font-bold uppercase text-amber-700 block mb-0.5">Edu Coins</span>
+            <span className="text-lg font-black text-amber-600 flex items-center justify-center space-x-1">
+              <Coins className="w-4 h-4 fill-amber-500" />
+              <span>{coins}</span>
+            </span>
+          </div>
+
+          <div className="bg-purple-50 border border-purple-200 p-4 rounded-2xl text-center">
+            <span className="text-[10px] font-bold uppercase text-purple-700 block mb-0.5">Total XP</span>
+            <span className="text-lg font-black text-purple-600 flex items-center justify-center space-x-1">
+              <Sparkles className="w-4 h-4 text-purple-500" />
+              <span>{xp} XP</span>
+            </span>
+          </div>
+
+          <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-center">
+            <span className="text-[10px] font-bold uppercase text-emerald-700 block mb-0.5">Reading Hours</span>
+            <span className="text-lg font-black text-emerald-700 flex items-center justify-center space-x-1">
+              <Clock className="w-4 h-4 text-emerald-600" />
+              <span>{readingHours}h</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Badges & Achievements */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-xs">
+        <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
+          <Award className="w-5 h-5 text-indigo-600" />
+          <span>Earned Academic Badges</span>
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {(BADGES || []).map((b) => (
+            <div key={b.id} className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl flex items-center space-x-3">
+              <span className="text-2xl">{b.icon}</span>
+              <div>
+                <h4 className="font-bold text-slate-900 text-xs">{b.name}</h4>
+                <p className="text-[11px] text-slate-500">{b.desc}</p>
               </div>
             </div>
-
-            {/* Badges / Milestone Showcase */}
-            <div className="space-y-3 border-t pt-4">
-              <h3 className="font-black text-slate-900 text-sm flex items-center space-x-2">
-                <Award className="w-4 h-4 text-amber-500" />
-                <span>Unlocked Academic Achievement Badges</span>
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {BADGES.map(badge => {
-                  const unlocked = xp >= badge.minXp;
-                  return (
-                    <div
-                      key={badge.id}
-                      className={`p-3 rounded-2xl border flex items-center space-x-3 ${
-                        unlocked ? 'bg-amber-50/60 border-amber-200' : 'bg-slate-50 border-slate-200 opacity-50'
-                      }`}
-                    >
-                      <span className="text-2xl">{badge.icon}</span>
-                      <div>
-                        <h4 className="font-bold text-xs text-slate-900">{badge.title}</h4>
-                        <p className="text-[10px] text-slate-500">{badge.desc}</p>
-                      </div>
-                      {unlocked && <CheckCircle2 className="w-4 h-4 text-emerald-600 ml-auto shrink-0" />}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Change Password Security */}
-        <form onSubmit={handleChangePassword} className="space-y-3 border-t pt-6">
-          <h3 className="font-black text-slate-900 text-sm flex items-center space-x-1.5">
-            <KeyRound className="w-4 h-4 text-indigo-600" />
-            <span>Update Account Password</span>
-          </h3>
-          <div className="flex gap-2">
-            <input
-              type="password"
-              value={newPass}
-              onChange={(e) => setNewPass(e.target.value)}
-              placeholder="New password (min 6 chars)"
-              className="flex-1 bg-slate-50 border rounded-xl px-3 py-2 text-xs"
-              required
-            />
-            <button type="submit" className="bg-indigo-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-xs">
-              Update Password
-            </button>
-          </div>
-        </form>
+          ))}
+        </div>
       </div>
     </div>
   );

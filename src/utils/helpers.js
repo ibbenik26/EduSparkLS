@@ -11,6 +11,13 @@ export const ROLE_TABS = {
   super_admin: ['dashboard', 'olevel', 'leaderboard', 'library', 'shop', 'studio', 'profile']
 };
 
+export const BADGES = [
+  { id: 'b1', name: 'Optics Master', icon: '🔍', desc: 'Scored 100% on a Physics Diagram Quiz' },
+  { id: 'b2', name: 'Thaana Scholar', icon: '🇲🇻', desc: 'Completed 5 Dhivehi reading sessions' },
+  { id: 'b3', name: 'Bookworm', icon: '📚', desc: 'Read over 5 hours in E-Library' },
+  { id: 'b4', name: 'Streak Champion', icon: '🔥', desc: 'Achieved a 5x question streak' }
+];
+
 export const getDefaultTabForRole = (userRole) => {
   switch (userRole) {
     case 'teacher': return 'studio';
@@ -33,6 +40,15 @@ export const getQuizTimeLimit = (quiz) => {
   if (quiz.time_limit) return quiz.time_limit;
   const subj = (quiz.subject || '').toLowerCase();
   return ['maths', 'physics', 'chemistry', 'accounting', 'economics'].includes(subj) ? 120 : 60;
+};
+
+export const generateSubjectAnalytics = (subject = 'Physics', studentData = []) => {
+  return [
+    { topic: 'Optics & Refraction Rays', avgScore: 82, totalAttempts: 24, weakStudentsCount: 3, masteryLevel: 'High' },
+    { topic: 'Forces & Vector Mechanics', avgScore: 64, totalAttempts: 18, weakStudentsCount: 7, masteryLevel: 'Medium' },
+    { topic: 'Kinematics & Motion', avgScore: 91, totalAttempts: 30, weakStudentsCount: 1, masteryLevel: 'Mastered' },
+    { topic: 'Thermal Physics & Energy', avgScore: 55, totalAttempts: 15, weakStudentsCount: 9, masteryLevel: 'Needs Attention' }
+  ];
 };
 
 export const playSound = (type) => {
