@@ -1,127 +1,84 @@
 import React, { useState } from 'react';
-import { Play, BookOpen, Clock, Heart, Sparkles, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { Play, BookOpen, Clock, Filter } from 'lucide-react';
 import { ALL_SUBJECTS, isRTLSubject } from '../utils/helpers';
 
-export default function StudentDashboard({ grade, quizzes, selectedSubject, setSelectedSubject, startQuiz }) {
-  const filteredQuizzes = quizzes.filter(q => 
-    q.grade === parseInt(grade) && (selectedSubject === 'All' || q.subject === selectedSubject)
-  );
+export default function StudentDashboard({ grade, quizzes, startQuiz }) {
+  const [selectedGrade, setSelectedGrade] = useState(grade || 7);
+  const [selectedSubject, setSelectedSubject] = useState('All');
+  const [selectedTopic, setSelectedTopic] = useState('All');
 
-  const [g1QuestionIdx, setG1QuestionIdx] = useState(0);
-  const [g1Selected, setG1Selected] = useState(null);
+  const filteredQuizzes = quizzes.filter(q => {
+    const matchesGrade = q.grade === parseInt(selectedGrade);
+    const matchesSubject = selectedSubject === 'All' || q.subject === selectedSubject;
+    const matchesTopic = selectedTopic === 'All' || (q.title || '').toLowerCase().includes(selectedTopic.toLowerCase());
 
-  // Grade 1 Special Focus Mode
-  if (grade === 1) {
-    const grade1Questions = quizzes.flatMap(q => q.questions || []);
-    const currentQ = grade1Questions[g1QuestionIdx];
-
-    return (
-      <div className="max-w-xl mx-auto space-y-6 py-4">
-        <div className="bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-3xl p-6 text-center space-y-2 shadow-lg">
-          <span className="text-3xl">🌟</span>
-          <h2 className="text-2xl font-black">Grade 1 Practice Focus</h2>
-          <p className="text-xs text-pink-100 font-bold">Answer one question at a time!</p>
-        </div>
-
-        {currentQ ? (
-          <div className="bg-white border-2 border-rose-200 rounded-3xl p-6 space-y-6 shadow-md text-center">
-            <span className="text-xs font-bold bg-rose-50 border border-rose-200 text-rose-700 px-3 py-1 rounded-full">
-              Question {g1QuestionIdx + 1} / {grade1Questions.length}
-            </span>
-
-            <h3 className={`text-xl font-black text-slate-900 ${isRTLSubject(currentQ.topic) ? 'font-dhivehi' : ''}`}>
-              {currentQ.question_text}
-            </h3>
-
-            <div className="grid grid-cols-1 gap-3">
-              {['A', 'B', 'C', 'D'].map(opt => {
-                const optText = currentQ[`option_${opt.toLowerCase()}`];
-                if (!optText) return null;
-                const isCorrect = opt === currentQ.correct_option;
-                const isSelected = g1Selected === opt;
-
-                return (
-                  <button
-                    key={opt}
-                    onClick={() => setG1Selected(opt)}
-                    className={`p-4 rounded-2xl border-2 font-bold text-sm transition flex items-center justify-between ${
-                      isSelected
-                        ? isCorrect
-                          ? 'bg-emerald-50 border-emerald-500 text-emerald-900'
-                          : 'bg-rose-50 border-rose-500 text-rose-900'
-                        : 'bg-slate-50 border-slate-200 hover:border-indigo-300'
-                    }`}
-                  >
-                    <span className={isRTLSubject(currentQ.topic) ? 'font-dhivehi' : ''}>{optText}</span>
-                    {isSelected && (isCorrect ? '✅ Great Job!' : '❌ Try Again')}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-between items-center pt-2">
-              <button
-                disabled={g1QuestionIdx === 0}
-                onClick={() => { setG1QuestionIdx(i => i - 1); setG1Selected(null); }}
-                className="px-4 py-2 border rounded-xl text-xs font-bold disabled:opacity-30"
-              >
-                Previous
-              </button>
-
-              <button
-                disabled={g1QuestionIdx + 1 >= grade1Questions.length}
-                onClick={() => { setG1QuestionIdx(i => i + 1); setG1Selected(null); }}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black shadow-sm"
-              >
-                Next Question ➡️
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-12 text-slate-400 font-bold">No Grade 1 practice questions available.</div>
-        )}
-      </div>
-    );
-  }
+    return matchesGrade && matchesSubject && matchesTopic;
+  });
 
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white space-y-2 shadow-md">
         <span className="bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider">
-          Grade {grade} Practice Vault
+          Class Grade Curriculum Vault
         </span>
         <h2 className="text-2xl sm:text-3xl font-black">Curriculum Practice Modules</h2>
         <p className="text-indigo-200 text-xs max-w-xl">
-          Choose Practice Mode for step-by-step guidance or Timed Lives mode for heart-based exam practice.
+          Select your class, subject, and topic to access practice questions and timed heart challenges.
         </p>
       </div>
 
-      {/* Subject Filter Bar */}
-      <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none whitespace-nowrap">
-        <button
-          onClick={() => setSelectedSubject('All')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
-            selectedSubject === 'All' ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-700'
-          }`}
-        >
-          All Subjects
-        </button>
-        {ALL_SUBJECTS.map(subj => (
-          <button
-            key={subj}
-            onClick={() => setSelectedSubject(subj)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
-              selectedSubject === subj ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-700'
-            }`}
-          >
-            {subj}
-          </button>
-        ))}
+      {/* Class, Subject, and Topic Filter Panel */}
+      <div className="bg-white border border-slate-200 p-4 rounded-3xl shadow-xs space-y-3">
+        <div className="flex items-center space-x-2 text-xs font-bold text-slate-700">
+          <Filter className="w-4 h-4 text-indigo-600" />
+          <span>Select Class, Subject, and Topic</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Class / Grade Selector */}
+          <div>
+            <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Class Grade</label>
+            <select
+              value={selectedGrade}
+              onChange={(e) => setSelectedGrade(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-900"
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => (
+                <option key={g} value={g}>Grade {g}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Subject Filter */}
+          <div>
+            <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Subject</label>
+            <select
+              value={selectedSubject}
+              onChange={(e) => setSelectedSubject(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-indigo-700"
+            >
+              <option value="All">All Subjects</option>
+              {ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+
+          {/* Topic Search Filter */}
+          <div>
+            <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Topic Search</label>
+            <input
+              type="text"
+              value={selectedTopic === 'All' ? '' : selectedTopic}
+              onChange={(e) => setSelectedTopic(e.target.value || 'All')}
+              placeholder="e.g. Optics, Grammar, Algebra"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-medium text-slate-900"
+            />
+          </div>
+        </div>
       </div>
 
       {filteredQuizzes.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-400 text-xs font-medium">
-          No practice tests available for Grade {grade} in {selectedSubject}.
+          No curriculum quizzes found for Grade {selectedGrade} matching your criteria.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -134,7 +91,7 @@ export default function StudentDashboard({ grade, quizzes, selectedSubject, setS
                   <span className={`text-[10px] font-black uppercase tracking-wider bg-indigo-50 border border-indigo-100 text-indigo-700 px-2.5 py-1 rounded-lg ${
                     isDhivehi ? 'font-dhivehi' : ''
                   }`}>
-                    {quiz.subject}
+                    {quiz.subject} • Grade {quiz.grade}
                   </span>
                   <span className="text-xs text-slate-400 font-medium">{quiz.questions.length} Qs</span>
                 </div>
