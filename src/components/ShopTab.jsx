@@ -170,19 +170,19 @@ export default function ShopTab({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-4 sm:space-y-6">
       {/* Sleek E-Commerce Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-xl border border-slate-800">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 rounded-2xl sm:rounded-3xl p-4 sm:p-8 text-white relative overflow-hidden shadow-xl border border-slate-800">
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 sm:gap-6">
           <div className="space-y-2 max-w-xl">
             <span className="text-[10px] font-black uppercase tracking-widest text-amber-300 bg-amber-500/20 px-3 py-1 rounded-full border border-amber-400/30 inline-flex items-center space-x-1.5">
               <ShoppingBag className="w-3.5 h-3.5 text-amber-400" />
               <span>EduSpark Reward Storefront</span>
             </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
               Exchange Coins For Physical Goods & Passes
             </h2>
             <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
@@ -191,7 +191,7 @@ export default function ShopTab({
           </div>
 
           {/* Edu Wallet Balance Ribbon */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 sm:p-5 flex items-center space-x-4 shrink-0 shadow-inner">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3 sm:p-5 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 shrink-0 shadow-inner">
             <div className="w-12 h-12 bg-amber-400/20 rounded-2xl flex items-center justify-center border border-amber-400/30">
               <Coins className="w-7 h-7 text-amber-400 fill-amber-400" />
             </div>
@@ -201,7 +201,7 @@ export default function ShopTab({
             </div>
             <button
               onClick={() => setShowCartDrawer(true)}
-              className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs shadow-md transition flex items-center space-x-1.5 ml-2"
+              className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-3 sm:px-4 py-2.5 rounded-xl text-xs shadow-md transition flex items-center gap-1.5 ml-auto sm:ml-2"
             >
               <ShoppingCart className="w-4 h-4" />
               <span>Cart ({cartTotalCount})</span>
@@ -211,15 +211,15 @@ export default function ShopTab({
       </div>
 
       {/* Modern Filter & Search Bar */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-4 shadow-xs space-y-3">
+      <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-3 sm:p-4 shadow-xs space-y-3">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Category Pill Tabs */}
-          <div className="flex items-center space-x-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 -mx-1 px-1">
             {categories.map(cat => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
+                className={`px-3 py-2.5 rounded-xl text-xs font-bold transition shrink-0 min-h-10 ${
                   selectedCategory === cat
                     ? 'bg-indigo-600 text-white shadow-xs'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -231,22 +231,22 @@ export default function ShopTab({
           </div>
 
           {/* Search Box & Teacher Publish Button */}
-          <div className="flex items-center space-x-2 w-full sm:w-auto">
-            <div className="relative flex-1 sm:w-64">
+          <div className="flex flex-col xs:flex-row sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search rewards..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-3 sm:py-2 text-sm sm:text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-500"
               />
             </div>
 
             {canEditShop && (
               <button
                 onClick={() => setShowItemModal(true)}
-                className="bg-slate-900 hover:bg-slate-800 text-white font-black px-4 py-2 rounded-xl text-xs shadow-md transition shrink-0 flex items-center space-x-1"
+                className="bg-slate-900 hover:bg-slate-800 text-white font-black px-3 sm:px-4 py-3 sm:py-2 rounded-xl text-xs shadow-md transition shrink-0 flex items-center justify-center gap-1"
               >
                 <Plus className="w-4 h-4 text-amber-400" />
                 <span>Publish Item</span>
@@ -257,10 +257,10 @@ export default function ShopTab({
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex space-x-2 border-b border-slate-200 pb-2">
+      <div className="flex gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
         <button
           onClick={() => setActiveTab('store')}
-          className={`px-4 py-2 font-bold rounded-xl text-xs transition ${
+          className={`px-3 sm:px-4 py-2.5 font-bold rounded-xl text-xs transition shrink-0 whitespace-nowrap ${
             activeTab === 'store' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700'
           }`}
         >
@@ -269,7 +269,7 @@ export default function ShopTab({
 
         <button
           onClick={() => setActiveTab('orders')}
-          className={`px-4 py-2 font-bold rounded-xl text-xs transition flex items-center space-x-1.5 ${
+          className={`px-3 sm:px-4 py-2.5 font-bold rounded-xl text-xs transition shrink-0 whitespace-nowrap flex items-center space-x-1.5 ${
             activeTab === 'orders' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700'
           }`}
         >
@@ -279,7 +279,7 @@ export default function ShopTab({
 
         <button
           onClick={() => setActiveTab('wallet_history')}
-          className={`px-4 py-2 font-bold rounded-xl text-xs transition flex items-center space-x-1.5 ${
+          className={`px-3 sm:px-4 py-2.5 font-bold rounded-xl text-xs transition shrink-0 whitespace-nowrap flex items-center space-x-1.5 ${
             activeTab === 'wallet_history' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700'
           }`}
         >
@@ -296,7 +296,7 @@ export default function ShopTab({
             <p>No reward items found matching "{searchQuery}".</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 min-[520px]:grid-cols-2 xl:grid-cols-3 gap-2.5 min-[400px]:gap-3 min-[520px]:gap-4 xl:gap-6">
             {filteredItems.map((item) => {
               const isGradeRestricted = item.target_grade !== 'All';
               const isStudentLocked = role === 'student' && isGradeRestricted && parseInt(item.target_grade) !== parseInt(studentGrade);
@@ -304,9 +304,9 @@ export default function ShopTab({
               const inCart = cart.find(ci => ci.item.id === item.id);
 
               return (
-                <div key={item.id} className="bg-white border border-slate-200/90 rounded-3xl overflow-hidden hover:shadow-xl transition duration-300 flex flex-col justify-between group">
+                <div key={item.id} className="bg-white border border-slate-200/90 rounded-xl min-[400px]:rounded-2xl sm:rounded-3xl overflow-hidden hover:shadow-xl hover:border-indigo-200 transition duration-300 flex flex-col group min-w-0 w-full">
                   {/* Image & Badges Overlay */}
-                  <div className="h-52 bg-slate-100 relative overflow-hidden border-b border-slate-100">
+                  <div className="h-28 min-[360px]:h-32 min-[400px]:h-36 min-[520px]:h-44 xl:h-52 bg-slate-100 relative overflow-hidden border-b border-slate-100">
                     <img 
                       src={item.image_url} 
                       alt={item.name} 
@@ -314,14 +314,16 @@ export default function ShopTab({
                     />
                     
                     {/* Price Tag */}
-                    <span className="absolute top-3 right-3 bg-slate-900/90 backdrop-blur-md text-amber-400 font-mono font-black text-xs px-3 py-1.5 rounded-xl shadow-md border border-slate-800 flex items-center space-x-1">
-                      <Coins className="w-3.5 h-3.5 fill-amber-400" />
-                      <span>{item.cost} Coins</span>
+                    <span className="absolute top-2 right-2 min-[520px]:top-3 min-[520px]:right-3 bg-white/95 backdrop-blur-md text-slate-950 px-2.5 py-1.5 min-[520px]:px-3 min-[520px]:py-2 rounded-lg min-[520px]:rounded-xl shadow-lg border border-white/70 flex flex-col items-end leading-tight max-w-[68%]">
+                      <span className="flex items-center gap-1 text-[8px] min-[520px]:text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
+                        <Coins className="w-3 h-3 text-amber-500 fill-amber-400" /> Edu Coins
+                      </span>
+                      <span className="text-lg min-[520px]:text-xl font-black text-slate-950 tracking-tight tabular-nums">{item.cost}</span>
                     </span>
 
                     {/* Grade Restriction Tag */}
                     {isGradeRestricted && (
-                      <span className="absolute top-3 left-3 bg-purple-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-xl flex items-center space-x-1 shadow-md">
+                      <span className="absolute top-2 left-2 min-[520px]:top-3 min-[520px]:left-3 bg-purple-600 text-white text-[9px] min-[520px]:text-[10px] font-bold px-2 py-1 rounded-lg min-[520px]:rounded-xl flex items-center space-x-1 shadow-md max-w-[58%]">
                         <Lock className="w-3 h-3" />
                         <span>Grade {item.target_grade} Reserved</span>
                       </span>
@@ -339,19 +341,22 @@ export default function ShopTab({
                   </div>
 
                   {/* Content & Actions */}
-                  <div className="p-5 space-y-4 flex-1 flex flex-col justify-between">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-md uppercase">
+                  <div className="p-2.5 min-[360px]:p-3 min-[520px]:p-4 xl:p-5 space-y-2.5 min-[400px]:space-y-3 min-[520px]:space-y-4 flex-1 flex flex-col justify-between min-w-0">
+                    <div className="space-y-1.5 min-[400px]:space-y-2 min-[520px]:space-y-2.5 min-w-0">
+                      <div className="flex flex-wrap items-start justify-between gap-1.5 min-[400px]:gap-2 min-w-0">
+                        <span className="text-[9px] min-[400px]:text-[10px] font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 min-[400px]:px-2 py-0.5 min-[520px]:px-2.5 min-[520px]:py-1 rounded-md min-[520px]:rounded-lg uppercase tracking-wide max-w-full min-w-0 whitespace-normal break-words [overflow-wrap:anywhere]">
                           {item.category || 'Stationery'}
                         </span>
-                        {item.stock && (
-                          <span className="text-[10px] font-bold text-slate-400">In Stock: {item.stock}</span>
+                        {item.stock !== undefined && item.stock !== null && (
+                          <span className={`inline-flex items-center gap-1 text-[9px] min-[400px]:text-[10px] min-[520px]:text-[11px] leading-tight font-extrabold px-1.5 min-[400px]:px-2 min-[520px]:px-2.5 py-0.5 min-[520px]:py-1 rounded-md min-[520px]:rounded-lg border max-w-full min-w-0 whitespace-normal break-words [overflow-wrap:anywhere] ${Number(item.stock) <= 0 ? 'bg-rose-50 text-rose-700 border-rose-200' : Number(item.stock) <= 5 ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`} >
+                            <span className={`w-1.5 h-1.5 rounded-full ${Number(item.stock) <= 0 ? 'bg-rose-500' : Number(item.stock) <= 5 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                            {Number(item.stock) <= 0 ? 'Out of stock' : Number(item.stock) <= 5 ? `Only ${item.stock} left` : `${item.stock} in stock`}
+                          </span>
                         )}
                       </div>
 
-                      <h3 className="font-black text-slate-900 text-base leading-snug">{item.name}</h3>
-                      <p className="text-xs text-slate-500 leading-relaxed">{item.desc}</p>
+                      <h3 className="font-extrabold text-slate-900 text-sm min-[360px]:text-[15px] min-[400px]:text-base min-[520px]:text-lg leading-snug tracking-tight min-w-0 break-words [overflow-wrap:anywhere]">{item.name}</h3>
+                      <p className="text-[11px] min-[400px]:text-xs min-[520px]:text-sm text-slate-500 leading-[1.4] min-[520px]:leading-relaxed min-w-0 whitespace-normal break-words [overflow-wrap:anywhere]">{item.desc}</p>
                     </div>
 
                     {/* Purchase / Add to Cart Controls */}
@@ -359,7 +364,7 @@ export default function ShopTab({
                       <button
                         onClick={() => addToCart(item)}
                         disabled={isStudentLocked}
-                        className={`w-full font-bold py-3.5 rounded-2xl text-xs shadow-md transition flex items-center justify-center space-x-2 ${
+                        className={`w-full min-w-0 min-h-11 px-2.5 py-2 min-[400px]:px-3 min-[520px]:py-3.5 rounded-lg min-[520px]:rounded-2xl text-[11px] min-[400px]:text-xs shadow-md transition flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center leading-tight whitespace-normal break-words [overflow-wrap:anywhere] ${
                           isStudentLocked
                             ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
                             : !isAffordable
@@ -370,12 +375,12 @@ export default function ShopTab({
                         {!isAffordable && !isStudentLocked ? (
                           <>
                             <AlertCircle className="w-4 h-4 text-amber-600" />
-                            <span>Needs {item.cost - coins} More Coins</span>
+                            <span className="min-w-0">Needs {item.cost - coins} More Coins</span>
                           </>
                         ) : (
                           <>
                             <ShoppingCart className="w-4 h-4" />
-                            <span>
+                            <span className="min-w-0 max-w-full">
                               {isStudentLocked 
                                 ? `Locked to Grade ${item.target_grade}` 
                                 : inCart 
@@ -394,7 +399,7 @@ export default function ShopTab({
         )
       ) : activeTab === 'orders' ? (
         /* Orders View */
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
+        <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-3 sm:p-6 shadow-xs space-y-4">
           <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
             <Package className="w-5 h-5 text-indigo-600" />
             <span>{canEditShop ? 'Student Store Voucher Receipts' : 'My Claimed Vouchers'}</span>
@@ -456,14 +461,14 @@ export default function ShopTab({
         </div>
       ) : (
         /* Statement Log View */
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
+        <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-3 sm:p-6 shadow-xs space-y-4">
           <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
             <History className="w-5 h-5 text-indigo-600" />
             <span>Edu Wallet Account Transaction Statement</span>
           </h3>
 
           <div className="space-y-3 font-mono text-xs">
-            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex justify-between items-center">
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <div>
                 <span className="font-bold text-emerald-900 block">Quiz Completion Credit</span>
                 <span className="text-[10px] text-emerald-700">Practice & Challenge Mode Rewards</span>
@@ -471,7 +476,7 @@ export default function ShopTab({
               <span className="font-black text-emerald-700 text-sm">+250 Coins 🪙</span>
             </div>
 
-            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex justify-between items-center">
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <div>
                 <span className="font-bold text-emerald-900 block">E-Library Auto-Timer Claim</span>
                 <span className="text-[10px] text-emerald-700">Digital Book Reading Session</span>
@@ -480,7 +485,7 @@ export default function ShopTab({
             </div>
 
             {orders.map((ord) => (
-              <div key={ord.id} className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex justify-between items-center">
+              <div key={ord.id} className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
                   <span className="font-bold text-rose-900 block">Store Merchandise Purchase</span>
                   <span className="text-[10px] text-rose-700">Item: {ord.name} ({ord.code})</span>
@@ -495,9 +500,9 @@ export default function ShopTab({
       {/* Cart Drawer Modal */}
       {showCartDrawer && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex justify-end">
-          <div className="bg-white max-w-md w-full h-full p-6 space-y-6 flex flex-col justify-between shadow-2xl overflow-y-auto animate-fade-in">
+          <div className="bg-white max-w-md w-full h-full p-4 sm:p-6 space-y-5 sm:space-y-6 flex flex-col justify-between shadow-2xl overflow-y-auto animate-fade-in">
             <div className="space-y-4">
-              <div className="flex justify-between items-center border-b pb-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-4">
                 <div className="flex items-center space-x-2">
                   <ShoppingCart className="w-5 h-5 text-indigo-600" />
                   <h3 className="font-black text-slate-900 text-lg">My Edu Cart</h3>
@@ -582,9 +587,9 @@ export default function ShopTab({
 
       {/* Teacher Publish Modal */}
       {showItemModal && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center border-b pb-3">
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs z-50 flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-md w-full max-h-[95dvh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-3">
               <h3 className="font-black text-slate-900 text-base">Publish Store Item</h3>
               <button onClick={() => setShowItemModal(false)} className="text-slate-400 font-bold">✕</button>
             </div>
@@ -595,7 +600,7 @@ export default function ShopTab({
                 <input type="text" value={itemName} onChange={(e) => setItemName(e.target.value)} placeholder="e.g. Deluxe Geometry Compass" className="w-full bg-slate-50 border rounded-xl p-2.5" required />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Category</label>
                   <select value={itemCategory} onChange={(e) => setItemCategory(e.target.value)} className="w-full bg-slate-50 border rounded-xl p-2.5 font-bold text-indigo-700">
@@ -624,7 +629,7 @@ export default function ShopTab({
 
               <div className="space-y-1">
                 <label className="font-bold text-slate-700 block">Upload Product Photo OR Web Image URL</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input type="text" value={itemImageUrl} onChange={(e) => setItemImageUrl(e.target.value)} placeholder="https://..." className="bg-slate-50 border rounded-xl p-2 text-xs" />
                   <label className="cursor-pointer bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded-xl p-2 text-center flex items-center justify-center space-x-1">
                     <Upload className="w-3.5 h-3.5" />
