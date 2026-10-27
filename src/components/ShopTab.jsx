@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   CreditCard, ShoppingCart, Plus, Minus, Trash2, Upload, Lock, Receipt, 
   Package, Coins, Sparkles, CheckCircle2, ArrowRight, X, History, 
-  ShoppingBag, ShieldCheck, Tag
+  ShoppingBag, ShieldCheck, Tag, Search, Filter, AlertCircle, Award
 } from 'lucide-react';
 import { canUserCRUDShop } from '../utils/helpers';
 
@@ -11,6 +11,8 @@ export default function ShopTab({
   coins, setCoins, orders, setOrders, showToast, askConfirm
 }) {
   const [activeTab, setActiveTab] = useState('store'); // 'store', 'orders', 'wallet_history'
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState([]); // [{ item, quantity }]
   const [showCartDrawer, setShowCartDrawer] = useState(false);
   const [showItemModal, setShowItemModal] = useState(false);
@@ -27,11 +29,21 @@ export default function ShopTab({
 
   const canEditShop = canUserCRUDShop(role);
 
-  // Cart Mechanics
+  const cartTotalCost = cart.reduce((sum, ci) => sum + (ci.item.cost * ci.quantity), 0);
+  const cartTotalCount = cart.reduce((sum, ci) => sum + ci.quantity, 0);
+
+  // Insufficient Coin Validation on Cart Additions
   const addToCart = (item) => {
-    // Grade restriction guard
+    // 1. Grade restriction guard
     if (role === 'student' && item.target_grade !== 'All' && parseInt(item.target_grade) !== parseInt(studentGrade)) {
       showToast(`🔒 Grade Block! Reserved exclusively for Grade ${item.target_grade} students.`, "error");
+      return;
+    }
+
+    // 2. Insufficient Coin Balance Guard
+    const potentialCartTotal = cartTotalCost + item.cost;
+    if (coins < item.cost || coins < potentialCartTotal) {
+      showToast(`🪙 Not Enough Edu Coins!\nItem costs ${item.cost} coins (Your balance: ${coins} coins).\nPlay a quiz or read in the E-Library to earn more!`, "warning");
       return;
     }
 
@@ -47,6 +59,12 @@ export default function ShopTab({
   };
 
   const updateQuantity = (itemId, delta) => {
+    const targetItem = cart.find(ci => ci.item.id === itemId);
+    if (delta > 0 && (cartTotalCost + targetItem.item.cost) > coins) {
+      showToast(`🪙 Insufficient Coin Balance to add another item!`, "warning");
+      return;
+    }
+
     const updatedCart = cart.map(ci => {
       if (ci.item.id === itemId) {
         const newQty = ci.quantity + delta;
@@ -61,15 +79,12 @@ export default function ShopTab({
     setCart(cart.filter(ci => ci.item.id !== itemId));
   };
 
-  const cartTotalCost = cart.reduce((sum, ci) => sum + (ci.item.cost * ci.quantity), 0);
-  const cartTotalCount = cart.reduce((sum, ci) => sum + ci.quantity, 0);
-
   // Wallet Checkout Processing
   const handleWalletCheckout = () => {
     if (cart.length === 0) return;
 
     if (coins < cartTotalCost) {
-      showToast(`❌ Insufficient Edu Wallet Balance!\nYour total is ${cartTotalCost} coins, but you have ${coins} coins.`, "warning");
+      showToast(`❌ Insufficient Edu Wallet Balance!\nTotal: ${cartTotalCost} coins (Balance: ${coins} coins).`, "warning");
       return;
     }
 
@@ -96,7 +111,7 @@ export default function ShopTab({
     setCart([]);
     setShowCartDrawer(false);
 
-    showToast(`🎉 Edu Wallet Payment Successful!\nSpent ${cartTotalCost} Coins on ${cartTotalCount} item(s).\nVouchers created!`, "success");
+    showToast(`🎉 Purchase Successful!\nSpent ${cartTotalCost} Coins on ${cartTotalCount} item(s).\nVouchers issued!`, "success");
   };
 
   // CRUD Actions
@@ -122,7 +137,7 @@ export default function ShopTab({
       creator_name: authName || 'Teacher',
       target_grade: targetGrade === 'All' ? 'All' : parseInt(targetGrade),
       image_url: finalImage,
-      desc: itemDesc || 'School custom merchandise item.'
+      desc: itemDesc || 'School merchandise item.'
     };
 
     setShopItems([newShopItem, ...shopItems]);
@@ -144,92 +159,104 @@ export default function ShopTab({
     showToast("✅ Order voucher marked as delivered!", "success");
   };
 
+  // Category Filtering
+  const categories = ['All', 'Stationery', 'School Supplies', 'Privileges', 'Tech & Gear'];
+
+  const filteredItems = shopItems.filter(item => {
+    const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (item.desc || '').toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
   return (
     <div className="space-y-6">
-      {/* Edu Wallet Digital Card Banner */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Digital Wallet Card */}
-        <div className="lg:col-span-2 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-xl border border-slate-700/80 flex flex-col justify-between min-h-[220px]">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
+      {/* Sleek E-Commerce Header Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-xl border border-slate-800">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
 
-          <div className="flex justify-between items-start relative z-10">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-300 bg-indigo-500/20 px-3 py-1 rounded-full border border-indigo-400/30 flex items-center space-x-1.5 w-fit">
-                <CreditCard className="w-3.5 h-3.5 text-indigo-400" />
-                <span>EduSpark Digital Student Wallet</span>
-              </span>
-              <h2 className="text-xl font-black mt-2 text-white">{authName || 'Student Account'}</h2>
-            </div>
-
-            <div className="text-right">
-              <span className="text-[10px] font-mono text-slate-400 uppercase block">Account Grade</span>
-              <span className="text-xs font-black bg-white/10 px-2.5 py-1 rounded-lg border border-white/20">Grade {studentGrade}</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-6 border-t border-slate-700/60 relative z-10">
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase block">Wallet Balance</span>
-              <div className="flex items-center space-x-1.5 text-2xl font-black text-amber-400">
-                <Coins className="w-6 h-6 fill-amber-400" />
-                <span>{coins} 🪙</span>
-              </div>
-            </div>
-
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase block">Vouchers Claimed</span>
-              <span className="text-2xl font-black text-white">{orders.length}</span>
-            </div>
-
-            <div className="col-span-2 sm:col-span-1 flex items-center justify-end">
-              <button
-                onClick={() => setShowCartDrawer(true)}
-                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black px-5 py-3 rounded-2xl text-xs shadow-lg transition flex items-center space-x-2 relative"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                <span>View Cart</span>
-                {cartTotalCount > 0 && (
-                  <span className="bg-slate-950 text-amber-400 text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border border-amber-400">
-                    {cartTotalCount}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions & Teacher Command */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col justify-between space-y-4 shadow-xs">
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Wallet Command Center</span>
-            <h3 className="font-black text-slate-900 text-lg mt-0.5">Quick Actions</h3>
-            <p className="text-xs text-slate-500 leading-relaxed mt-1">
-              Add products to your Edu Cart and checkout using your accumulated Edu Coins balance.
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="space-y-2 max-w-xl">
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-300 bg-amber-500/20 px-3 py-1 rounded-full border border-amber-400/30 inline-flex items-center space-x-1.5">
+              <ShoppingBag className="w-3.5 h-3.5 text-amber-400" />
+              <span>EduSpark Reward Storefront</span>
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+              Exchange Coins For Physical Goods & Passes
+            </h2>
+            <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+              Earn coins by completing quizzes & reading textbooks, then redeem them for stationery kits and class vouchers.
             </p>
           </div>
 
-          {canEditShop ? (
+          {/* Edu Wallet Balance Ribbon */}
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 sm:p-5 flex items-center space-x-4 shrink-0 shadow-inner">
+            <div className="w-12 h-12 bg-amber-400/20 rounded-2xl flex items-center justify-center border border-amber-400/30">
+              <Coins className="w-7 h-7 text-amber-400 fill-amber-400" />
+            </div>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 block">Edu Wallet Balance</span>
+              <span className="text-2xl font-black text-amber-400 font-mono">{coins} 🪙</span>
+            </div>
             <button
-              onClick={() => setShowItemModal(true)}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-3.5 rounded-2xl text-xs shadow-md transition flex items-center justify-center space-x-2"
+              onClick={() => setShowCartDrawer(true)}
+              className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs shadow-md transition flex items-center space-x-1.5 ml-2"
             >
-              <Plus className="w-4 h-4 text-amber-400" />
-              <span>Publish Grade Item (CRUD)</span>
+              <ShoppingCart className="w-4 h-4" />
+              <span>Cart ({cartTotalCount})</span>
             </button>
-          ) : (
-            <button
-              onClick={() => setActiveTab(activeTab === 'wallet_history' ? 'store' : 'wallet_history')}
-              className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-3 rounded-2xl text-xs transition flex items-center justify-center space-x-2"
-            >
-              <History className="w-4 h-4" />
-              <span>{activeTab === 'wallet_history' ? 'Back to Store' : 'Wallet Statement Log'}</span>
-            </button>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Navigation Tabs Bar */}
+      {/* Modern Filter & Search Bar */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-4 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Category Pill Tabs */}
+          <div className="flex items-center space-x-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
+                  selectedCategory === cat
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Search Box & Teacher Publish Button */}
+          <div className="flex items-center space-x-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-64">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search rewards..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            {canEditShop && (
+              <button
+                onClick={() => setShowItemModal(true)}
+                className="bg-slate-900 hover:bg-slate-800 text-white font-black px-4 py-2 rounded-xl text-xs shadow-md transition shrink-0 flex items-center space-x-1"
+              >
+                <Plus className="w-4 h-4 text-amber-400" />
+                <span>Publish Item</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation Sub-Tabs */}
       <div className="flex space-x-2 border-b border-slate-200 pb-2">
         <button
           onClick={() => setActiveTab('store')}
@@ -237,7 +264,7 @@ export default function ShopTab({
             activeTab === 'store' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700'
           }`}
         >
-          Store Catalog
+          Store Catalog ({filteredItems.length})
         </button>
 
         <button
@@ -247,7 +274,7 @@ export default function ShopTab({
           }`}
         >
           <Receipt className="w-3.5 h-3.5" />
-          <span>{canEditShop ? 'Student Voucher Orders' : 'My Claimed Vouchers'} ({orders.length})</span>
+          <span>{canEditShop ? 'Student Orders' : 'My Claimed Vouchers'} ({orders.length})</span>
         </button>
 
         <button
@@ -261,78 +288,112 @@ export default function ShopTab({
         </button>
       </div>
 
-      {/* Main Tab Views */}
+      {/* Main Views */}
       {activeTab === 'store' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {shopItems.map((item) => {
-            const isGradeRestricted = item.target_grade !== 'All';
-            const isStudentLocked = role === 'student' && isGradeRestricted && parseInt(item.target_grade) !== parseInt(studentGrade);
-            const inCart = cart.find(ci => ci.item.id === item.id);
+        filteredItems.length === 0 ? (
+          <div className="bg-white border border-slate-200 rounded-3xl p-16 text-center text-slate-400 text-xs font-medium space-y-2">
+            <ShoppingBag className="w-12 h-12 mx-auto text-slate-300" />
+            <p>No reward items found matching "{searchQuery}".</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredItems.map((item) => {
+              const isGradeRestricted = item.target_grade !== 'All';
+              const isStudentLocked = role === 'student' && isGradeRestricted && parseInt(item.target_grade) !== parseInt(studentGrade);
+              const isAffordable = coins >= item.cost;
+              const inCart = cart.find(ci => ci.item.id === item.id);
 
-            return (
-              <div key={item.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden hover:shadow-md transition flex flex-col justify-between relative group">
-                <div className="h-48 bg-slate-100 relative overflow-hidden border-b border-slate-100">
-                  <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
-                  
-                  <span className="absolute top-2.5 right-2.5 bg-slate-900/90 backdrop-blur-xs text-amber-400 font-mono font-bold text-xs px-3 py-1 rounded-xl shadow-md">
-                    {item.cost} Coins 🪙
-                  </span>
-
-                  {isGradeRestricted && (
-                    <span className="absolute top-2.5 left-2.5 bg-purple-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center space-x-1 shadow-md">
-                      <Lock className="w-3 h-3" />
-                      <span>Grade {item.target_grade} Only</span>
+              return (
+                <div key={item.id} className="bg-white border border-slate-200/90 rounded-3xl overflow-hidden hover:shadow-xl transition duration-300 flex flex-col justify-between group">
+                  {/* Image & Badges Overlay */}
+                  <div className="h-52 bg-slate-100 relative overflow-hidden border-b border-slate-100">
+                    <img 
+                      src={item.image_url} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
+                    />
+                    
+                    {/* Price Tag */}
+                    <span className="absolute top-3 right-3 bg-slate-900/90 backdrop-blur-md text-amber-400 font-mono font-black text-xs px-3 py-1.5 rounded-xl shadow-md border border-slate-800 flex items-center space-x-1">
+                      <Coins className="w-3.5 h-3.5 fill-amber-400" />
+                      <span>{item.cost} Coins</span>
                     </span>
-                  )}
 
-                  {canEditShop && (
-                    <button
-                      onClick={() => handleDeleteItem(item)}
-                      className="absolute bottom-2.5 right-2.5 bg-rose-600 hover:bg-rose-700 text-white p-2 rounded-xl text-xs shadow-md transition"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-
-                <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
-                  <div className="space-y-1">
-                    <h3 className="font-black text-slate-900 text-base leading-snug">{item.name}</h3>
-                    {item.creator_name && (
-                      <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded inline-block">
-                        By {item.creator_name}
+                    {/* Grade Restriction Tag */}
+                    {isGradeRestricted && (
+                      <span className="absolute top-3 left-3 bg-purple-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-xl flex items-center space-x-1 shadow-md">
+                        <Lock className="w-3 h-3" />
+                        <span>Grade {item.target_grade} Reserved</span>
                       </span>
                     )}
-                    <p className="text-xs text-slate-500 leading-relaxed pt-1">{item.desc}</p>
+
+                    {/* Admin Delete Action */}
+                    {canEditShop && (
+                      <button
+                        onClick={() => handleDeleteItem(item)}
+                        className="absolute bottom-3 right-3 bg-rose-600 hover:bg-rose-700 text-white p-2 rounded-xl text-xs shadow-md transition"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
 
-                  {role === 'student' && (
-                    <button
-                      onClick={() => addToCart(item)}
-                      disabled={isStudentLocked}
-                      className={`w-full font-bold py-3 rounded-2xl text-xs shadow-sm transition flex items-center justify-center space-x-2 ${
-                        isStudentLocked
-                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                          : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                      }`}
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      <span>
-                        {isStudentLocked 
-                          ? `Locked to Grade ${item.target_grade}` 
-                          : inCart 
-                            ? `Add More to Cart (${inCart.quantity} in cart)` 
-                            : 'Add to Edu Cart'}
-                      </span>
-                    </button>
-                  )}
+                  {/* Content & Actions */}
+                  <div className="p-5 space-y-4 flex-1 flex flex-col justify-between">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-md uppercase">
+                          {item.category || 'Stationery'}
+                        </span>
+                        {item.stock && (
+                          <span className="text-[10px] font-bold text-slate-400">In Stock: {item.stock}</span>
+                        )}
+                      </div>
+
+                      <h3 className="font-black text-slate-900 text-base leading-snug">{item.name}</h3>
+                      <p className="text-xs text-slate-500 leading-relaxed">{item.desc}</p>
+                    </div>
+
+                    {/* Purchase / Add to Cart Controls */}
+                    {role === 'student' && (
+                      <button
+                        onClick={() => addToCart(item)}
+                        disabled={isStudentLocked}
+                        className={`w-full font-bold py-3.5 rounded-2xl text-xs shadow-md transition flex items-center justify-center space-x-2 ${
+                          isStudentLocked
+                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                            : !isAffordable
+                              ? 'bg-amber-500/10 border border-amber-300 text-amber-800 hover:bg-amber-500/20'
+                              : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        }`}
+                      >
+                        {!isAffordable && !isStudentLocked ? (
+                          <>
+                            <AlertCircle className="w-4 h-4 text-amber-600" />
+                            <span>Needs {item.cost - coins} More Coins</span>
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingCart className="w-4 h-4" />
+                            <span>
+                              {isStudentLocked 
+                                ? `Locked to Grade ${item.target_grade}` 
+                                : inCart 
+                                  ? `Add More (${inCart.quantity} in cart)` 
+                                  : 'Add to Edu Cart'}
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )
       ) : activeTab === 'orders' ? (
-        /* Orders & Voucher Fulfillment */
+        /* Orders View */
         <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
           <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
             <Package className="w-5 h-5 text-indigo-600" />
@@ -394,7 +455,7 @@ export default function ShopTab({
           )}
         </div>
       ) : (
-        /* Wallet Statement Log View */
+        /* Statement Log View */
         <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
           <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
             <History className="w-5 h-5 text-indigo-600" />
@@ -490,11 +551,11 @@ export default function ShopTab({
                     <span className="font-bold text-slate-900">{coins} 🪙</span>
                   </div>
                   <div className="flex justify-between text-slate-500">
-                    <span>Cart Items Total:</span>
+                    <span>Cart Total:</span>
                     <span className="font-bold text-amber-600">{cartTotalCost} 🪙</span>
                   </div>
                   <div className="flex justify-between text-slate-900 font-black text-sm pt-2 border-t">
-                    <span>Balance Remaining:</span>
+                    <span>Balance After Payment:</span>
                     <span className={coins >= cartTotalCost ? 'text-emerald-600' : 'text-rose-600'}>
                       {coins - cartTotalCost} 🪙
                     </span>
@@ -507,7 +568,7 @@ export default function ShopTab({
                   className={`w-full font-black py-4 rounded-2xl text-xs shadow-lg transition flex items-center justify-center space-x-2 ${
                     coins < cartTotalCost
                       ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950'
+                      : 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950'
                   }`}
                 >
                   <CreditCard className="w-4 h-4" />
@@ -519,7 +580,7 @@ export default function ShopTab({
         </div>
       )}
 
-      {/* Teacher / Admin Store Item Creation Modal */}
+      {/* Teacher Publish Modal */}
       {showItemModal && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
@@ -536,6 +597,16 @@ export default function ShopTab({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
+                  <label className="font-bold text-slate-700 block mb-1">Category</label>
+                  <select value={itemCategory} onChange={(e) => setItemCategory(e.target.value)} className="w-full bg-slate-50 border rounded-xl p-2.5 font-bold text-indigo-700">
+                    <option value="Stationery">Stationery</option>
+                    <option value="School Supplies">School Supplies</option>
+                    <option value="Privileges">Privileges</option>
+                    <option value="Tech & Gear">Tech & Gear</option>
+                  </select>
+                </div>
+
+                <div>
                   <label className="font-bold text-slate-700 block mb-1">Grade Restriction</label>
                   <select value={targetGrade} onChange={(e) => setTargetGrade(e.target.value)} className="w-full bg-slate-50 border rounded-xl p-2.5 font-bold text-purple-700">
                     <option value="All">All Grades</option>
@@ -544,15 +615,15 @@ export default function ShopTab({
                     ))}
                   </select>
                 </div>
+              </div>
 
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Price (Edu Coins)</label>
-                  <input type="number" value={itemCost} onChange={(e) => setItemCost(e.target.value)} className="w-full bg-slate-50 border rounded-xl p-2.5 font-bold text-amber-600" required />
-                </div>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Price (Edu Coins)</label>
+                <input type="number" value={itemCost} onChange={(e) => setItemCost(e.target.value)} className="w-full bg-slate-50 border rounded-xl p-2.5 font-bold text-amber-600" required />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-slate-700 block">Upload Product Image OR Web URL</label>
+                <label className="font-bold text-slate-700 block">Upload Product Photo OR Web Image URL</label>
                 <div className="grid grid-cols-2 gap-2">
                   <input type="text" value={itemImageUrl} onChange={(e) => setItemImageUrl(e.target.value)} placeholder="https://..." className="bg-slate-50 border rounded-xl p-2 text-xs" />
                   <label className="cursor-pointer bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded-xl p-2 text-center flex items-center justify-center space-x-1">
