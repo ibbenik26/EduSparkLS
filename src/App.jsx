@@ -296,15 +296,6 @@ export default function App() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
-        {activeTab === 'dashboard' && (
-          <StudentDashboard
-            grade={studentGrade}
-            quizzes={quizzes}
-            startQuiz={startQuiz}
-            lockedChallengeQuizIds={lockedChallengeQuizIds}
-          />
-        )}
-
       {activeTab === 'dashboard' && (
   <StudentDashboard
     role={role}
