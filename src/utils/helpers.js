@@ -11,11 +11,19 @@ export const ROLE_TABS = {
   super_admin: ['dashboard', 'olevel', 'leaderboard', 'library', 'shop', 'studio', 'profile']
 };
 
-export const BADGES = [
-  { id: 'b1', name: 'Optics Master', icon: '🔍', desc: 'Scored 100% on a Physics Diagram Quiz' },
-  { id: 'b2', name: 'Thaana Scholar', icon: '🇲🇻', desc: 'Completed 5 Dhivehi reading sessions' },
-  { id: 'b3', name: 'Bookworm', icon: '📚', desc: 'Read over 5 hours in E-Library' },
-  { id: 'b4', name: 'Streak Champion', icon: '🔥', desc: 'Achieved a 5x question streak' }
+export const INITIAL_BADGES = [
+  { id: 'b1', name: 'Optics Master', icon: '🔍', desc: 'Scored 100% on a Physics Diagram Quiz', reqXp: 100 },
+  { id: 'b2', name: 'Thaana Scholar', icon: '🇲🇻', desc: 'Completed 5 Dhivehi reading sessions', reqXp: 250 },
+  { id: 'b3', name: 'Bookworm', icon: '📚', desc: 'Read over 5 hours in E-Library', reqXp: 500 },
+  { id: 'b4', name: 'Streak Champion', icon: '🔥', desc: 'Achieved a 5x question streak', reqXp: 300 }
+];
+
+export const INITIAL_RANKS = [
+  { id: 'r1', title: 'Novice', minXp: 0, text: 'text-slate-600', bg: 'bg-slate-100', icon: '🌱' },
+  { id: 'r2', title: 'Scholar', minXp: 300, text: 'text-emerald-600', bg: 'bg-emerald-100', icon: '🥉' },
+  { id: 'r3', title: 'Expert', minXp: 700, text: 'text-blue-600', bg: 'bg-blue-100', icon: '🥈' },
+  { id: 'r4', title: 'Master', minXp: 1200, text: 'text-purple-600', bg: 'bg-purple-100', icon: '🥇' },
+  { id: 'r5', title: 'Legend', minXp: 2000, text: 'text-amber-600', bg: 'bg-amber-100', icon: '👑' }
 ];
 
 export const getDefaultTabForRole = (userRole) => {
@@ -49,28 +57,22 @@ export const lenientMatch = (targetContent, searchQuery) => {
   const q = searchQuery.toLowerCase().trim();
   const text = String(targetContent || '').toLowerCase();
 
-  // 1. Direct Substring Check
   if (text.includes(q)) return true;
 
-  // 2. Number Words <-> Digits Matching (e.g. '2' matches 'two', '1' matches 'one')
   const numToWord = { '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine', '10': 'ten' };
   const wordToNum = { 'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9', 'ten': '10' };
 
   if (numToWord[q] && text.includes(numToWord[q])) return true;
   if (wordToNum[q] && text.includes(wordToNum[q])) return true;
 
-  // 3. Token-by-token Partial Match
   const tokens = q.split(/\s+/);
   return tokens.some(token => text.includes(token));
 };
 
-export const generateSubjectAnalytics = (subject = 'Physics', studentData = []) => {
-  return [
-    { topic: 'Optics & Refraction Rays', avgScore: 82, totalAttempts: 24, weakStudentsCount: 3, masteryLevel: 'High' },
-    { topic: 'Forces & Vector Mechanics', avgScore: 64, totalAttempts: 18, weakStudentsCount: 7, masteryLevel: 'Medium' },
-    { topic: 'Kinematics & Motion', avgScore: 91, totalAttempts: 30, weakStudentsCount: 1, masteryLevel: 'Mastered' },
-    { topic: 'Thermal Physics & Energy', avgScore: 55, totalAttempts: 15, weakStudentsCount: 9, masteryLevel: 'Needs Attention' }
-  ];
+export const getStudentRank = (xp, customRanks = INITIAL_RANKS) => {
+  const sorted = [...customRanks].sort((a, b) => b.minXp - a.minXp);
+  const matched = sorted.find(r => xp >= r.minXp) || sorted[sorted.length - 1];
+  return matched || { title: 'Novice', icon: '🌱' };
 };
 
 export const playSound = (type) => {
@@ -107,12 +109,4 @@ export const playSound = (type) => {
   } catch (e) {
     console.warn("Audio Context error:", e);
   }
-};
-
-export const getStudentRank = (xp) => {
-  if (xp >= 2000) return { title: 'Legend', level: 5, text: 'text-amber-600', bg: 'bg-amber-100', icon: '👑' };
-  if (xp >= 1200) return { title: 'Master', level: 4, text: 'text-purple-600', bg: 'bg-purple-100', icon: '🥇' };
-  if (xp >= 700)  return { title: 'Expert', level: 3, text: 'text-blue-600', bg: 'bg-blue-100', icon: '🥈' };
-  if (xp >= 300)  return { title: 'Scholar', level: 2, text: 'text-emerald-600', bg: 'bg-emerald-100', icon: '🥉' };
-  return { title: 'Novice', level: 1, text: 'text-slate-600', bg: 'bg-slate-100', icon: '🌱' };
 };
