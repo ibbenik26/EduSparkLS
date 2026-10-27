@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 
-import { ALL_SUBJECTS, ROLE_TABS, getDefaultTabForRole, getQuizTimeLimit, playSound } from './utils/helpers';
+import { ALL_SUBJECTS, ROLE_TABS, INITIAL_BADGES, INITIAL_RANKS, getDefaultTabForRole, getQuizTimeLimit, playSound } from './utils/helpers';
 import { INITIAL_QUIZZES, INITIAL_BOOKS, INITIAL_SHOP_ITEMS } from './data/initialData';
 
 import Navbar from './components/Navbar';
@@ -34,6 +34,10 @@ export default function App() {
   const [readingHours, setReadingHours] = useState(5.5);
   const [claimedCodes, setClaimedCodes] = useState([]);
 
+  // Badges & Ranks Global State
+  const [badges, setBadges] = useState(INITIAL_BADGES);
+  const [ranks, setRanks] = useState(INITIAL_RANKS);
+
   const [quizzes, setQuizzes] = useState(INITIAL_QUIZZES);
   const [books, setBooks] = useState(INITIAL_BOOKS);
   const [shopItems, setShopItems] = useState(INITIAL_SHOP_ITEMS);
@@ -65,7 +69,7 @@ export default function App() {
     });
   };
 
-  // Quiz Modal State
+  // Quiz Execution Modal State
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [quizMode, setQuizMode] = useState('practice');
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
@@ -80,7 +84,42 @@ export default function App() {
 
   const [showDiagramUploadModal, setShowDiagramUploadModal] = useState(false);
 
-  // Active Quiz Timer
+  // -------------------------------------------------------------
+  // SPA HISTORY & BROWSER / MOBILE BACK BUTTON NAVIGATION FIX
+  // -------------------------------------------------------------
+  useEffect(() => {
+    const handlePopState = (e) => {
+      // If a modal is open, close it first without navigating away
+      if (activeQuiz) {
+        setActiveQuiz(null);
+        return;
+      }
+      if (showDiagramUploadModal) {
+        setShowDiagramUploadModal(false);
+        return;
+      }
+
+      // Sync active tab with browser hash
+      const hashTab = window.location.hash.replace('#', '');
+      if (hashTab && (ROLE_TABS[role] || ROLE_TABS.student).includes(hashTab)) {
+        setActiveTab(hashTab);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeQuiz, showDiagramUploadModal, role]);
+
+  const navigateToTab = (tabName) => {
+    const allowed = ROLE_TABS[role] || ROLE_TABS.student;
+    if (!allowed.includes(tabName)) return;
+
+    setActiveQuiz(null);
+    setActiveTab(tabName);
+    window.history.pushState({ tab: tabName }, '', `#${tabName}`);
+  };
+
+  // Active Quiz Countdown Timer
   useEffect(() => {
     let timer = null;
     if (activeQuiz && (quizMode === 'challenge' || quizMode === 'olevel') && !quizFinished && !gameOver) {
@@ -150,13 +189,15 @@ export default function App() {
       setTeacherSubject(data?.teacher_subject || authUser?.user_metadata?.teacher_subject || 'Physics');
       setCoins(data?.coins ?? 350);
       setXp(data?.xp ?? 420);
-      setActiveTab(getDefaultTabForRole(effectiveRole));
+      
+      const initialTab = getDefaultTabForRole(effectiveRole);
+      setActiveTab(initialTab);
+      window.history.replaceState({ tab: initialTab }, '', `#${initialTab}`);
     } catch (e) {
       console.warn("Profile fetch error:", e);
     }
   };
 
-  // Student Profile Updates Function (Syncs local state & Supabase database)
   const handleUpdateProfile = async (updatedFields) => {
     setAuthName(updatedFields.full_name);
     setStudentGrade(updatedFields.grade);
@@ -179,13 +220,6 @@ export default function App() {
         console.warn("Supabase profile sync error:", err);
       }
     }
-  };
-
-  const navigateToTab = (tabName) => {
-    const allowed = ROLE_TABS[role] || ROLE_TABS.student;
-    if (!allowed.includes(tabName)) return;
-    setActiveQuiz(null);
-    setActiveTab(tabName);
   };
 
   const handleLogout = async () => {
@@ -213,6 +247,8 @@ export default function App() {
     setQuizFinished(false);
     setGameOver(false);
     setTimeLeft(getQuizTimeLimit(quiz));
+
+    window.history.pushState({ modal: 'quiz' }, '', '#quiz');
   };
 
   const handleAnswerSubmit = (option) => {
@@ -296,31 +332,38 @@ export default function App() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
-      {activeTab === 'dashboard' && (
-  <StudentDashboard
-    role={role}
-    grade={studentGrade}
-    quizzes={quizzes}
-    setQuizzes={setQuizzes}
-    startQuiz={startQuiz}
-    lockedChallengeQuizIds={lockedChallengeQuizIds}
-    onOpenDiagramUpload={() => setShowDiagramUploadModal(true)}
-    showToast={showToast}
-    askConfirm={askConfirm}
-  />
-)}
+        {activeTab === 'dashboard' && (
+          <StudentDashboard
+            role={role}
+            grade={studentGrade}
+            quizzes={quizzes}
+            setQuizzes={setQuizzes}
+            startQuiz={startQuiz}
+            lockedChallengeQuizIds={lockedChallengeQuizIds}
+            onOpenDiagramUpload={() => {
+              setShowDiagramUploadModal(true);
+              window.history.pushState({ modal: 'diagram' }, '', '#diagram');
+            }}
+            showToast={showToast}
+            askConfirm={askConfirm}
+          />
+        )}
 
-{activeTab === 'olevel' && (
-  <OLevelArena
-    role={role}
-    quizzes={quizzes}
-    setQuizzes={setQuizzes}
-    startQuiz={startQuiz}
-    onOpenDiagramUpload={() => setShowDiagramUploadModal(true)}
-    showToast={showToast}
-    askConfirm={askConfirm}
-  />
-)}
+        {activeTab === 'olevel' && (
+          <OLevelArena
+            role={role}
+            quizzes={quizzes}
+            setQuizzes={setQuizzes}
+            startQuiz={startQuiz}
+            onOpenDiagramUpload={() => {
+              setShowDiagramUploadModal(true);
+              window.history.pushState({ modal: 'diagram' }, '', '#diagram');
+            }}
+            showToast={showToast}
+            askConfirm={askConfirm}
+          />
+        )}
+
         {activeTab === 'leaderboard' && (
           <LeaderboardTab profiles={allProfiles} />
         )}
@@ -350,6 +393,10 @@ export default function App() {
             teacherSubject={teacherSubject}
             quizzes={quizzes}
             setQuizzes={setQuizzes}
+            badges={badges}
+            setBadges={setBadges}
+            ranks={ranks}
+            setRanks={setRanks}
             showDiagramUploadModal={showDiagramUploadModal}
             setShowDiagramUploadModal={setShowDiagramUploadModal}
             showToast={showToast}
@@ -362,6 +409,7 @@ export default function App() {
             authName={authName} role={role} studentGrade={studentGrade}
             schoolName={schoolName} studentAddress={studentAddress} indexNumber={indexNumber}
             coins={coins} xp={xp} readingHours={readingHours} user={user}
+            badges={badges} ranks={ranks}
             onUpdateProfile={handleUpdateProfile} showToast={showToast}
           />
         )}
@@ -372,7 +420,10 @@ export default function App() {
           quizzes={quizzes}
           setQuizzes={setQuizzes}
           showToast={showToast}
-          onClose={() => setShowDiagramUploadModal(false)}
+          onClose={() => {
+            setShowDiagramUploadModal(false);
+            if (window.location.hash.includes('diagram')) window.history.back();
+          }}
         />
       )}
 
@@ -382,7 +433,10 @@ export default function App() {
           hearts={hearts} timeLeft={timeLeft} streak={streak} selectedOption={selectedOption}
           showExplanation={showExplanation} score={score} quizFinished={quizFinished} gameOver={gameOver}
           handleAnswerSubmit={handleAnswerSubmit} nextQuestion={nextQuestion} startQuiz={startQuiz}
-          onClose={() => setActiveQuiz(null)}
+          onClose={() => {
+            setActiveQuiz(null);
+            if (window.location.hash.includes('quiz')) window.history.back();
+          }}
         />
       )}
     </div>
