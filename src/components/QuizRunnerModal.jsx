@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Flame, Heart, X, CheckCircle2, XCircle, Sparkles, ChevronRight, RotateCcw, Trophy, Image as ImageIcon } from 'lucide-react';
+import { Clock, Flame, Heart, X, CheckCircle2, XCircle, Sparkles, ChevronRight, RotateCcw, Trophy, Image as ImageIcon, Lock } from 'lucide-react';
 import { isRTLSubject } from '../utils/helpers';
 
 export default function QuizRunnerModal({
@@ -38,8 +38,9 @@ export default function QuizRunnerModal({
                 </span>
 
                 {(quizMode === 'challenge' || quizMode === 'olevel') && (
-                  <div className="flex items-center space-x-1.5 bg-rose-50 border border-rose-200/60 px-3 py-1.5 rounded-xl">
-                    {[...Array(3)].map((_, i) => (
+                  <div className="flex items-center space-x-1 bg-rose-50 border border-rose-200/60 px-2.5 py-1.5 rounded-xl">
+                    {/* 5 HEARTS DISPLAY */}
+                    {[...Array(5)].map((_, i) => (
                       <Heart
                         key={i}
                         className={`w-4 h-4 transition-all duration-300 ${
@@ -82,7 +83,7 @@ export default function QuizRunnerModal({
             </div>
 
             {/* Diagram Display Area */}
-            {currentQuestion.diagram_url && (
+            {currentQuestion?.diagram_url && (
               <div className="w-full bg-slate-900/5 border border-slate-200 rounded-2xl p-2.5 flex flex-col justify-center items-center space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1 self-start px-1">
                   <ImageIcon className="w-3 h-3 text-indigo-600" />
@@ -99,20 +100,20 @@ export default function QuizRunnerModal({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className={`text-[11px] font-bold tracking-wider uppercase text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg ${isDhivehi ? 'font-dhivehi' : ''}`}>
-                  {currentQuestion.topic || activeQuiz.subject}
+                  {currentQuestion?.topic || activeQuiz.subject}
                 </span>
                 <span className="text-xs text-slate-400 font-medium">{activeQuiz.title}</span>
               </div>
 
               <h3 className={`text-base sm:text-lg font-black text-slate-900 leading-snug pt-1 ${isDhivehi ? 'font-dhivehi' : ''}`}>
-                {currentQuestion.question_text}
+                {currentQuestion?.question_text}
               </h3>
             </div>
 
             {/* Options List */}
             <div className="space-y-2.5">
               {['A', 'B', 'C', 'D'].map((opt) => {
-                const optionText = currentQuestion[`option_${opt.toLowerCase()}`];
+                const optionText = currentQuestion?.[`option_${opt.toLowerCase()}`];
                 if (!optionText) return null;
 
                 const isCorrectOpt = opt === currentQuestion.correct_option;
@@ -157,10 +158,10 @@ export default function QuizRunnerModal({
                 <div className="bg-gradient-to-r from-slate-50 to-indigo-50/30 border border-slate-200 p-4 rounded-2xl space-y-1">
                   <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-wide flex items-center space-x-1">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                    <span>Concept Breakdown & Mark Scheme</span>
+                    <span>Concept Breakdown</span>
                   </span>
                   <p className={`text-xs text-slate-700 leading-relaxed font-normal ${isDhivehi ? 'font-dhivehi' : ''}`}>
-                    {currentQuestion.explanation || 'Option verified against subject mark scheme.'}
+                    {currentQuestion?.explanation || 'Option verified against subject mark scheme.'}
                   </p>
                 </div>
 
@@ -180,22 +181,22 @@ export default function QuizRunnerModal({
               <Heart className="w-10 h-10 text-rose-500" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-2xl font-black text-slate-900">Session Ended</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                You ran out of lives or time during this session. Review weak topics to boost performance!
+              <h3 className="text-2xl font-black text-slate-900">Hearts Depleted or Time Expired</h3>
+              <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
+                You ran out of lives or time! Challenge Mode for this quiz is now <strong className="text-rose-600 font-bold">LOCKED</strong> until you complete <strong className="text-indigo-600 font-bold">Practice Mode</strong>.
               </p>
             </div>
 
             <div className="flex justify-center space-x-3 pt-2">
               <button
-                onClick={() => startQuiz(activeQuiz, quizMode)}
+                onClick={() => startQuiz(activeQuiz, 'practice')}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-2xl text-xs shadow-md transition flex items-center space-x-1.5"
               >
                 <RotateCcw className="w-4 h-4" />
-                <span>Try Again</span>
+                <span>Play Practice Mode First 📖</span>
               </button>
               <button onClick={onClose} className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-6 py-3 rounded-2xl text-xs transition">
-                Return to Dashboard
+                Close
               </button>
             </div>
           </div>
@@ -207,7 +208,7 @@ export default function QuizRunnerModal({
 
             <div className="space-y-1">
               <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-full">
-                Quiz Completed!
+                {quizMode === 'practice' ? 'Practice Completed! Challenge Unlocked 🔓' : 'Challenge Passed!'}
               </span>
               <h3 className={`text-2xl font-black text-slate-900 pt-1 ${isDhivehi ? 'font-dhivehi' : ''}`}>{activeQuiz.title}</h3>
             </div>

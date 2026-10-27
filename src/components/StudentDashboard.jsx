@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Play, BookOpen, Clock, Filter } from 'lucide-react';
+import { Play, BookOpen, Clock, Filter, Lock } from 'lucide-react';
 import { ALL_SUBJECTS, isRTLSubject } from '../utils/helpers';
 
-export default function StudentDashboard({ grade, quizzes, startQuiz }) {
+export default function StudentDashboard({ grade, quizzes, startQuiz, lockedChallengeQuizIds = [] }) {
   const [selectedGrade, setSelectedGrade] = useState(grade || 7);
   const [selectedSubject, setSelectedSubject] = useState('All');
   const [selectedTopic, setSelectedTopic] = useState('All');
@@ -23,19 +23,17 @@ export default function StudentDashboard({ grade, quizzes, startQuiz }) {
         </span>
         <h2 className="text-2xl sm:text-3xl font-black">Curriculum Practice Modules</h2>
         <p className="text-indigo-200 text-xs max-w-xl">
-          Select your class, subject, and topic to access practice questions and timed heart challenges.
+          Select your class, subject, and topic to access practice questions and 5-heart timed challenges.
         </p>
       </div>
 
-      {/* Class, Subject, and Topic Filter Panel */}
       <div className="bg-white border border-slate-200 p-4 rounded-3xl shadow-xs space-y-3">
         <div className="flex items-center space-x-2 text-xs font-bold text-slate-700">
           <Filter className="w-4 h-4 text-indigo-600" />
-          <span>Select Class, Subject, and Topic</span>
+          <span>Select Class Grade, Subject, and Topic</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Class / Grade Selector */}
           <div>
             <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Class Grade</label>
             <select
@@ -49,7 +47,6 @@ export default function StudentDashboard({ grade, quizzes, startQuiz }) {
             </select>
           </div>
 
-          {/* Subject Filter */}
           <div>
             <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Subject</label>
             <select
@@ -62,7 +59,6 @@ export default function StudentDashboard({ grade, quizzes, startQuiz }) {
             </select>
           </div>
 
-          {/* Topic Search Filter */}
           <div>
             <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Topic Search</label>
             <input
@@ -84,6 +80,7 @@ export default function StudentDashboard({ grade, quizzes, startQuiz }) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredQuizzes.map((quiz) => {
             const isDhivehi = isRTLSubject(quiz.subject);
+            const isChallengeLocked = lockedChallengeQuizIds.includes(quiz.id);
 
             return (
               <div key={quiz.id} className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4 hover:shadow-md transition">
@@ -108,12 +105,27 @@ export default function StudentDashboard({ grade, quizzes, startQuiz }) {
                     <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
                     <span>Practice Mode</span>
                   </button>
+
                   <button
                     onClick={() => startQuiz(quiz, 'challenge')}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1 shadow-xs"
+                    disabled={isChallengeLocked}
+                    className={`font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1 shadow-xs ${
+                      isChallengeLocked
+                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                    }`}
                   >
-                    <Play className="w-3.5 h-3.5" />
-                    <span>Timed Lives</span>
+                    {isChallengeLocked ? (
+                      <>
+                        <Lock className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Practice Required</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5" />
+                        <span>Timed 5-Lives</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
