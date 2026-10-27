@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { User, Shield, Coins, Award, Clock, Sparkles, Edit3, Save, MapPin, School, Hash, CheckCircle2 } from 'lucide-react';
-import { getStudentRank, BADGES } from '../utils/helpers';
+import { User, Shield, Coins, Award, Clock, Sparkles, Edit3, Save, MapPin, School, Hash } from 'lucide-react';
+import { getStudentRank } from '../utils/helpers';
 
-export default function ProfileTab({ authName, role, studentGrade, schoolName, studentAddress, indexNumber, coins, xp, readingHours, user, onUpdateProfile, showToast }) {
-  const rank = getStudentRank(xp);
+export default function ProfileTab({
+  authName, role, studentGrade, schoolName, studentAddress, indexNumber,
+  coins, xp, readingHours, user, badges = [], ranks = [],
+  onUpdateProfile, showToast
+}) {
+  const rank = getStudentRank(xp, ranks);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(authName || '');
@@ -30,7 +34,7 @@ export default function ProfileTab({ authName, role, studentGrade, schoolName, s
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Profile Overview & Editable Settings Card */}
+      {/* Profile Overview Card */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xs">
         <div className="flex flex-col sm:flex-row items-center justify-between border-b border-slate-100 pb-6 gap-4">
           <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-5 text-center sm:text-left">
@@ -97,7 +101,6 @@ export default function ProfileTab({ authName, role, studentGrade, schoolName, s
                   type="text"
                   value={editSchool}
                   onChange={(e) => setEditSchool(e.target.value)}
-                  placeholder="e.g. Majeedhiyya School"
                   className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-slate-900"
                   required
                 />
@@ -109,7 +112,6 @@ export default function ProfileTab({ authName, role, studentGrade, schoolName, s
                   type="text"
                   value={editIndex}
                   onChange={(e) => setEditIndex(e.target.value)}
-                  placeholder="e.g. STU-2026"
                   className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-slate-900 font-mono"
                   required
                 />
@@ -121,7 +123,6 @@ export default function ProfileTab({ authName, role, studentGrade, schoolName, s
                   type="text"
                   value={editAddress}
                   onChange={(e) => setEditAddress(e.target.value)}
-                  placeholder="e.g. M. Henveiru, Orchid Magu, Malé"
                   className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-slate-900"
                   required
                 />
@@ -137,7 +138,6 @@ export default function ProfileTab({ authName, role, studentGrade, schoolName, s
             </button>
           </form>
         ) : (
-          /* Profile Information Cards */
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl flex items-center space-x-3">
               <School className="w-5 h-5 text-indigo-600 shrink-0" />
@@ -158,14 +158,14 @@ export default function ProfileTab({ authName, role, studentGrade, schoolName, s
             <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl flex items-center space-x-3">
               <Hash className="w-5 h-5 text-purple-600 shrink-0" />
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Index / Student ID</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Index ID</span>
                 <span className="text-xs font-mono font-bold text-slate-900">{indexNumber || 'STU-2026'}</span>
               </div>
             </div>
           </div>
         )}
 
-        {/* Academic Stats Grid */}
+        {/* Dynamic Academic Rank Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-slate-100">
           <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl text-center">
             <span className="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">Rank Level</span>
@@ -201,7 +201,7 @@ export default function ProfileTab({ authName, role, studentGrade, schoolName, s
         </div>
       </div>
 
-      {/* Badges & Achievements */}
+      {/* Dynamic Academic Badges */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-xs">
         <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
           <Award className="w-5 h-5 text-indigo-600" />
@@ -209,15 +209,31 @@ export default function ProfileTab({ authName, role, studentGrade, schoolName, s
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {(BADGES || []).map((b) => (
-            <div key={b.id} className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl flex items-center space-x-3">
-              <span className="text-2xl">{b.icon}</span>
-              <div>
-                <h4 className="font-bold text-slate-900 text-xs">{b.name}</h4>
-                <p className="text-[11px] text-slate-500">{b.desc}</p>
+          {badges.map((b) => {
+            const isUnlocked = xp >= (b.reqXp || 0);
+
+            return (
+              <div
+                key={b.id}
+                className={`p-3.5 rounded-2xl flex items-center space-x-3 border transition ${
+                  isUnlocked ? 'bg-slate-50 border-slate-200' : 'bg-slate-100/60 border-slate-200 opacity-60'
+                }`}
+              >
+                <span className="text-2xl">{b.icon}</span>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-slate-900 text-xs">{b.name}</h4>
+                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${
+                      isUnlocked ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'
+                    }`}>
+                      {isUnlocked ? 'Unlocked ✅' : `Req: ${b.reqXp || 100} XP`}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">{b.desc}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
