@@ -84,7 +84,7 @@ export default function ShopTab({
     if (cart.length === 0) return;
 
     if (coins < cartTotalCost) {
-      showToast(`❌ Insufficient Edu Wallet Balance!\nTotal: ${cartTotalCost} coins (Balance: ${coins} coins).`, "warning");
+      showToast(`Checkout not completed: your Edu Wallet has ${coins} coins, but this cart costs ${cartTotalCost} coins. Earn more Edu Coins and try again.`, "warning");
       return;
     }
 
@@ -111,7 +111,7 @@ export default function ShopTab({
     setCart([]);
     setShowCartDrawer(false);
 
-    showToast(`🎉 Purchase Successful!\nSpent ${cartTotalCost} Coins on ${cartTotalCount} item(s).\nVouchers issued!`, "success");
+    showToast(`Purchase complete! You spent ${cartTotalCost} Edu Coins on ${cartTotalCount} item(s). Your collection vouchers are ready in Orders.`, "success");
   };
 
   // CRUD Actions
@@ -201,7 +201,8 @@ export default function ShopTab({
             </div>
             <button
               onClick={() => setShowCartDrawer(true)}
-              className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-3 sm:px-4 py-2.5 rounded-xl text-xs shadow-md transition flex items-center gap-1.5 ml-auto sm:ml-2"
+              aria-label={`Open shopping cart, ${cartTotalCount} ${cartTotalCount === 1 ? 'item' : 'items'}`}
+              className="min-h-11 min-w-11 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-3 sm:px-4 py-2.5 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-1.5 ml-auto sm:ml-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
             >
               <ShoppingCart className="w-4 h-4" />
               <span>Cart ({cartTotalCount})</span>
@@ -304,7 +305,7 @@ export default function ShopTab({
               const inCart = cart.find(ci => ci.item.id === item.id);
 
               return (
-                <div key={item.id} className="bg-white border border-slate-200/90 rounded-xl min-[400px]:rounded-2xl sm:rounded-3xl overflow-hidden hover:shadow-xl hover:border-indigo-200 transition duration-300 flex flex-col group min-w-0 w-full">
+                <div key={item.id} className="bg-white border border-slate-200/90 rounded-xl min-[400px]:rounded-2xl sm:rounded-3xl overflow-hidden hover:shadow-xl hover:border-indigo-200 transition duration-300 flex flex-col group min-w-0 w-full focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2">
                   {/* Image & Badges Overlay */}
                   <div className="h-28 min-[360px]:h-32 min-[400px]:h-36 min-[520px]:h-44 xl:h-52 bg-slate-100 relative overflow-hidden border-b border-slate-100">
                     <img 
@@ -315,7 +316,7 @@ export default function ShopTab({
                     
                     {/* Price Tag */}
                     <span className="absolute top-2 right-2 min-[520px]:top-3 min-[520px]:right-3 bg-white/95 backdrop-blur-md text-slate-950 px-2.5 py-1.5 min-[520px]:px-3 min-[520px]:py-2 rounded-lg min-[520px]:rounded-xl shadow-lg border border-white/70 flex flex-col items-end leading-tight max-w-[68%]">
-                      <span className="flex items-center gap-1 text-[8px] min-[520px]:text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
+                      <span className="flex items-center gap-1 text-[9px] min-[520px]:text-[10px] font-extrabold uppercase tracking-wide text-slate-700">
                         <Coins className="w-3 h-3 text-amber-500 fill-amber-400" /> Edu Coins
                       </span>
                       <span className="text-lg min-[520px]:text-xl font-black text-slate-950 tracking-tight tabular-nums">{item.cost}</span>
@@ -323,7 +324,7 @@ export default function ShopTab({
 
                     {/* Grade Restriction Tag */}
                     {isGradeRestricted && (
-                      <span className="absolute top-2 left-2 min-[520px]:top-3 min-[520px]:left-3 bg-purple-600 text-white text-[9px] min-[520px]:text-[10px] font-bold px-2 py-1 rounded-lg min-[520px]:rounded-xl flex items-center space-x-1 shadow-md max-w-[58%]">
+                      <span className="absolute top-2 left-2 min-[520px]:top-3 min-[520px]:left-3 bg-purple-600 text-white text-[10px] min-[520px]:text-[11px] font-bold px-2 py-1 rounded-lg min-[520px]:rounded-xl flex items-center space-x-1 shadow-md max-w-[58%]">
                         <Lock className="w-3 h-3" />
                         <span>Grade {item.target_grade} Reserved</span>
                       </span>
@@ -333,7 +334,7 @@ export default function ShopTab({
                     {canEditShop && (
                       <button
                         onClick={() => handleDeleteItem(item)}
-                        className="absolute bottom-3 right-3 bg-rose-600 hover:bg-rose-700 text-white p-2 rounded-xl text-xs shadow-md transition"
+                        aria-label={`Delete product ${item.name}`} title={`Delete product ${item.name}`} className="absolute bottom-3 right-3 min-h-11 min-w-11 flex items-center justify-center bg-rose-700 hover:bg-rose-800 text-white p-2 rounded-xl text-xs shadow-md transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-300 focus-visible:ring-offset-2"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -344,11 +345,11 @@ export default function ShopTab({
                   <div className="p-2.5 min-[360px]:p-3 min-[520px]:p-4 xl:p-5 space-y-2.5 min-[400px]:space-y-3 min-[520px]:space-y-4 flex-1 flex flex-col justify-between min-w-0">
                     <div className="space-y-1.5 min-[400px]:space-y-2 min-[520px]:space-y-2.5 min-w-0">
                       <div className="flex flex-wrap items-start justify-between gap-1.5 min-[400px]:gap-2 min-w-0">
-                        <span className="text-[9px] min-[400px]:text-[10px] font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 min-[400px]:px-2 py-0.5 min-[520px]:px-2.5 min-[520px]:py-1 rounded-md min-[520px]:rounded-lg uppercase tracking-wide max-w-full min-w-0 whitespace-normal break-words [overflow-wrap:anywhere]">
+                        <span className="text-[10px] min-[400px]:text-[11px] font-extrabold text-indigo-800 bg-indigo-50 border border-indigo-100 px-1.5 min-[400px]:px-2 py-0.5 min-[520px]:px-2.5 min-[520px]:py-1 rounded-md min-[520px]:rounded-lg uppercase tracking-wide max-w-full min-w-0 whitespace-normal break-words [overflow-wrap:anywhere]">
                           {item.category || 'Stationery'}
                         </span>
                         {item.stock !== undefined && item.stock !== null && (
-                          <span className={`inline-flex items-center gap-1 text-[9px] min-[400px]:text-[10px] min-[520px]:text-[11px] leading-tight font-extrabold px-1.5 min-[400px]:px-2 min-[520px]:px-2.5 py-0.5 min-[520px]:py-1 rounded-md min-[520px]:rounded-lg border max-w-full min-w-0 whitespace-normal break-words [overflow-wrap:anywhere] ${Number(item.stock) <= 0 ? 'bg-rose-50 text-rose-700 border-rose-200' : Number(item.stock) <= 5 ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`} >
+                          <span className={`inline-flex items-center gap-1 text-[10px] min-[400px]:text-[11px] min-[520px]:text-xs leading-tight font-extrabold px-1.5 min-[400px]:px-2 min-[520px]:px-2.5 py-0.5 min-[520px]:py-1 rounded-md min-[520px]:rounded-lg border max-w-full min-w-0 whitespace-normal break-words [overflow-wrap:anywhere] ${Number(item.stock) <= 0 ? 'bg-rose-50 text-rose-700 border-rose-200' : Number(item.stock) <= 5 ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`} >
                             <span className={`w-1.5 h-1.5 rounded-full ${Number(item.stock) <= 0 ? 'bg-rose-500' : Number(item.stock) <= 5 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
                             {Number(item.stock) <= 0 ? 'Out of stock' : Number(item.stock) <= 5 ? `Only ${item.stock} left` : `${item.stock} in stock`}
                           </span>
@@ -356,7 +357,7 @@ export default function ShopTab({
                       </div>
 
                       <h3 className="font-extrabold text-slate-900 text-sm min-[360px]:text-[15px] min-[400px]:text-base min-[520px]:text-lg leading-snug tracking-tight min-w-0 break-words [overflow-wrap:anywhere]">{item.name}</h3>
-                      <p className="text-[11px] min-[400px]:text-xs min-[520px]:text-sm text-slate-500 leading-[1.4] min-[520px]:leading-relaxed min-w-0 whitespace-normal break-words [overflow-wrap:anywhere]">{item.desc}</p>
+                      <p className="text-xs min-[400px]:text-[13px] min-[520px]:text-sm text-slate-700 leading-[1.45] min-[520px]:leading-relaxed min-w-0 whitespace-normal break-words [overflow-wrap:anywhere]">{item.desc}</p>
                     </div>
 
                     {/* Purchase / Add to Cart Controls */}
@@ -364,12 +365,13 @@ export default function ShopTab({
                       <button
                         onClick={() => addToCart(item)}
                         disabled={isStudentLocked}
-                        className={`w-full min-w-0 min-h-11 px-2.5 py-2 min-[400px]:px-3 min-[520px]:py-3.5 rounded-lg min-[520px]:rounded-2xl text-[11px] min-[400px]:text-xs shadow-md transition flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center leading-tight whitespace-normal break-words [overflow-wrap:anywhere] ${
+                        aria-label={isStudentLocked ? `Unavailable: ${item.name}, reserved for Grade ${item.target_grade}` : !isAffordable ? `Add ${item.name} to cart unavailable: need ${item.cost - coins} more Edu Coins` : inCart ? `Add another ${item.name} to cart; ${inCart.quantity} already in cart` : `Add ${item.name} to Edu Cart for ${item.cost} coins`}
+                        className={`w-full min-w-0 min-h-11 px-2.5 py-2 min-[400px]:px-3 min-[520px]:py-3.5 rounded-lg min-[520px]:rounded-2xl text-xs min-[400px]:text-sm font-bold shadow-md transition flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center leading-tight whitespace-normal break-words [overflow-wrap:anywhere] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300 focus-visible:ring-offset-2 ${
                           isStudentLocked
-                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                            ? 'bg-slate-100 text-slate-700 cursor-not-allowed border border-slate-300'
                             : !isAffordable
-                              ? 'bg-amber-500/10 border border-amber-300 text-amber-800 hover:bg-amber-500/20'
-                              : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                              ? 'bg-amber-50 border border-amber-400 text-amber-900 hover:bg-amber-100'
+                              : 'bg-indigo-700 hover:bg-indigo-800 text-white'
                         }`}
                       >
                         {!isAffordable && !isStudentLocked ? (
@@ -500,45 +502,45 @@ export default function ShopTab({
       {/* Cart Drawer Modal */}
       {showCartDrawer && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex justify-end">
-          <div className="bg-white max-w-md w-full h-full p-4 sm:p-6 space-y-5 sm:space-y-6 flex flex-col justify-between shadow-2xl overflow-y-auto animate-fade-in">
+          <div role="dialog" aria-modal="true" aria-label="My Edu Cart" className="bg-white max-w-md w-full h-full p-3 min-[375px]:p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col justify-between shadow-2xl overflow-y-auto animate-fade-in">
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-4">
                 <div className="flex items-center space-x-2">
                   <ShoppingCart className="w-5 h-5 text-indigo-600" />
                   <h3 className="font-black text-slate-900 text-lg">My Edu Cart</h3>
                 </div>
-                <button onClick={() => setShowCartDrawer(false)} className="p-2 text-slate-400 hover:text-slate-700">
-                  <X className="w-5 h-5" />
+                <button onClick={() => setShowCartDrawer(false)} aria-label="Close shopping cart" className="min-h-11 min-w-11 p-2 text-slate-700 hover:bg-slate-100 hover:text-slate-950 rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300 focus-visible:ring-offset-2">
+                  <X className="w-5 h-5 mx-auto" />
                 </button>
               </div>
 
               {cart.length === 0 ? (
-                <div className="text-center py-16 text-slate-400 space-y-2">
+                <div className="text-center py-16 text-slate-600 space-y-2">
                   <ShoppingBag className="w-12 h-12 mx-auto text-slate-300" />
-                  <p className="text-xs font-bold">Your Edu Cart is currently empty.</p>
+                  <p className="text-sm font-bold text-slate-700">Your Edu Cart is currently empty.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {cart.map(({ item, quantity }) => (
-                    <div key={item.id} className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
+                    <div key={item.id} className="bg-slate-50 border border-slate-300 p-3 rounded-2xl flex flex-wrap min-[375px]:flex-nowrap items-center gap-3 justify-between">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <img src={item.image_url} alt={item.name} className="w-12 h-12 rounded-xl object-cover border" />
                         <div>
-                          <h4 className="font-bold text-slate-900 text-xs">{item.name}</h4>
-                          <span className="text-[10px] font-bold text-amber-600">{item.cost * quantity} Coins</span>
+                          <h4 className="font-bold text-slate-950 text-xs leading-snug break-words [overflow-wrap:anywhere]">{item.name}</h4>
+                          <span className="text-xs font-bold text-amber-800">{item.cost * quantity} Coins</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2 bg-white border border-slate-200 rounded-xl p-1">
-                        <button onClick={() => updateQuantity(item.id, -1)} className="p-1 hover:bg-slate-100 rounded">
-                          <Minus className="w-3 h-3 text-slate-600" />
+                      <div className="flex items-center gap-1 bg-white border border-slate-300 rounded-xl p-1 shrink-0" aria-label={`Quantity controls for ${item.name}`}>
+                        <button type="button" onClick={() => updateQuantity(item.id, -1)} aria-label={`Decrease quantity of ${item.name}`} className="min-h-11 min-w-11 p-2 hover:bg-slate-100 text-slate-900 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300 focus-visible:ring-inset">
+                          <Minus className="w-4 h-4 mx-auto" />
                         </button>
-                        <span className="text-xs font-black px-1.5">{quantity}</span>
-                        <button onClick={() => updateQuantity(item.id, 1)} className="p-1 hover:bg-slate-100 rounded">
-                          <Plus className="w-3 h-3 text-slate-600" />
+                        <span className="text-sm font-black text-slate-950 min-w-5 text-center" aria-label={`Quantity ${quantity}`}>{quantity}</span>
+                        <button type="button" onClick={() => updateQuantity(item.id, 1)} aria-label={`Increase quantity of ${item.name}`} className="min-h-11 min-w-11 p-2 hover:bg-slate-100 text-slate-900 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300 focus-visible:ring-inset">
+                          <Plus className="w-4 h-4 mx-auto" />
                         </button>
-                        <button onClick={() => removeFromCart(item.id)} className="p-1 text-rose-600 hover:bg-rose-50 rounded">
-                          <Trash2 className="w-3 h-3" />
+                        <button type="button" onClick={() => removeFromCart(item.id)} aria-label={`Remove ${item.name} from cart`} className="min-h-11 min-w-11 p-2 text-rose-800 hover:bg-rose-50 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-300 focus-visible:ring-inset">
+                          <Trash2 className="w-4 h-4 mx-auto" />
                         </button>
                       </div>
                     </div>
@@ -549,35 +551,47 @@ export default function ShopTab({
 
             {/* Checkout Footer */}
             {cart.length > 0 && (
-              <div className="border-t border-slate-100 pt-4 space-y-4">
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex justify-between text-slate-500">
+              <div className="border-t border-slate-200 pt-4 space-y-4">
+                <div className="space-y-1.5 text-sm" aria-label="Checkout summary">
+                  <div className="flex justify-between gap-3 text-slate-700">
                     <span>Edu Wallet Balance:</span>
-                    <span className="font-bold text-slate-900">{coins} 🪙</span>
+                    <span className="font-bold text-slate-950">{coins} 🪙</span>
                   </div>
-                  <div className="flex justify-between text-slate-500">
+                  <div className="flex justify-between gap-3 text-slate-700">
                     <span>Cart Total:</span>
-                    <span className="font-bold text-amber-600">{cartTotalCost} 🪙</span>
+                    <span className="font-bold text-amber-800">{cartTotalCost} 🪙</span>
                   </div>
-                  <div className="flex justify-between text-slate-900 font-black text-sm pt-2 border-t">
+                  <div className="flex justify-between gap-3 text-slate-950 font-black text-sm pt-2 border-t border-slate-300">
                     <span>Balance After Payment:</span>
-                    <span className={coins >= cartTotalCost ? 'text-emerald-600' : 'text-rose-600'}>
+                    <span className={coins >= cartTotalCost ? 'text-emerald-800' : 'text-rose-800'} aria-label={coins >= cartTotalCost ? 'Sufficient balance after payment' : 'Insufficient balance'}>
                       {coins - cartTotalCost} 🪙
                     </span>
                   </div>
                 </div>
 
+                {coins < cartTotalCost && (
+                  <div role="status" aria-live="polite" className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-3 text-sm font-semibold leading-snug text-rose-900">
+                    <span className="block font-black">Not enough Edu Coins to check out</span>
+                    <span className="block mt-1">You need {cartTotalCost - coins} more coins. Earn coins through quizzes or the E-Library, then try again.</span>
+                  </div>
+                )}
+                {coins >= cartTotalCost && (
+                  <p role="status" aria-live="polite" className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold leading-snug text-emerald-900">
+                    Your balance covers this purchase. Select the button below to confirm checkout.
+                  </p>
+                )}
                 <button
                   onClick={handleWalletCheckout}
                   disabled={coins < cartTotalCost}
-                  className={`w-full font-black py-4 rounded-2xl text-xs shadow-lg transition flex items-center justify-center space-x-2 ${
+                  aria-label={coins < cartTotalCost ? `Checkout unavailable: need ${cartTotalCost - coins} more Edu Coins` : `Confirm purchase for ${cartTotalCost} Edu Coins using Edu Wallet`}
+                  className={`w-full min-h-12 px-3 py-3 font-black rounded-2xl text-sm leading-snug shadow-lg transition flex flex-wrap items-center justify-center gap-2 text-center break-words focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300 focus-visible:ring-offset-2 ${
                     coins < cartTotalCost
-                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950'
+                      ? 'bg-slate-200 text-slate-600 border border-slate-400 cursor-not-allowed'
+                      : 'bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-slate-950 border border-amber-700'
                   }`}
                 >
                   <CreditCard className="w-4 h-4" />
-                  <span>Pay {cartTotalCost} Coins with Edu Wallet</span>
+                  <span>{coins < cartTotalCost ? `Need ${cartTotalCost - coins} More Coins` : `Confirm Purchase · ${cartTotalCost} Edu Coins`}</span>
                 </button>
               </div>
             )}
