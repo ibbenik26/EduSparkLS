@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Sparkles, Clock, Image as ImageIcon, Play, Filter, Calendar, BookOpen } from 'lucide-react';
-import { ALL_SUBJECTS } from '../utils/helpers';
+import { Sparkles, Clock, Image as ImageIcon, Play, Filter, BookOpen } from 'lucide-react';
+import { ALL_SUBJECTS, isRTLSubject, canUserCRUDQuizzes } from '../utils/helpers';
 
 export default function OLevelArena({
+  role,
   quizzes,
   startQuiz,
   onOpenDiagramUpload
@@ -10,6 +11,8 @@ export default function OLevelArena({
   const [selectedSubject, setSelectedSubject] = useState('All');
   const [selectedYear, setSelectedYear] = useState('All');
   const [selectedTopic, setSelectedTopic] = useState('All');
+
+  const canEditOLevel = canUserCRUDQuizzes(role);
 
   const olevelPapers = quizzes.filter(q => {
     if (!q.is_past_paper) return false;
@@ -23,6 +26,7 @@ export default function OLevelArena({
 
   return (
     <div className="space-y-6">
+      {/* Header Banner */}
       <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
         <div className="space-y-2">
           <span className="bg-purple-500/20 border border-purple-400/30 text-purple-300 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider">
@@ -34,13 +38,16 @@ export default function OLevelArena({
           </p>
         </div>
 
-        <button
-          onClick={onOpenDiagramUpload}
-          className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-3 rounded-2xl text-xs transition shadow-md shrink-0 flex items-center space-x-2"
-        >
-          <ImageIcon className="w-4 h-4" />
-          <span>+ Upload Diagram Paper</span>
-        </button>
+        {/* RESTRICTED: Upload Diagram Paper button only visible to Teachers & Super Admins */}
+        {canEditOLevel && (
+          <button
+            onClick={onOpenDiagramUpload}
+            className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-3 rounded-2xl text-xs transition shadow-md shrink-0 flex items-center space-x-2"
+          >
+            <ImageIcon className="w-4 h-4" />
+            <span>+ Upload Diagram Paper</span>
+          </button>
+        )}
       </div>
 
       {/* Multi-Parameter Filter Panel */}
@@ -57,7 +64,7 @@ export default function OLevelArena({
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-indigo-700"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-indigo-700 focus:outline-none focus:border-purple-500"
             >
               <option value="All">All Subjects</option>
               {ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -70,7 +77,7 @@ export default function OLevelArena({
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-900"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-purple-500"
             >
               <option value="All">All Exam Years</option>
               {[2026, 2025, 2024, 2023, 2022, 2021, 2020].map(y => (
@@ -87,7 +94,7 @@ export default function OLevelArena({
               value={selectedTopic === 'All' ? '' : selectedTopic}
               onChange={(e) => setSelectedTopic(e.target.value || 'All')}
               placeholder="e.g. Paper 12, Optics, Mechanics"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-medium text-slate-900"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-medium text-slate-900 focus:outline-none focus:border-purple-500"
             />
           </div>
         </div>
@@ -99,39 +106,45 @@ export default function OLevelArena({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {olevelPapers.map((paper) => (
-            <div key={paper.id} className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 hover:shadow-md transition">
-              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                <span className="text-xs font-bold text-purple-700 bg-purple-50 border border-purple-100 px-2.5 py-1 rounded-lg">
-                  {paper.subject} • {paper.exam_year || 2026}
-                </span>
-                <span className="text-xs font-mono font-bold text-slate-500 flex items-center space-x-1">
-                  <Clock className="w-3.5 h-3.5 text-amber-600" />
-                  <span>{paper.time_limit || 120}s limit</span>
-                </span>
+          {olevelPapers.map((paper) => {
+            const isDhivehi = isRTLSubject(paper.subject);
+
+            return (
+              <div key={paper.id} className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 hover:shadow-md transition">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <span className={`text-xs font-bold text-purple-700 bg-purple-50 border border-purple-100 px-2.5 py-1 rounded-lg ${isDhivehi ? 'font-dhivehi' : ''}`}>
+                    {paper.subject} • {paper.exam_year || 2026}
+                  </span>
+                  <span className="text-xs font-mono font-bold text-slate-500 flex items-center space-x-1">
+                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                    <span>{paper.time_limit || 120}s limit</span>
+                  </span>
+                </div>
+
+                <h3 className={`font-black text-slate-900 text-lg leading-snug ${isDhivehi ? 'font-dhivehi' : ''}`}>
+                  {paper.title}
+                </h3>
+
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    onClick={() => startQuiz(paper, 'practice')}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-purple-600" />
+                    <span>Practice</span>
+                  </button>
+
+                  <button
+                    onClick={() => startQuiz(paper, 'olevel')}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1 shadow-xs"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    <span>Timed Simulation</span>
+                  </button>
+                </div>
               </div>
-
-              <h3 className="font-black text-slate-900 text-lg leading-snug">{paper.title}</h3>
-
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <button
-                  onClick={() => startQuiz(paper, 'practice')}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1"
-                >
-                  <BookOpen className="w-3.5 h-3.5 text-purple-600" />
-                  <span>Practice</span>
-                </button>
-
-                <button
-                  onClick={() => startQuiz(paper, 'olevel')}
-                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1 shadow-xs"
-                >
-                  <Play className="w-3.5 h-3.5" />
-                  <span>Timed Simulation</span>
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
