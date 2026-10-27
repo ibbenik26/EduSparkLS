@@ -1,28 +1,44 @@
 import React, { useState } from 'react';
-import { Sparkles, Clock, Image as ImageIcon, Play, Filter, BookOpen } from 'lucide-react';
-import { ALL_SUBJECTS, isRTLSubject, canUserCRUDQuizzes } from '../utils/helpers';
+import { Sparkles, Clock, Image as ImageIcon, Play, Filter, BookOpen, Trash2, Search, Plus } from 'lucide-react';
+import { ALL_SUBJECTS, isRTLSubject, canUserCRUDQuizzes, lenientMatch } from '../utils/helpers';
 
 export default function OLevelArena({
   role,
   quizzes,
+  setQuizzes,
   startQuiz,
-  onOpenDiagramUpload
+  onOpenDiagramUpload,
+  showToast,
+  askConfirm
 }) {
   const [selectedSubject, setSelectedSubject] = useState('All');
   const [selectedYear, setSelectedYear] = useState('All');
-  const [selectedTopic, setSelectedTopic] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const canEditOLevel = canUserCRUDQuizzes(role);
 
+  // Hyper-Lenient Filter for O-Level Past Papers
   const olevelPapers = quizzes.filter(q => {
     if (!q.is_past_paper) return false;
 
     const matchesSubject = selectedSubject === 'All' || q.subject === selectedSubject;
     const matchesYear = selectedYear === 'All' || String(q.exam_year) === String(selectedYear);
-    const matchesTopic = selectedTopic === 'All' || (q.variant || '').toLowerCase().includes(selectedTopic.toLowerCase());
 
-    return matchesSubject && matchesYear && matchesTopic;
+    const questionTextBuffer = (q.questions || []).map(qItem => `${qItem.question_text} ${qItem.topic}`).join(' ');
+    const searchableBuffer = `${q.title} ${q.subject} ${q.variant || ''} ${q.exam_year || ''} ${questionTextBuffer}`;
+
+    const matchesSearch = lenientMatch(searchableBuffer, searchQuery);
+
+    return matchesSubject && matchesYear && matchesSearch;
   });
+
+  const handleDeletePaper = (paper) => {
+    if (!canEditOLevel) return;
+    askConfirm("Delete O-Level Past Paper", `Remove "${paper.title}" from the Cambridge Arena?`, () => {
+      setQuizzes(quizzes.filter(q => q.id !== paper.id));
+      showToast(`Deleted O-Level paper "${paper.title}".`, "info");
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -34,27 +50,27 @@ export default function OLevelArena({
           </span>
           <h2 className="text-2xl sm:text-3xl font-black">Cambridge O-Level Past Papers</h2>
           <p className="text-purple-200 text-xs max-w-lg">
-            Timed Paper 1 & Paper 2 exam simulations featuring optical ray diagrams and force vector physics questions.
+            Timed Paper 1 & Paper 2 exam simulations featuring optical ray diagrams and mechanics physics models.
           </p>
         </div>
 
-        {/* RESTRICTED: Upload Diagram Paper button only visible to Teachers & Super Admins */}
+        {/* ADMIN / TEACHER CRUD UPLOAD BUTTON */}
         {canEditOLevel && (
           <button
             onClick={onOpenDiagramUpload}
             className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-3 rounded-2xl text-xs transition shadow-md shrink-0 flex items-center space-x-2"
           >
             <ImageIcon className="w-4 h-4" />
-            <span>+ Upload Diagram Paper</span>
+            <span>+ Upload O-Level Paper</span>
           </button>
         )}
       </div>
 
-      {/* Multi-Parameter Filter Panel */}
+      {/* Multi-Parameter & Lenient Search Panel */}
       <div className="bg-white border border-slate-200 p-4 rounded-3xl shadow-xs space-y-3">
         <div className="flex items-center space-x-2 text-xs font-bold text-slate-700">
           <Filter className="w-4 h-4 text-purple-600" />
-          <span>Filter Cambridge Papers by Subject, Year, or Topic</span>
+          <span>Filter Cambridge Papers (Hyper-Lenient Search)</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -64,7 +80,7 @@ export default function OLevelArena({
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-indigo-700 focus:outline-none focus:border-purple-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-indigo-700 focus:outline-none"
             >
               <option value="All">All Subjects</option>
               {ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -77,7 +93,7 @@ export default function OLevelArena({
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-purple-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-900 focus:outline-none"
             >
               <option value="All">All Exam Years</option>
               {[2026, 2025, 2024, 2023, 2022, 2021, 2020].map(y => (
@@ -86,23 +102,26 @@ export default function OLevelArena({
             </select>
           </div>
 
-          {/* Paper / Topic Filter */}
+          {/* Lenient Search Box */}
           <div>
-            <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Paper / Topic Search</label>
-            <input
-              type="text"
-              value={selectedTopic === 'All' ? '' : selectedTopic}
-              onChange={(e) => setSelectedTopic(e.target.value || 'All')}
-              placeholder="e.g. Paper 12, Optics, Mechanics"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-medium text-slate-900 focus:outline-none focus:border-purple-500"
-            />
+            <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Lenient Paper/Topic Search</label>
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Type '2', 'paper 12', 'optics'..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs font-medium text-slate-900 focus:outline-none focus:border-purple-500"
+              />
+            </div>
           </div>
         </div>
       </div>
 
       {olevelPapers.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-400 text-xs">
-          No Cambridge past papers match your selected filter criteria.
+          No Cambridge past papers match "{searchQuery || 'selected criteria'}".
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -110,15 +129,29 @@ export default function OLevelArena({
             const isDhivehi = isRTLSubject(paper.subject);
 
             return (
-              <div key={paper.id} className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 hover:shadow-md transition">
+              <div key={paper.id} className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 hover:shadow-md transition relative group">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                   <span className={`text-xs font-bold text-purple-700 bg-purple-50 border border-purple-100 px-2.5 py-1 rounded-lg ${isDhivehi ? 'font-dhivehi' : ''}`}>
                     {paper.subject} • {paper.exam_year || 2026}
                   </span>
-                  <span className="text-xs font-mono font-bold text-slate-500 flex items-center space-x-1">
-                    <Clock className="w-3.5 h-3.5 text-amber-600" />
-                    <span>{paper.time_limit || 120}s limit</span>
-                  </span>
+
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-mono font-bold text-slate-500 flex items-center space-x-1">
+                      <Clock className="w-3.5 h-3.5 text-amber-600" />
+                      <span>{paper.time_limit || 120}s limit</span>
+                    </span>
+
+                    {/* ADMIN / TEACHER DELETE PAPER ACTION */}
+                    {canEditOLevel && (
+                      <button
+                        onClick={() => handleDeletePaper(paper)}
+                        className="text-slate-300 hover:text-rose-600 p-1 rounded-lg transition"
+                        title="Delete O-Level Paper"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <h3 className={`font-black text-slate-900 text-lg leading-snug ${isDhivehi ? 'font-dhivehi' : ''}`}>

@@ -42,6 +42,28 @@ export const getQuizTimeLimit = (quiz) => {
   return ['maths', 'physics', 'chemistry', 'accounting', 'economics'].includes(subj) ? 120 : 60;
 };
 
+// HYPER-LENIENT SEARCH HELPER
+export const lenientMatch = (targetContent, searchQuery) => {
+  if (!searchQuery || searchQuery.trim() === '' || searchQuery === 'All') return true;
+
+  const q = searchQuery.toLowerCase().trim();
+  const text = String(targetContent || '').toLowerCase();
+
+  // 1. Direct Substring Check
+  if (text.includes(q)) return true;
+
+  // 2. Number Words <-> Digits Matching (e.g. '2' matches 'two', '1' matches 'one')
+  const numToWord = { '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine', '10': 'ten' };
+  const wordToNum = { 'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9', 'ten': '10' };
+
+  if (numToWord[q] && text.includes(numToWord[q])) return true;
+  if (wordToNum[q] && text.includes(wordToNum[q])) return true;
+
+  // 3. Token-by-token Partial Match
+  const tokens = q.split(/\s+/);
+  return tokens.some(token => text.includes(token));
+};
+
 export const generateSubjectAnalytics = (subject = 'Physics', studentData = []) => {
   return [
     { topic: 'Optics & Refraction Rays', avgScore: 82, totalAttempts: 24, weakStudentsCount: 3, masteryLevel: 'High' },

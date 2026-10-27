@@ -305,14 +305,31 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'olevel' && (
-          <OLevelArena
-            quizzes={quizzes}
-            startQuiz={startQuiz}
-            onOpenDiagramUpload={() => setShowDiagramUploadModal(true)}
-          />
-        )}
+      {activeTab === 'dashboard' && (
+  <StudentDashboard
+    role={role}
+    grade={studentGrade}
+    quizzes={quizzes}
+    setQuizzes={setQuizzes}
+    startQuiz={startQuiz}
+    lockedChallengeQuizIds={lockedChallengeQuizIds}
+    onOpenDiagramUpload={() => setShowDiagramUploadModal(true)}
+    showToast={showToast}
+    askConfirm={askConfirm}
+  />
+)}
 
+{activeTab === 'olevel' && (
+  <OLevelArena
+    role={role}
+    quizzes={quizzes}
+    setQuizzes={setQuizzes}
+    startQuiz={startQuiz}
+    onOpenDiagramUpload={() => setShowDiagramUploadModal(true)}
+    showToast={showToast}
+    askConfirm={askConfirm}
+  />
+)}
         {activeTab === 'leaderboard' && (
           <LeaderboardTab profiles={allProfiles} />
         )}
