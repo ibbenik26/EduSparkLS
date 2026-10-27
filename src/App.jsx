@@ -24,6 +24,9 @@ export default function App() {
   const [role, setRole] = useState('student');
   const [authName, setAuthName] = useState('User');
   const [studentGrade, setStudentGrade] = useState(7);
+  const [schoolName, setSchoolName] = useState('Majeedhiyya School');
+  const [studentAddress, setStudentAddress] = useState('M. Henveiru, Malé');
+  const [indexNumber, setIndexNumber] = useState('STU-2026');
   const [teacherSubject, setTeacherSubject] = useState('Physics');
 
   const [coins, setCoins] = useState(350);
@@ -40,29 +43,21 @@ export default function App() {
   const [allProfiles, setAllProfiles] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // Track Quizzes with Locked Challenge Mode (Unlocked only after finishing Practice Mode)
   const [lockedChallengeQuizIds, setLockedChallengeQuizIds] = useState([]);
 
-  // In-App Toast State
+  // Toast State
   const [toasts, setToasts] = useState([]);
-
   const showToast = (message, type = 'info') => {
     const id = `toast_${Date.now()}_${Math.random()}`;
     setToasts(prev => [...prev, { id, message, type }]);
   };
+  const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
 
-  const removeToast = (id) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  };
-
-  // In-App Confirm Modal State
+  // Confirm Modal State
   const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
-
   const askConfirm = (title, message, onConfirm) => {
     setConfirmState({
-      isOpen: true,
-      title,
-      message,
+      isOpen: true, title, message,
       onConfirm: () => {
         onConfirm();
         setConfirmState(prev => ({ ...prev, isOpen: false }));
@@ -70,23 +65,22 @@ export default function App() {
     });
   };
 
-  // Quiz Execution Modal State
+  // Quiz Modal State
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [quizMode, setQuizMode] = useState('practice');
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [showExplanation, setShowExplanation] = useState(false);
   const [score, setScore] = useState(0);
-  const [hearts, setHearts] = useState(5); // 5 HEARTS SYSTEM
+  const [hearts, setHearts] = useState(5);
   const [streak, setStreak] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
   const [quizFinished, setQuizFinished] = useState(false);
   const [gameOver, setGameOver] = useState(false);
 
-  // Diagram Builder State
   const [showDiagramUploadModal, setShowDiagramUploadModal] = useState(false);
 
-  // Active Quiz Countdown Timer Effect
+  // Active Quiz Timer
   useEffect(() => {
     let timer = null;
     if (activeQuiz && (quizMode === 'challenge' || quizMode === 'olevel') && !quizFinished && !gameOver) {
@@ -150,12 +144,40 @@ export default function App() {
       setAuthName(data?.full_name || authUser?.user_metadata?.full_name || 'User');
       setRole(effectiveRole);
       setStudentGrade(data?.grade || authUser?.user_metadata?.grade || 7);
+      setSchoolName(data?.school_name || authUser?.user_metadata?.school_name || 'Majeedhiyya School');
+      setStudentAddress(data?.student_address || authUser?.user_metadata?.student_address || 'M. Henveiru, Malé');
+      setIndexNumber(data?.index_number || authUser?.user_metadata?.index_number || 'STU-2026');
       setTeacherSubject(data?.teacher_subject || authUser?.user_metadata?.teacher_subject || 'Physics');
       setCoins(data?.coins ?? 350);
       setXp(data?.xp ?? 420);
       setActiveTab(getDefaultTabForRole(effectiveRole));
     } catch (e) {
       console.warn("Profile fetch error:", e);
+    }
+  };
+
+  // Student Profile Updates Function (Syncs local state & Supabase database)
+  const handleUpdateProfile = async (updatedFields) => {
+    setAuthName(updatedFields.full_name);
+    setStudentGrade(updatedFields.grade);
+    setSchoolName(updatedFields.school_name);
+    setStudentAddress(updatedFields.student_address);
+    setIndexNumber(updatedFields.index_number);
+
+    if (user?.id) {
+      try {
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          full_name: updatedFields.full_name,
+          grade: updatedFields.grade,
+          school_name: updatedFields.school_name,
+          student_address: updatedFields.student_address,
+          index_number: updatedFields.index_number,
+          role
+        });
+      } catch (err) {
+        console.warn("Supabase profile sync error:", err);
+      }
     }
   };
 
@@ -186,7 +208,7 @@ export default function App() {
     setSelectedOption(null);
     setShowExplanation(false);
     setScore(0);
-    setHearts(5); // 5 HEARTS SYSTEM
+    setHearts(5);
     setStreak(0);
     setQuizFinished(false);
     setGameOver(false);
@@ -234,7 +256,6 @@ export default function App() {
       setCoins(c => c + score * 15);
       setXp(x => x + score * 30);
 
-      // Unlocks Challenge Mode if Practice Mode was completed
       if (quizMode === 'practice') {
         setLockedChallengeQuizIds(prev => prev.filter(id => id !== activeQuiz.id));
         showToast(`🎉 Practice Completed! Challenge Mode for "${activeQuiz.title}" is UNLOCKED 🔓`, "success");
@@ -329,7 +350,12 @@ export default function App() {
         )}
 
         {activeTab === 'profile' && (
-          <ProfileTab authName={authName} role={role} coins={coins} xp={xp} readingHours={readingHours} user={user} />
+          <ProfileTab
+            authName={authName} role={role} studentGrade={studentGrade}
+            schoolName={schoolName} studentAddress={studentAddress} indexNumber={indexNumber}
+            coins={coins} xp={xp} readingHours={readingHours} user={user}
+            onUpdateProfile={handleUpdateProfile} showToast={showToast}
+          />
         )}
       </main>
 
