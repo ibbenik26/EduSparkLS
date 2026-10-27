@@ -47,7 +47,11 @@ export default function App() {
   const [allProfiles, setAllProfiles] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
 
+  // Track Quizzes with Locked Challenge Mode (when hearts hit 0)
   const [lockedChallengeQuizIds, setLockedChallengeQuizIds] = useState([]);
+
+  // Anti-Coin Farming Completion Tracker: Stores "quizId_mode" keys that already claimed coins
+  const [completedQuizModes, setCompletedQuizModes] = useState([]);
 
   // Toast State
   const [toasts, setToasts] = useState([]);
@@ -84,12 +88,9 @@ export default function App() {
 
   const [showDiagramUploadModal, setShowDiagramUploadModal] = useState(false);
 
-  // -------------------------------------------------------------
-  // SPA HISTORY & BROWSER / MOBILE BACK BUTTON NAVIGATION FIX
-  // -------------------------------------------------------------
+  // SPA History Back Button Handler
   useEffect(() => {
-    const handlePopState = (e) => {
-      // If a modal is open, close it first without navigating away
+    const handlePopState = () => {
       if (activeQuiz) {
         setActiveQuiz(null);
         return;
@@ -99,7 +100,6 @@ export default function App() {
         return;
       }
 
-      // Sync active tab with browser hash
       const hashTab = window.location.hash.replace('#', '');
       if (hashTab && (ROLE_TABS[role] || ROLE_TABS.student).includes(hashTab)) {
         setActiveTab(hashTab);
@@ -131,7 +131,7 @@ export default function App() {
             if (!lockedChallengeQuizIds.includes(activeQuiz.id)) {
               setLockedChallengeQuizIds(prevIds => [...prevIds, activeQuiz.id]);
             }
-            showToast("⏱️ Time expired! Practice Mode must be completed to unlock Challenge again.", "error");
+            showToast("⏱️ Time expired! Complete Practice Mode to unlock Challenge mode again.", "error");
             return 0;
           }
           return prev - 1;
@@ -231,8 +231,9 @@ export default function App() {
   };
 
   const startQuiz = (quiz, mode) => {
+    // Lock Guard: If Challenge Mode is locked because hearts ran out earlier
     if (mode === 'challenge' && lockedChallengeQuizIds.includes(quiz.id)) {
-      showToast("🔒 Practice Mode Required! You must finish Practice Mode first to unlock Challenge Mode.", "warning");
+      showToast("🔒 Challenge Locked! Hearts ran out earlier. Complete Practice Mode first to re-unlock!", "warning");
       return;
     }
 
@@ -272,7 +273,7 @@ export default function App() {
             if (!lockedChallengeQuizIds.includes(activeQuiz.id)) {
               setLockedChallengeQuizIds(prevIds => [...prevIds, activeQuiz.id]);
             }
-            showToast("💔 Out of hearts! Complete Practice Mode to unlock Challenge again.", "error");
+            showToast("💔 Out of hearts! Practice Mode must be completed to unlock Challenge again.", "error");
           }
           return nextHearts;
         });
@@ -289,14 +290,41 @@ export default function App() {
     } else {
       setQuizFinished(true);
       playSound('coin');
-      setCoins(c => c + score * 15);
-      setXp(x => x + score * 30);
+
+      const completionKey = `${activeQuiz.id}_${quizMode}`;
+      const isFirstTimeCompletion = !completedQuizModes.includes(completionKey);
 
       if (quizMode === 'practice') {
+        // Unlocks Challenge Mode for this quiz ID
         setLockedChallengeQuizIds(prev => prev.filter(id => id !== activeQuiz.id));
-        showToast(`🎉 Practice Completed! Challenge Mode for "${activeQuiz.title}" is UNLOCKED 🔓`, "success");
+
+        if (isFirstTimeCompletion) {
+          const earnedCoins = score * 15;
+          const earnedXp = score * 30;
+          setCoins(c => c + earnedCoins);
+          setXp(x => x + earnedXp);
+          setCompletedQuizModes(prev => [...prev, completionKey]);
+          showToast(`🎉 Practice Completed! Challenge Mode UNLOCKED 🔓 (+${earnedCoins} Coins & +${earnedXp} XP)`, "success");
+        } else {
+          // Repeated completion: 0 extra coins, small token XP
+          const tokenXp = score * 5;
+          setXp(x => x + tokenXp);
+          showToast(`📖 Practice Finished! (+${tokenXp} XP). No extra coins awarded for redoing the same quiz.`, "info");
+        }
       } else {
-        showToast(`🏆 Challenge Passed! +${score * 15} Coins & +${score * 30} XP Earned!`, "success");
+        // Challenge / O-Level Timed Mode
+        if (isFirstTimeCompletion) {
+          const earnedCoins = score * 20;
+          const earnedXp = score * 40;
+          setCoins(c => c + earnedCoins);
+          setXp(x => x + earnedXp);
+          setCompletedQuizModes(prev => [...prev, completionKey]);
+          showToast(`🏆 Challenge Passed! +${earnedCoins} Coins & +${earnedXp} XP Earned!`, "success");
+        } else {
+          const tokenXp = score * 5;
+          setXp(x => x + tokenXp);
+          showToast(`🏆 Challenge Mastered! (+${tokenXp} XP). First-completion coins already claimed.`, "info");
+        }
       }
     }
   };
