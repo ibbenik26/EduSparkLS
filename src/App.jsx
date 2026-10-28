@@ -96,7 +96,7 @@ export default function App() {
 
   const [showDiagramUploadModal, setShowDiagramUploadModal] = useState(false);
 
-  // Sync completions for current user
+  // Sync completion history for active student account
   useEffect(() => {
     if (user?.id) {
       const savedUserCompletions = localStorage.getItem(`edusparkls_completed_${user.id}`);
@@ -116,7 +116,7 @@ export default function App() {
     });
   };
 
-  // FETCH ALL DATA FROM SUPABASE ON LAUNCH
+  // Fetch initial data from Supabase
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -140,7 +140,6 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch Quizzes from Supabase
   const fetchQuizzesFromSupabase = async () => {
     try {
       const { data, error } = await supabase.from('quizzes').select('*').order('created_at', { ascending: false });
@@ -161,7 +160,6 @@ export default function App() {
     }
   };
 
-  // Add Quiz to State & Supabase
   const handleAddQuiz = async (newQuiz) => {
     setQuizzes(prev => [newQuiz, ...prev]);
     try {
@@ -183,7 +181,6 @@ export default function App() {
     }
   };
 
-  // Delete Quiz from State & Supabase
   const handleDeleteQuiz = async (quizId) => {
     setQuizzes(prev => prev.filter(q => q.id !== quizId));
     try {
@@ -284,11 +281,13 @@ export default function App() {
     showToast("Signed out successfully.", "info");
   };
 
+  // STRICT SINGLE-ATTEMPT GUARD FOR TIMED QUIZZES
   const startQuiz = (quiz, mode) => {
     const completionKey = `${quiz.id}_${mode}`;
 
+    // Strictly block completed timed quizzes (Students can play Practice anytime!)
     if ((mode === 'challenge' || mode === 'olevel') && completedQuizModes.includes(completionKey)) {
-      showToast("🔒 Quiz Completed! You have already claimed your coins for this quiz.", "warning");
+      showToast("🔒 Quiz Completed! Timed simulation quizzes can only be taken once.", "warning");
       return;
     }
 
@@ -333,7 +332,7 @@ export default function App() {
             if (!lockedChallengeQuizIds.includes(activeQuiz.id)) {
               setLockedChallengeQuizIds(prevIds => [...prevIds, activeQuiz.id]);
             }
-            showToast("💔 Out of hearts! Practice Mode must be completed to unlock Challenge again.", "error");
+            showToast("💔 Out of hearts! Complete Practice Mode again to unlock Challenge mode.", "error");
           }
           return nextHearts;
         });
@@ -341,6 +340,7 @@ export default function App() {
     }
   };
 
+  // STRICT REWARD EVALUATION LOGIC
   const nextQuestion = () => {
     setSelectedOption(null);
     setShowExplanation(false);
@@ -354,13 +354,17 @@ export default function App() {
       const isFirstTimeCompletion = !completedQuizModes.includes(completionKey);
 
       if (quizMode === 'practice') {
+        // Practice Mode: 0 Coins & 0 XP (Unlimited attempts allowed)
         setLockedChallengeQuizIds(prev => prev.filter(id => id !== activeQuiz.id));
         recordUserCompletion(completionKey);
         showToast("📖 Practice Mode Completed! Challenge Mode UNLOCKED 🔓 (0 Coins & 0 XP awarded in Practice)", "info");
       } else {
-        const baseCoins = score * 2;
-        const heartBonus = (hearts === 5 && score === activeQuiz.questions.length) ? 5 : 0;
-        const totalCoins = baseCoins + heartBonus;
+        // Timed Challenge / O-Level Simulation Mode
+        const totalQuestions = activeQuiz.questions.length;
+        const isPerfect5Hearts = (hearts === 5 && score === totalQuestions);
+        
+        // Strict Coin Rule: 25 Coins if 5 Hearts intact; otherwise 2 Coins per correct answer
+        const totalCoins = isPerfect5Hearts ? 25 : (score * 2);
         const earnedXp = score * 10;
 
         if (isFirstTimeCompletion) {
@@ -369,8 +373,11 @@ export default function App() {
           setXp(x => x + earnedXp);
           recordUserCompletion(completionKey);
 
-          const bonusText = heartBonus > 0 ? " (includes +5 Perfect 5-Heart Bonus!)" : "";
-          showToast(`🏆 Quiz Passed! +${totalCoins} Coins${bonusText} & +${earnedXp} XP! Quiz locked for retakes.`, "success");
+          const detailMsg = isPerfect5Hearts 
+            ? "⭐ PERFECT 5-HEART BONUS! 25 Coins Claimed!" 
+            : `${score} correct × 2 coins = ${totalCoins} Coins Claimed!`;
+
+          showToast(`🏆 Timed Quiz Completed! +${totalCoins} Coins (${detailMsg}) & +${earnedXp} XP! Quiz locked.`, "success");
         }
       }
     }

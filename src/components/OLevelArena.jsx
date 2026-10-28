@@ -5,7 +5,7 @@ import { ALL_SUBJECTS, isRTLSubject, canUserCRUDOLevel, lenientMatch } from '../
 export default function OLevelArena({
   role,
   quizzes,
-  setQuizzes,
+  onDeleteQuiz,
   startQuiz,
   completedQuizModes = [],
   onOpenDiagramUpload,
@@ -35,7 +35,7 @@ export default function OLevelArena({
   const handleDeletePaper = (paper) => {
     if (!canEditOLevel) return;
     askConfirm("Delete O-Level Past Paper", `Remove "${paper.title}" from the Cambridge Arena?`, () => {
-      setQuizzes(quizzes.filter(q => q.id !== paper.id));
+      onDeleteQuiz(paper.id);
       showToast(`Deleted O-Level paper "${paper.title}".`, "info");
     });
   };
@@ -50,7 +50,7 @@ export default function OLevelArena({
           </span>
           <h2 className="text-2xl sm:text-3xl font-black">Cambridge O-Level Past Papers</h2>
           <p className="text-purple-200 text-xs max-w-lg">
-            Timed Paper 1 & Paper 2 exam simulations featuring optical ray diagrams and mechanics physics models.
+            Practice Mode can be taken anytime. Timed Paper 1 & 2 simulations can only be completed ONCE per student!
           </p>
         </div>
 
@@ -65,7 +65,7 @@ export default function OLevelArena({
         )}
       </div>
 
-      {/* Search & Filter Panel */}
+      {/* Filter Panel */}
       <div className="bg-white border border-slate-200 p-4 rounded-3xl shadow-xs space-y-3">
         <div className="flex items-center space-x-2 text-xs font-bold text-slate-700">
           <Filter className="w-4 h-4 text-purple-600" />
@@ -163,6 +163,7 @@ export default function OLevelArena({
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 pt-1">
+                  {/* Practice Button: Always Open */}
                   <button
                     onClick={() => startQuiz(paper, 'practice')}
                     className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1"
@@ -171,6 +172,7 @@ export default function OLevelArena({
                     <span>Practice</span>
                   </button>
 
+                  {/* Timed Simulation Button: Locked Once Completed */}
                   <button
                     onClick={() => startQuiz(paper, 'olevel')}
                     disabled={isSimulationCompleted}

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Play, BookOpen, Clock, Filter, Lock, Plus, Trash2, Search, CheckCircle2, Check } from 'lucide-react';
+import { Play, BookOpen, Lock, Plus, Trash2, Search, CheckCircle2, Check, Filter } from 'lucide-react';
 import { ALL_SUBJECTS, isRTLSubject, canUserCRUDPracticeVault, lenientMatch } from '../utils/helpers';
 
 export default function StudentDashboard({
   role,
   grade,
   quizzes,
-  setQuizzes,
+  onDeleteQuiz,
   startQuiz,
   lockedChallengeQuizIds = [],
   completedQuizModes = [],
@@ -35,10 +35,10 @@ export default function StudentDashboard({
     return matchesGrade && matchesSubject && matchesSearch;
   });
 
-  const handleDeleteQuiz = (quiz) => {
+  const handleDeleteQuizAction = (quiz) => {
     if (!canEditVault) return;
     askConfirm("Delete Practice Quiz", `Are you sure you want to delete "${quiz.title}" from the Grade ${quiz.grade} vault?`, () => {
-      setQuizzes(quizzes.filter(q => q.id !== quiz.id));
+      onDeleteQuiz(quiz.id);
       showToast(`Deleted paper "${quiz.title}".`, "info");
     });
   };
@@ -61,7 +61,7 @@ export default function StudentDashboard({
           </div>
           <h2 className="text-2xl sm:text-3xl font-black">Curriculum Practice Vault</h2>
           <p className="text-cyan-200 text-xs max-w-xl">
-            Complete Practice Mode (0 rewards) to unlock Timed 5-Heart Challenges (earn up to 25 coins!).
+            Students can replay Practice Mode anytime (0 coins/XP). Timed 5-Heart Challenges can be taken ONCE to earn up to 25 coins!
           </p>
         </div>
 
@@ -161,7 +161,7 @@ export default function StudentDashboard({
                     <span className="text-xs text-slate-400 font-medium">{quiz.questions.length} Qs</span>
                     {canEditVault && (
                       <button
-                        onClick={() => handleDeleteQuiz(quiz)}
+                        onClick={() => handleDeleteQuizAction(quiz)}
                         className="text-slate-300 hover:text-rose-600 p-1 rounded-lg transition"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -175,7 +175,6 @@ export default function StudentDashboard({
                     {quiz.title}
                   </h3>
 
-                  {/* Visual Completion Status Bar */}
                   {isChallengeCompleted && (
                     <span className="inline-flex items-center space-x-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md mt-1.5">
                       <CheckCircle2 className="w-3 h-3 text-emerald-600" />
@@ -185,18 +184,20 @@ export default function StudentDashboard({
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 pt-2">
+                  {/* Practice Mode Button: Always Open & Playable Anytime! */}
                   <button
                     onClick={() => startQuiz(quiz, 'practice')}
                     className={`font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1 ${
                       isPracticeDone
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
                     }`}
                   >
                     <BookOpen className="w-3.5 h-3.5 text-cyan-600" />
-                    <span>{isPracticeDone ? 'Practice Done 📖' : 'Practice Mode'}</span>
+                    <span>{isPracticeDone ? 'Practice Mode 📖' : 'Practice Mode'}</span>
                   </button>
 
+                  {/* Timed Challenge Button: Locked Once Completed! */}
                   <button
                     onClick={() => startQuiz(quiz, 'challenge')}
                     disabled={isChallengeLocked || isChallengeCompleted}
