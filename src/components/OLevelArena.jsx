@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Sparkles, Clock, Image as ImageIcon, Play, Filter, BookOpen, Trash2, Search, Plus } from 'lucide-react';
-import { ALL_SUBJECTS, isRTLSubject, canUserCRUDQuizzes, lenientMatch } from '../utils/helpers';
+import { Sparkles, Clock, Image as ImageIcon, Play, Filter, BookOpen, Trash2, Search } from 'lucide-react';
+import { ALL_SUBJECTS, isRTLSubject, canUserCRUDOLevel, lenientMatch } from '../utils/helpers';
 
 export default function OLevelArena({
   role,
@@ -15,9 +15,9 @@ export default function OLevelArena({
   const [selectedYear, setSelectedYear] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const canEditOLevel = canUserCRUDQuizzes(role);
+  // O-Level CRUD reserved strictly for Super Admin
+  const canEditOLevel = canUserCRUDOLevel(role);
 
-  // Hyper-Lenient Filter for O-Level Past Papers
   const olevelPapers = quizzes.filter(q => {
     if (!q.is_past_paper) return false;
 
@@ -54,7 +54,7 @@ export default function OLevelArena({
           </p>
         </div>
 
-        {/* ADMIN / TEACHER CRUD UPLOAD BUTTON */}
+        {/* Super Admin Only Upload Button */}
         {canEditOLevel && (
           <button
             onClick={onOpenDiagramUpload}
@@ -141,7 +141,7 @@ export default function OLevelArena({
                       <span>{paper.time_limit || 120}s limit</span>
                     </span>
 
-                    {/* ADMIN / TEACHER DELETE PAPER ACTION */}
+                    {/* Super Admin Delete Action */}
                     {canEditOLevel && (
                       <button
                         onClick={() => handleDeletePaper(paper)}

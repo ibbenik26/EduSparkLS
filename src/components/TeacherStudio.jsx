@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Upload, Code, Image as ImageIcon, Trash2, Award, Plus, Sparkles, Shield, HeartHandshake, Mail, Phone } from 'lucide-react';
-import { ALL_SUBJECTS, canUserCRUDQuizzes } from '../utils/helpers';
+import { ALL_SUBJECTS, canUserCRUDPracticeVault } from '../utils/helpers';
 
 export default function TeacherStudio({
   role, teacherSubject = 'Physics', quizzes, setQuizzes,
@@ -8,7 +8,7 @@ export default function TeacherStudio({
   sponsors = [], setSponsors,
   showDiagramUploadModal, setShowDiagramUploadModal, showToast, askConfirm
 }) {
-  const [studioTab, setStudioTab] = useState('diagnostics'); // 'diagnostics', 'manage_quizzes', 'json_upload', 'badges_ranks', 'sponsors'
+  const [studioTab, setStudioTab] = useState('manage_quizzes');
   const [jsonInput, setJsonInput] = useState(`[
   {
     "topic": "Registered Subject Focus",
@@ -18,20 +18,21 @@ export default function TeacherStudio({
   }
 ]`);
 
-  // New Badge Form
+  // New Badge Form State
   const [badgeName, setBadgeName] = useState('');
   const [badgeIcon, setBadgeIcon] = useState('🏆');
   const [badgeDesc, setBadgeDesc] = useState('');
   const [badgeReqXp, setBadgeReqXp] = useState(250);
 
-  const userCanCRUD = canUserCRUDQuizzes(role);
+  const canEditVault = canUserCRUDPracticeVault(role);
+  const isAdmin = role === 'super_admin';
 
-  const myClassQuizzes = role === 'super_admin'
+  const myClassQuizzes = isAdmin
     ? quizzes
     : quizzes.filter(q => (q.subject || '').toLowerCase() === (teacherSubject || '').toLowerCase());
 
   const handleImportJson = () => {
-    if (!userCanCRUD) return showToast("❌ Permission Denied!", "error");
+    if (!canEditVault) return showToast("❌ Permission Denied!", "error");
 
     try {
       const parsed = JSON.parse(jsonInput);
@@ -39,13 +40,13 @@ export default function TeacherStudio({
 
       const newQuiz = {
         id: `quiz_json_${Date.now()}`,
-        title: `${teacherSubject} Custom Batch Paper`,
+        title: `${teacherSubject} Custom Practice Paper`,
         subject: teacherSubject,
         grade: 10,
         subject_code: '0625',
         exam_year: 2026,
         variant: 'Teacher Custom',
-        is_past_paper: true,
+        is_past_paper: false,
         has_diagrams: parsed.some(q => !!q.diagram_url),
         questions: parsed
       };
@@ -58,7 +59,7 @@ export default function TeacherStudio({
   };
 
   const handleDeleteQuiz = (quiz) => {
-    if (!userCanCRUD) return;
+    if (!canEditVault) return;
     askConfirm("Delete Exam Paper", `Remove "${quiz.title}" from the curriculum system?`, () => {
       setQuizzes(quizzes.filter(q => q.id !== quiz.id));
       showToast(`Deleted paper "${quiz.title}".`, "info");
@@ -90,13 +91,11 @@ export default function TeacherStudio({
     });
   };
 
-  // RANK XP UPDATE
   const handleUpdateRankMinXp = (rankId, newMinXp) => {
     setRanks(ranks.map(r => r.id === rankId ? { ...r, minXp: parseInt(newMinXp) || 0 } : r));
     showToast("Updated Rank XP Threshold!", "success");
   };
 
-  // SPONSOR STATUS MANAGEMENT
   const handleUpdateSponsorStatus = (sponsorId, newStatus) => {
     setSponsors(sponsors.map(s => s.id === sponsorId ? { ...s, status: newStatus } : s));
     showToast(`Updated sponsor status to "${newStatus}"!`, "success");
@@ -114,90 +113,101 @@ export default function TeacherStudio({
       <div className="bg-gradient-to-r from-indigo-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
         <div className="space-y-2">
           <span className="bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider">
-            {role === 'super_admin' ? 'Super Admin Command Studio' : `Registered Teacher Studio (${teacherSubject} Class)`}
+            {isAdmin ? 'Super Admin Command Dashboard' : `Teacher Practice Studio (${teacherSubject} Class)`}
           </span>
-          <h2 className="text-2xl sm:text-3xl font-black">Teacher & Admin Management Studio</h2>
+          <h2 className="text-2xl sm:text-3xl font-black">
+            {isAdmin ? 'Super Admin Command Center' : 'Teacher Practice Vault Studio'}
+          </h2>
           <p className="text-indigo-200 text-xs max-w-lg">
-            Manage quizzes, diagnostics, fast JSON uploads, Academic Badges, and review Sponsor/Partner applications.
+            {isAdmin 
+              ? 'Manage system-wide practice papers, Cambridge arena, student badges, and sponsor proposals.' 
+              : `Create and publish practice vault quizzes for your registered ${teacherSubject} class across all grades.`}
           </p>
         </div>
 
-        {userCanCRUD && (
+        {canEditVault && (
           <button
             onClick={() => setShowDiagramUploadModal(true)}
             className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-3 rounded-2xl text-xs shadow-md transition shrink-0 flex items-center space-x-1.5"
           >
             <ImageIcon className="w-4 h-4" />
-            <span>+ Create {teacherSubject} Quiz</span>
+            <span>+ Add {teacherSubject} Practice Quiz</span>
           </button>
         )}
       </div>
 
       <div className="flex space-x-2 border-b border-slate-200 pb-2 overflow-x-auto">
         <button
-          onClick={() => setStudioTab('diagnostics')}
-          className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 ${
-            studioTab === 'diagnostics' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
-          }`}
-        >
-          Class Diagnostics
-        </button>
-
-        <button
           onClick={() => setStudioTab('manage_quizzes')}
           className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 ${
             studioTab === 'manage_quizzes' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
           }`}
         >
-          Class Papers ({myClassQuizzes.length})
+          Practice Vault Quizzes ({myClassQuizzes.length})
         </button>
 
-        <button
-          onClick={() => setStudioTab('sponsors')}
-          className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 flex items-center space-x-1 font-bold ${
-            studioTab === 'sponsors' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
-          }`}
-        >
-          <HeartHandshake className="w-3.5 h-3.5 text-rose-400" />
-          <span>Sponsor Proposals ({sponsors.length})</span>
-        </button>
+        {isAdmin && (
+          <>
+            <button
+              onClick={() => setStudioTab('sponsors')}
+              className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 flex items-center space-x-1 font-bold ${
+                studioTab === 'sponsors' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
+              }`}
+            >
+              <HeartHandshake className="w-3.5 h-3.5 text-rose-400" />
+              <span>Sponsor Proposals ({sponsors.length})</span>
+            </button>
 
-        <button
-          onClick={() => setStudioTab('badges_ranks')}
-          className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 flex items-center space-x-1 ${
-            studioTab === 'badges_ranks' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
-          }`}
-        >
-          <Award className="w-3.5 h-3.5" />
-          <span>Manage Badges & Ranks</span>
-        </button>
-
-        {userCanCRUD && (
-          <button
-            onClick={() => setStudioTab('json_upload')}
-            className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 flex items-center space-x-1.5 ${
-              studioTab === 'json_upload' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
-            }`}
-          >
-            <Code className="w-3.5 h-3.5" />
-            <span>JSON Importer</span>
-          </button>
+            <button
+              onClick={() => setStudioTab('badges_ranks')}
+              className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 flex items-center space-x-1 ${
+                studioTab === 'badges_ranks' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
+              }`}
+            >
+              <Award className="w-3.5 h-3.5" />
+              <span>Manage Badges & Ranks</span>
+            </button>
+          </>
         )}
+
+        <button
+          onClick={() => setStudioTab('json_upload')}
+          className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 flex items-center space-x-1.5 ${
+            studioTab === 'json_upload' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
+          }`}
+        >
+          <Code className="w-3.5 h-3.5" />
+          <span>JSON Importer</span>
+        </button>
       </div>
 
-      {studioTab === 'diagnostics' ? (
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-xs">
-          <h3 className="font-black text-slate-900 text-base">Student Performance Diagnostic ({teacherSubject})</h3>
-          <p className="text-xs text-slate-500">Real-time weak topic diagnostics for your registered class.</p>
+      {studioTab === 'manage_quizzes' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {myClassQuizzes.map(q => (
+            <div key={q.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex justify-between items-center shadow-xs">
+              <div>
+                <span className="text-[10px] font-bold text-indigo-600 uppercase bg-indigo-50 px-2 py-0.5 rounded">
+                  {q.subject} • Grade {q.grade}
+                </span>
+                <h4 className="font-bold text-slate-900 text-sm mt-1">{q.title}</h4>
+                <span className="text-[10px] text-slate-400 font-mono block mt-0.5">{q.questions.length} Questions</span>
+              </div>
+              {canEditVault && (
+                <button onClick={() => handleDeleteQuiz(q)} className="p-2.5 text-rose-600 hover:bg-rose-50 rounded-xl transition">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          ))}
         </div>
-      ) : studioTab === 'sponsors' ? (
-        /* SPONSORS & PARTNERS MANAGEMENT VIEW */
+      ) : studioTab === 'sponsors' && isAdmin ? (
+        /* SUPER ADMIN SPONSOR PROPOSALS VIEW */
         <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-xs">
           <div className="flex justify-between items-center border-b pb-4">
             <div>
               <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
                 <HeartHandshake className="w-5 h-5 text-rose-600" />
-                <span>Partner & Sponsor Proposals Portal</span>
+                <span>Partner & Sponsor Proposals Dashboard</span>
               </h3>
               <p className="text-xs text-slate-500">Review applications submitted from the landing page by parents, businesses, and alumni.</p>
             </div>
@@ -219,7 +229,7 @@ export default function TeacherStudio({
 
                     <div className="flex items-center space-x-2">
                       <select
-                        value={sp.status || 'Pending Review'}
+                        value={sp.status || 'Pending Review ⏳'}
                         onChange={(e) => handleUpdateSponsorStatus(sp.id, e.target.value)}
                         className={`text-xs font-bold px-3 py-1.5 rounded-xl border focus:outline-none ${
                           sp.status === 'Approved Partner ✅' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
@@ -227,7 +237,7 @@ export default function TeacherStudio({
                           'bg-amber-100 text-amber-800 border-amber-300'
                         }`}
                       >
-                        <option value="Pending Review">Pending Review ⏳</option>
+                        <option value="Pending Review ⏳">Pending Review ⏳</option>
                         <option value="Contacted 📞">Contacted 📞</option>
                         <option value="Approved Partner ✅">Approved Partner ✅</option>
                       </select>
@@ -261,25 +271,8 @@ export default function TeacherStudio({
             </div>
           )}
         </div>
-      ) : studioTab === 'manage_quizzes' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {myClassQuizzes.map(q => (
-            <div key={q.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex justify-between items-center shadow-xs">
-              <div>
-                <span className="text-[10px] font-bold text-indigo-600 uppercase bg-indigo-50 px-2 py-0.5 rounded">{q.subject}</span>
-                <h4 className="font-bold text-slate-900 text-sm mt-1">{q.title}</h4>
-                <span className="text-[10px] text-slate-400 font-mono block mt-0.5">{q.questions.length} Questions</span>
-              </div>
-              {userCanCRUD && (
-                <button onClick={() => handleDeleteQuiz(q)} className="p-2.5 text-rose-600 hover:bg-rose-50 rounded-xl transition">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      ) : studioTab === 'badges_ranks' ? (
-        /* BADGES & RANKS MANAGER VIEW */
+      ) : studioTab === 'badges_ranks' && isAdmin ? (
+        /* SUPER ADMIN BADGES & RANKS VIEW */
         <div className="space-y-6">
           <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-xs">
             <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">

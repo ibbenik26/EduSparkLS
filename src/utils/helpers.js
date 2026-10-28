@@ -6,9 +6,9 @@ export const ALL_SUBJECTS = [
 
 export const ROLE_TABS = {
   student: ['dashboard', 'olevel', 'leaderboard', 'library', 'shop', 'profile'],
-  teacher: ['studio', 'library', 'shop', 'dashboard', 'olevel', 'leaderboard', 'profile'],
+  teacher: ['studio', 'dashboard', 'library', 'shop', 'leaderboard', 'profile'],
   shop_admin: ['shop', 'profile'],
-  super_admin: ['dashboard', 'olevel', 'leaderboard', 'library', 'shop', 'studio', 'profile']
+  super_admin: ['studio', 'dashboard', 'olevel', 'leaderboard', 'library', 'shop', 'profile']
 };
 
 export const INITIAL_BADGES = [
@@ -35,7 +35,9 @@ export const getDefaultTabForRole = (userRole) => {
   }
 };
 
-export const canUserCRUDQuizzes = (role) => ['teacher', 'super_admin'].includes(role);
+// PERMISSION HELPERS
+export const canUserCRUDPracticeVault = (role) => ['teacher', 'super_admin'].includes(role);
+export const canUserCRUDOLevel = (role) => role === 'super_admin';
 export const canUserCRUDShop = (role) => ['teacher', 'shop_admin', 'super_admin'].includes(role);
 export const canUserCRUDLibrary = (role) => ['teacher', 'super_admin'].includes(role);
 

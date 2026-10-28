@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Play, BookOpen, Clock, Filter, Lock, Plus, Trash2, Search, Sparkles } from 'lucide-react';
-import { ALL_SUBJECTS, isRTLSubject, canUserCRUDQuizzes, lenientMatch } from '../utils/helpers';
+import { ALL_SUBJECTS, isRTLSubject, canUserCRUDPracticeVault, lenientMatch } from '../utils/helpers';
 
 export default function StudentDashboard({
   role,
@@ -17,9 +17,9 @@ export default function StudentDashboard({
   const [selectedSubject, setSelectedSubject] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const canEditVault = canUserCRUDQuizzes(role);
+  const canEditVault = canUserCRUDPracticeVault(role);
 
-  // Hyper-Lenient Filter
+  // Filter quizzes strictly for Practice Vault
   const filteredQuizzes = quizzes.filter(q => {
     const matchesGrade = role === 'student'
       ? parseInt(q.grade) === parseInt(grade)
@@ -27,7 +27,6 @@ export default function StudentDashboard({
 
     const matchesSubject = selectedSubject === 'All' || q.subject === selectedSubject;
 
-    // Search across Title, Topic, Questions, Variant, Exam Year
     const questionTextBuffer = (q.questions || []).map(qItem => `${qItem.question_text} ${qItem.topic}`).join(' ');
     const searchableBuffer = `${q.title} ${q.subject} ${q.variant || ''} ${q.exam_year || ''} Grade ${q.grade} ${questionTextBuffer}`;
 
@@ -51,7 +50,7 @@ export default function StudentDashboard({
         <div className="space-y-2">
           <div className="flex items-center space-x-2">
             <span className="bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider">
-              {role === 'student' ? `Enrolled Grade ${grade} Vault` : `Grade ${selectedGrade} Curriculum Practice Vault`}
+              {role === 'student' ? `Enrolled Grade ${grade} Vault` : `Grade ${selectedGrade} Curriculum Vault`}
             </span>
             {role === 'student' && (
               <span className="bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 font-bold px-2.5 py-1 rounded-full text-[10px] uppercase flex items-center space-x-1">
@@ -66,7 +65,6 @@ export default function StudentDashboard({
           </p>
         </div>
 
-        {/* ADMIN / TEACHER CRUD CREATE BUTTON */}
         {canEditVault && (
           <button
             onClick={onOpenDiagramUpload}
@@ -78,7 +76,7 @@ export default function StudentDashboard({
         )}
       </div>
 
-      {/* Filter & Lenient Search Panel */}
+      {/* Filter Panel */}
       <div className="bg-white border border-slate-200 p-4 rounded-3xl shadow-xs space-y-3">
         <div className="flex flex-col sm:flex-row items-center justify-between text-xs font-bold text-slate-700 gap-2">
           <div className="flex items-center space-x-2">
@@ -88,10 +86,10 @@ export default function StudentDashboard({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Class Grade Box */}
+          {/* Grade Selector */}
           <div>
             <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">
-              {role === 'student' ? 'Your Enrolled Grade' : 'Select Target Grade'}
+              {role === 'student' ? 'Your Enrolled Grade' : 'Select Grade Vault'}
             </label>
             {role === 'student' ? (
               <div className="w-full bg-slate-100 border border-slate-200 rounded-xl p-2.5 text-xs font-black text-slate-700 flex items-center justify-between cursor-not-allowed">
@@ -105,7 +103,7 @@ export default function StudentDashboard({
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-black text-indigo-700 focus:outline-none"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => (
-                  <option key={g} value={g}>Grade {g}</option>
+                  <option key={g} value={g}>Grade {g} Vault</option>
                 ))}
               </select>
             )}
@@ -163,7 +161,6 @@ export default function StudentDashboard({
                   <div className="flex items-center space-x-2">
                     <span className="text-xs text-slate-400 font-medium">{quiz.questions.length} Qs</span>
                     
-                    {/* ADMIN / TEACHER DELETE QUIZ ACTION */}
                     {canEditVault && (
                       <button
                         onClick={() => handleDeleteQuiz(quiz)}
