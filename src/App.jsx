@@ -41,25 +41,14 @@ export default function App() {
   // Persistent Sponsor Proposals State
   const [sponsors, setSponsors] = useState(() => {
     const saved = localStorage.getItem('edusparkls_sponsors');
-    return saved ? JSON.parse(saved) : [
-      {
-        id: 'sp_1',
-        applicantName: 'Bank of Maldives CSR Team',
-        email: 'csr@bml.com.mv',
-        phone: '+960 333-0200',
-        partnerType: 'Corporate Partner',
-        contributionType: 'Physical Goods / Stationery',
-        message: 'We wish to sponsor 100 Geometry Kits and Stationery sets for top student quiz scorers.',
-        status: 'Approved Partner ✅',
-        date: '2026-10-24'
-      }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   useEffect(() => {
     localStorage.setItem('edusparkls_sponsors', JSON.stringify(sponsors));
   }, [sponsors]);
 
+  // Quizzes State
   const [quizzes, setQuizzes] = useState(INITIAL_QUIZZES);
   const [books, setBooks] = useState(INITIAL_BOOKS);
   const [shopItems, setShopItems] = useState(INITIAL_SHOP_ITEMS);
@@ -70,30 +59,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const [lockedChallengeQuizIds, setLockedChallengeQuizIds] = useState([]);
-  
-  // USER-SPECIFIC Completion State
   const [completedQuizModes, setCompletedQuizModes] = useState([]);
-
-  // Sync completion history whenever active user changes
-  useEffect(() => {
-    if (user?.id) {
-      const savedUserCompletions = localStorage.getItem(`edusparkls_completed_${user.id}`);
-      setCompletedQuizModes(savedUserCompletions ? JSON.parse(savedUserCompletions) : []);
-    } else {
-      setCompletedQuizModes([]);
-    }
-  }, [user]);
-
-  // Persist completions specifically for active student ID
-  const recordUserCompletion = (completionKey) => {
-    setCompletedQuizModes(prev => {
-      const updated = [...prev, completionKey];
-      if (user?.id) {
-        localStorage.setItem(`edusparkls_completed_${user.id}`, JSON.stringify(updated));
-      }
-      return updated;
-    });
-  };
 
   // Toast State
   const [toasts, setToasts] = useState([]);
@@ -115,7 +81,7 @@ export default function App() {
     });
   };
 
-  // Quiz Modal State
+  // Quiz Runner Modal State
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [quizMode, setQuizMode] = useState('practice');
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
@@ -130,57 +96,27 @@ export default function App() {
 
   const [showDiagramUploadModal, setShowDiagramUploadModal] = useState(false);
 
+  // Sync completions for current user
   useEffect(() => {
-    const handlePopState = () => {
-      if (activeQuiz) {
-        setActiveQuiz(null);
-        return;
+    if (user?.id) {
+      const savedUserCompletions = localStorage.getItem(`edusparkls_completed_${user.id}`);
+      setCompletedQuizModes(savedUserCompletions ? JSON.parse(savedUserCompletions) : []);
+    } else {
+      setCompletedQuizModes([]);
+    }
+  }, [user]);
+
+  const recordUserCompletion = (completionKey) => {
+    setCompletedQuizModes(prev => {
+      const updated = [...prev, completionKey];
+      if (user?.id) {
+        localStorage.setItem(`edusparkls_completed_${user.id}`, JSON.stringify(updated));
       }
-      if (showDiagramUploadModal) {
-        setShowDiagramUploadModal(false);
-        return;
-      }
-
-      const hashTab = window.location.hash.replace('#', '');
-      if (hashTab && (ROLE_TABS[role] || ROLE_TABS.student).includes(hashTab)) {
-        setActiveTab(hashTab);
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [activeQuiz, showDiagramUploadModal, role]);
-
-  const navigateToTab = (tabName) => {
-    const allowed = ROLE_TABS[role] || ROLE_TABS.student;
-    if (!allowed.includes(tabName)) return;
-
-    setActiveQuiz(null);
-    setActiveTab(tabName);
-    window.history.pushState({ tab: tabName }, '', `#${tabName}`);
+      return updated;
+    });
   };
 
-  useEffect(() => {
-    let timer = null;
-    if (activeQuiz && (quizMode === 'challenge' || quizMode === 'olevel') && !quizFinished && !gameOver) {
-      timer = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            setGameOver(true);
-            if (!lockedChallengeQuizIds.includes(activeQuiz.id)) {
-              setLockedChallengeQuizIds(prevIds => [...prevIds, activeQuiz.id]);
-            }
-            showToast("⏱️ Time expired! Complete Practice Mode to unlock Challenge mode again.", "error");
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [activeQuiz, quizMode, quizFinished, gameOver, lockedChallengeQuizIds]);
-
+  // FETCH ALL DATA FROM SUPABASE ON LAUNCH
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -198,10 +134,64 @@ export default function App() {
       }
     });
 
+    fetchQuizzesFromSupabase();
     fetchAllProfiles();
     fetchSponsorsFromSupabase();
     return () => subscription.unsubscribe();
   }, []);
+
+  // Fetch Quizzes from Supabase
+  const fetchQuizzesFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase.from('quizzes').select('*').order('created_at', { ascending: false });
+      if (error) {
+        console.warn("Supabase quizzes fetch error:", error);
+        return;
+      }
+      if (data && data.length > 0) {
+        const mapped = data.map(q => ({
+          ...q,
+          grade: parseInt(q.grade) || 7,
+          questions: typeof q.questions === 'string' ? JSON.parse(q.questions) : (q.questions || [])
+        }));
+        setQuizzes(mapped);
+      }
+    } catch (e) {
+      console.warn("Quizzes fetch info:", e);
+    }
+  };
+
+  // Add Quiz to State & Supabase
+  const handleAddQuiz = async (newQuiz) => {
+    setQuizzes(prev => [newQuiz, ...prev]);
+    try {
+      await supabase.from('quizzes').insert([{
+        id: newQuiz.id,
+        title: newQuiz.title,
+        subject: newQuiz.subject,
+        grade: parseInt(newQuiz.grade),
+        subject_code: newQuiz.subject_code || '',
+        exam_year: newQuiz.exam_year ? parseInt(newQuiz.exam_year) : null,
+        variant: newQuiz.variant || '',
+        is_past_paper: !!newQuiz.is_past_paper,
+        has_diagrams: !!newQuiz.has_diagrams,
+        questions: newQuiz.questions
+      }]);
+      showToast("🎉 Saved to Supabase Database!", "success");
+    } catch (e) {
+      console.warn("Supabase quiz insert error:", e);
+    }
+  };
+
+  // Delete Quiz from State & Supabase
+  const handleDeleteQuiz = async (quizId) => {
+    setQuizzes(prev => prev.filter(q => q.id !== quizId));
+    try {
+      await supabase.from('quizzes').delete().eq('id', quizId);
+    } catch (e) {
+      console.warn("Supabase quiz delete error:", e);
+    }
+  };
 
   const fetchSponsorsFromSupabase = async () => {
     try {
@@ -294,7 +284,6 @@ export default function App() {
     showToast("Signed out successfully.", "info");
   };
 
-  // Guard retaking completed timed quizzes for active student
   const startQuiz = (quiz, mode) => {
     const completionKey = `${quiz.id}_${mode}`;
 
@@ -369,7 +358,6 @@ export default function App() {
         recordUserCompletion(completionKey);
         showToast("📖 Practice Mode Completed! Challenge Mode UNLOCKED 🔓 (0 Coins & 0 XP awarded in Practice)", "info");
       } else {
-        // Challenge / O-Level mode: 2 coins per correct answer + 5 bonus coins for 5 hearts intact
         const baseCoins = score * 2;
         const heartBonus = (hearts === 5 && score === activeQuiz.questions.length) ? 5 : 0;
         const totalCoins = baseCoins + heartBonus;
@@ -386,6 +374,15 @@ export default function App() {
         }
       }
     }
+  };
+
+  const navigateToTab = (tabName) => {
+    const allowed = ROLE_TABS[role] || ROLE_TABS.student;
+    if (!allowed.includes(tabName)) return;
+
+    setActiveQuiz(null);
+    setActiveTab(tabName);
+    window.history.pushState({ tab: tabName }, '', `#${tabName}`);
   };
 
   if (!user) {
@@ -436,7 +433,7 @@ export default function App() {
             role={role}
             grade={studentGrade}
             quizzes={quizzes}
-            setQuizzes={setQuizzes}
+            onDeleteQuiz={handleDeleteQuiz}
             startQuiz={startQuiz}
             lockedChallengeQuizIds={lockedChallengeQuizIds}
             completedQuizModes={completedQuizModes}
@@ -453,7 +450,7 @@ export default function App() {
           <OLevelArena
             role={role}
             quizzes={quizzes}
-            setQuizzes={setQuizzes}
+            onDeleteQuiz={handleDeleteQuiz}
             startQuiz={startQuiz}
             completedQuizModes={completedQuizModes}
             onOpenDiagramUpload={() => {
@@ -493,7 +490,8 @@ export default function App() {
             role={role}
             teacherSubject={teacherSubject}
             quizzes={quizzes}
-            setQuizzes={setQuizzes}
+            onAddQuiz={handleAddQuiz}
+            onDeleteQuiz={handleDeleteQuiz}
             badges={badges}
             setBadges={setBadges}
             ranks={ranks}
@@ -520,8 +518,7 @@ export default function App() {
 
       {showDiagramUploadModal && (
         <DiagramUploadModal
-          quizzes={quizzes}
-          setQuizzes={setQuizzes}
+          onAddQuiz={handleAddQuiz}
           showToast={showToast}
           onClose={() => {
             setShowDiagramUploadModal(false);

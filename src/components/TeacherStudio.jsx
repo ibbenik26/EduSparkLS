@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Upload, Code, Image as ImageIcon, Trash2, Award, Plus, Sparkles, Shield, HeartHandshake, Mail, Phone } from 'lucide-react';
-import { ALL_SUBJECTS, canUserCRUDPracticeVault } from '../utils/helpers';
+import { Upload, Code, Image as ImageIcon, Trash2, Award, Plus, Sparkles, HeartHandshake, Mail, Phone } from 'lucide-react';
+import { canUserCRUDPracticeVault } from '../utils/helpers';
 
 export default function TeacherStudio({
-  role, teacherSubject = 'Physics', quizzes, setQuizzes,
+  role, teacherSubject = 'Physics', quizzes, onAddQuiz, onDeleteQuiz,
   badges, setBadges, ranks, setRanks,
   sponsors = [], setSponsors,
   showDiagramUploadModal, setShowDiagramUploadModal, showToast, askConfirm
@@ -11,14 +11,13 @@ export default function TeacherStudio({
   const [studioTab, setStudioTab] = useState('manage_quizzes');
   const [jsonInput, setJsonInput] = useState(`[
   {
-    "topic": "Registered Subject Focus",
-    "question_text": "Sample question for teacher's registered subject class.",
-    "option_a": "Option A", "option_b": "Option B", "option_c": "Option C", "option_d": "Option D",
-    "correct_option": "A", "explanation": "Mark scheme verified."
+    "topic": "Light Rays & Lenses",
+    "question_text": "Which lens converges parallel light rays to a real focal point?",
+    "option_a": "Convex Lens", "option_b": "Concave Lens", "option_c": "Flat Glass", "option_d": "Prism",
+    "correct_option": "A", "explanation": "A convex lens is thicker in the middle and converges incoming parallel light rays."
   }
 ]`);
 
-  // New Badge Form State
   const [badgeName, setBadgeName] = useState('');
   const [badgeIcon, setBadgeIcon] = useState('🏆');
   const [badgeDesc, setBadgeDesc] = useState('');
@@ -31,7 +30,7 @@ export default function TeacherStudio({
     ? quizzes
     : quizzes.filter(q => (q.subject || '').toLowerCase() === (teacherSubject || '').toLowerCase());
 
-  const handleImportJson = () => {
+  const handleImportJson = async () => {
     if (!canEditVault) return showToast("❌ Permission Denied!", "error");
 
     try {
@@ -40,7 +39,7 @@ export default function TeacherStudio({
 
       const newQuiz = {
         id: `quiz_json_${Date.now()}`,
-        title: `${teacherSubject} Custom Practice Paper`,
+        title: `${teacherSubject} Grade 10 Practice Paper`,
         subject: teacherSubject,
         grade: 10,
         subject_code: '0625',
@@ -51,22 +50,21 @@ export default function TeacherStudio({
         questions: parsed
       };
 
-      setQuizzes([newQuiz, ...quizzes]);
-      showToast(`🎉 Batch JSON Uploaded! Created ${teacherSubject} paper with ${parsed.length} questions.`, "success");
+      await onAddQuiz(newQuiz);
+      showToast(`🎉 Published ${teacherSubject} paper with ${parsed.length} questions to Supabase!`, "success");
     } catch (e) {
       showToast("❌ Invalid JSON format: " + e.message, "error");
     }
   };
 
-  const handleDeleteQuiz = (quiz) => {
+  const handleDeleteQuizAction = (quiz) => {
     if (!canEditVault) return;
-    askConfirm("Delete Exam Paper", `Remove "${quiz.title}" from the curriculum system?`, () => {
-      setQuizzes(quizzes.filter(q => q.id !== quiz.id));
+    askConfirm("Delete Exam Paper", `Remove "${quiz.title}" from the database?`, () => {
+      onDeleteQuiz(quiz.id);
       showToast(`Deleted paper "${quiz.title}".`, "info");
     });
   };
 
-  // BADGE CRUD
   const handleAddBadge = (e) => {
     e.preventDefault();
     if (!badgeName) return showToast("Enter badge name.", "warning");
@@ -85,7 +83,7 @@ export default function TeacherStudio({
   };
 
   const handleDeleteBadge = (badgeId) => {
-    askConfirm("Delete Badge", "Delete this achievement badge from system?", () => {
+    askConfirm("Delete Badge", "Delete this achievement badge?", () => {
       setBadges(badges.filter(b => b.id !== badgeId));
       showToast("Deleted badge.", "info");
     });
@@ -110,15 +108,15 @@ export default function TeacherStudio({
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-indigo-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
+      <div className="bg-gradient-to-r from-cyan-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
         <div className="space-y-2">
-          <span className="bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider">
+          <span className="bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider">
             {isAdmin ? 'Super Admin Command Dashboard' : `Teacher Practice Studio (${teacherSubject} Class)`}
           </span>
           <h2 className="text-2xl sm:text-3xl font-black">
             {isAdmin ? 'Super Admin Command Center' : 'Teacher Practice Vault Studio'}
           </h2>
-          <p className="text-indigo-200 text-xs max-w-lg">
+          <p className="text-cyan-200 text-xs max-w-lg">
             {isAdmin 
               ? 'Manage system-wide practice papers, Cambridge arena, student badges, and sponsor proposals.' 
               : `Create and publish practice vault quizzes for your registered ${teacherSubject} class across all grades.`}
@@ -140,7 +138,7 @@ export default function TeacherStudio({
         <button
           onClick={() => setStudioTab('manage_quizzes')}
           className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 ${
-            studioTab === 'manage_quizzes' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
+            studioTab === 'manage_quizzes' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-700'
           }`}
         >
           Practice Vault Quizzes ({myClassQuizzes.length})
@@ -151,7 +149,7 @@ export default function TeacherStudio({
             <button
               onClick={() => setStudioTab('sponsors')}
               className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 flex items-center space-x-1 font-bold ${
-                studioTab === 'sponsors' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
+                studioTab === 'sponsors' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-700'
               }`}
             >
               <HeartHandshake className="w-3.5 h-3.5 text-rose-400" />
@@ -161,7 +159,7 @@ export default function TeacherStudio({
             <button
               onClick={() => setStudioTab('badges_ranks')}
               className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 flex items-center space-x-1 ${
-                studioTab === 'badges_ranks' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
+                studioTab === 'badges_ranks' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-700'
               }`}
             >
               <Award className="w-3.5 h-3.5" />
@@ -173,7 +171,7 @@ export default function TeacherStudio({
         <button
           onClick={() => setStudioTab('json_upload')}
           className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 flex items-center space-x-1.5 ${
-            studioTab === 'json_upload' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
+            studioTab === 'json_upload' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-700'
           }`}
         >
           <Code className="w-3.5 h-3.5" />
@@ -186,14 +184,14 @@ export default function TeacherStudio({
           {myClassQuizzes.map(q => (
             <div key={q.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex justify-between items-center shadow-xs">
               <div>
-                <span className="text-[10px] font-bold text-indigo-600 uppercase bg-indigo-50 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-bold text-cyan-700 uppercase bg-cyan-50 px-2 py-0.5 rounded">
                   {q.subject} • Grade {q.grade}
                 </span>
                 <h4 className="font-bold text-slate-900 text-sm mt-1">{q.title}</h4>
                 <span className="text-[10px] text-slate-400 font-mono block mt-0.5">{q.questions.length} Questions</span>
               </div>
               {canEditVault && (
-                <button onClick={() => handleDeleteQuiz(q)} className="p-2.5 text-rose-600 hover:bg-rose-50 rounded-xl transition">
+                <button onClick={() => handleDeleteQuizAction(q)} className="p-2.5 text-rose-600 hover:bg-rose-50 rounded-xl transition">
                   <Trash2 className="w-4 h-4" />
                 </button>
               )}
@@ -201,7 +199,6 @@ export default function TeacherStudio({
           ))}
         </div>
       ) : studioTab === 'sponsors' && isAdmin ? (
-        /* SUPER ADMIN SPONSOR PROPOSALS VIEW */
         <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-xs">
           <div className="flex justify-between items-center border-b pb-4">
             <div>
@@ -221,7 +218,7 @@ export default function TeacherStudio({
                 <div key={sp.id} className="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-3 relative">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-200/80 pb-3">
                     <div>
-                      <span className="text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-md">
+                      <span className="text-[10px] font-black uppercase text-cyan-800 bg-cyan-50 border border-cyan-200 px-2.5 py-0.5 rounded-md">
                         {sp.partnerType} • {sp.contributionType}
                       </span>
                       <h4 className="font-black text-slate-900 text-base mt-1">{sp.applicantName}</h4>
@@ -257,8 +254,8 @@ export default function TeacherStudio({
 
                   <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500 pt-1">
                     <span className="flex items-center space-x-1">
-                      <Mail className="w-3.5 h-3.5 text-indigo-600" />
-                      <a href={`mailto:${sp.email}`} className="text-indigo-600 font-bold hover:underline">{sp.email}</a>
+                      <Mail className="w-3.5 h-3.5 text-cyan-600" />
+                      <a href={`mailto:${sp.email}`} className="text-cyan-600 font-bold hover:underline">{sp.email}</a>
                     </span>
                     <span className="flex items-center space-x-1">
                       <Phone className="w-3.5 h-3.5 text-slate-400" />
@@ -272,11 +269,10 @@ export default function TeacherStudio({
           )}
         </div>
       ) : studioTab === 'badges_ranks' && isAdmin ? (
-        /* SUPER ADMIN BADGES & RANKS VIEW */
         <div className="space-y-6">
           <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-xs">
             <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
-              <Sparkles className="w-5 h-5 text-indigo-600" />
+              <Sparkles className="w-5 h-5 text-cyan-600" />
               <span>Student Rank Level XP Requirements</span>
             </h3>
             <p className="text-xs text-slate-500">Modify minimum XP required for students to unlock each rank tier.</p>
@@ -292,7 +288,7 @@ export default function TeacherStudio({
                       type="number"
                       value={r.minXp}
                       onChange={(e) => handleUpdateRankMinXp(r.id, e.target.value)}
-                      className="w-full bg-white border rounded-lg p-1 text-center font-bold text-indigo-700 text-xs"
+                      className="w-full bg-white border rounded-lg p-1 text-center font-bold text-cyan-700 text-xs"
                     />
                   </div>
                 </div>
@@ -304,7 +300,7 @@ export default function TeacherStudio({
             <div className="flex justify-between items-center border-b pb-4">
               <div>
                 <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
-                  <Award className="w-5 h-5 text-indigo-600" />
+                  <Award className="w-5 h-5 text-cyan-600" />
                   <span>Academic Achievement Badges (CRUD)</span>
                 </h3>
                 <p className="text-xs text-slate-500">Create or delete achievement badges displayed on student profiles.</p>
@@ -335,10 +331,10 @@ export default function TeacherStudio({
                   value={badgeReqXp}
                   onChange={(e) => setBadgeReqXp(e.target.value)}
                   placeholder="Req XP"
-                  className="bg-white border rounded-xl p-2.5 font-bold text-indigo-700"
+                  className="bg-white border rounded-xl p-2.5 font-bold text-cyan-700"
                   required
                 />
-                <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition flex items-center justify-center space-x-1">
+                <button type="submit" className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 rounded-xl transition flex items-center justify-center space-x-1">
                   <Plus className="w-4 h-4" />
                   <span>Create Badge</span>
                 </button>
@@ -360,7 +356,7 @@ export default function TeacherStudio({
                     <div>
                       <h4 className="font-bold text-slate-900 text-xs">{b.name}</h4>
                       <p className="text-[11px] text-slate-500">{b.desc}</p>
-                      <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded mt-1 inline-block">
+                      <span className="text-[10px] font-bold text-cyan-700 bg-cyan-50 px-2 py-0.5 rounded mt-1 inline-block">
                         Unlocks at {b.reqXp || 100} XP
                       </span>
                     </div>
@@ -388,10 +384,10 @@ export default function TeacherStudio({
           />
           <button
             onClick={handleImportJson}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-6 py-3 rounded-2xl text-xs shadow-md transition flex items-center space-x-2"
+            className="bg-cyan-600 hover:bg-cyan-700 text-white font-black px-6 py-3 rounded-2xl text-xs shadow-md transition flex items-center space-x-2"
           >
             <Upload className="w-4 h-4" />
-            <span>Publish {teacherSubject} Paper</span>
+            <span>Publish {teacherSubject} Paper to Supabase</span>
           </button>
         </div>
       )}
