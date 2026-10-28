@@ -17,11 +17,11 @@ export function LandingPage({ onGoLogin, onGoRegister, sponsors, setSponsors, sh
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-between font-sans relative overflow-hidden">
-      {/* Background Lighting */}
+      {/* Background Ambient Glows */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-600/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Navigation Header (Cleaned - "Become a Partner" tab removed from top) */}
+      {/* Navigation Header */}
       <header className="max-w-7xl w-full mx-auto p-6 flex justify-between items-center relative z-10">
         <div className="flex items-center space-x-3">
           <img 
@@ -52,7 +52,7 @@ export function LandingPage({ onGoLogin, onGoRegister, sponsors, setSponsors, sh
         </div>
       </header>
 
-      {/* Hero Section (Partner Form retained here in the landing page area) */}
+      {/* Hero Section */}
       <main className="max-w-5xl w-full mx-auto px-6 py-12 text-center space-y-8 relative z-10 my-auto">
         <span className="bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 font-bold px-4 py-1.5 rounded-full text-xs uppercase tracking-widest inline-flex items-center space-x-2">
           <span>Students Learning Platform</span>
@@ -84,22 +84,22 @@ export function LandingPage({ onGoLogin, onGoRegister, sponsors, setSponsors, sh
           </button>
         </div>
 
-        {/* Partner Logos Banner */}
+        {/* Partner Logos Banner - Horizontal Scroll on Mobile + Glowing Thin Border Lines */}
         <div className="pt-12 border-t border-slate-800/80 space-y-4">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">
             Trusted & Supported By Secondary Education Partners
           </span>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+          <div className="flex overflow-x-auto sm:flex-wrap items-center justify-start sm:justify-center gap-3 sm:gap-4 pb-4 pt-1 snap-x scrollbar-none">
             {partnerLogos.map((p, idx) => (
               <div
                 key={idx}
-                className="bg-slate-900/80 border border-slate-800 hover:border-slate-700 px-4 py-2.5 rounded-2xl flex items-center space-x-2.5 transition"
+                className="shrink-0 snap-center bg-slate-900/90 border border-cyan-500/40 shadow-[0_0_15px_-2px_rgba(6,182,212,0.3)] hover:shadow-[0_0_22px_0px_rgba(6,182,212,0.55)] hover:border-cyan-400 transition-all duration-300 px-4 py-3 rounded-2xl flex items-center space-x-3 cursor-pointer"
               >
-                <span className="text-xl">{p.icon}</span>
+                <span className="text-2xl">{p.icon}</span>
                 <div className="text-left">
-                  <span className="text-xs font-bold text-slate-200 block">{p.name}</span>
-                  <span className="text-[9px] text-cyan-400 font-medium">{p.type}</span>
+                  <span className="text-xs font-bold text-slate-100 block whitespace-nowrap">{p.name}</span>
+                  <span className="text-[9px] text-cyan-400 font-semibold uppercase tracking-wider block">{p.type}</span>
                 </div>
               </div>
             ))}
@@ -172,7 +172,7 @@ function SponsorPartnerModal({ sponsors, setSponsors, showToast, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 text-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl relative text-left">
+      <div className="bg-slate-900 border border-cyan-500/40 shadow-[0_0_30px_rgba(6,182,212,0.25)] text-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 relative text-left">
         <button onClick={onClose} className="absolute top-5 right-5 text-slate-400 hover:text-white p-1">
           <X className="w-5 h-5" />
         </button>
