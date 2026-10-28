@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { 
   CreditCard, ShoppingCart, Plus, Minus, Trash2, Upload, Lock, Receipt, 
-  Package, Coins, Sparkles, CheckCircle2, ArrowRight, X, History, 
-  ShoppingBag, ShieldCheck, Tag, Search, Filter, AlertCircle, Award
+  Package, Coins, Sparkles, X, History, ShoppingBag, Search, 
+  AlertCircle, Star, Tag, Check
 } from 'lucide-react';
 import { canUserCRUDShop } from '../utils/helpers';
 
@@ -84,7 +84,7 @@ export default function ShopTab({
     if (cart.length === 0) return;
 
     if (coins < cartTotalCost) {
-      showToast(`Checkout not completed: your Edu Wallet has ${coins} coins, but this cart costs ${cartTotalCost} coins. Earn more Edu Coins and try again.`, "warning");
+      showToast(`❌ Insufficient Edu Wallet Balance!\nTotal: ${cartTotalCost} coins (Balance: ${coins} coins).`, "warning");
       return;
     }
 
@@ -111,7 +111,7 @@ export default function ShopTab({
     setCart([]);
     setShowCartDrawer(false);
 
-    showToast(`Purchase complete! You spent ${cartTotalCost} Edu Coins on ${cartTotalCount} item(s). Your collection vouchers are ready in Orders.`, "success");
+    showToast(`🎉 Purchase Successful!\nSpent ${cartTotalCost} Coins on ${cartTotalCount} item(s).\nVouchers issued!`, "success");
   };
 
   // CRUD Actions
@@ -159,7 +159,6 @@ export default function ShopTab({
     showToast("✅ Order voucher marked as delivered!", "success");
   };
 
-  // Category Filtering
   const categories = ['All', 'Stationery', 'School Supplies', 'Privileges', 'Tech & Gear'];
 
   const filteredItems = shopItems.filter(item => {
@@ -170,39 +169,35 @@ export default function ShopTab({
   });
 
   return (
-    <div className="w-full min-w-0 space-y-4 sm:space-y-6">
-      {/* Sleek E-Commerce Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 rounded-2xl sm:rounded-3xl p-4 sm:p-8 text-white relative overflow-hidden shadow-xl border border-slate-800">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 sm:gap-6">
-          <div className="space-y-2 max-w-xl">
+    <div className="space-y-6">
+      {/* Marketplace Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-5 sm:p-7 text-white relative overflow-hidden shadow-xl border border-slate-800">
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
+          <div className="space-y-1.5 max-w-xl">
             <span className="text-[10px] font-black uppercase tracking-widest text-amber-300 bg-amber-500/20 px-3 py-1 rounded-full border border-amber-400/30 inline-flex items-center space-x-1.5">
               <ShoppingBag className="w-3.5 h-3.5 text-amber-400" />
-              <span>EduSpark Reward Storefront</span>
+              <span>EduSpark Online Store</span>
             </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-              Exchange Coins For Physical Goods & Passes
+            <h2 className="text-xl sm:text-3xl font-black text-white tracking-tight">
+              School Marketplace & Rewards
             </h2>
-            <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-              Earn coins by completing quizzes & reading textbooks, then redeem them for stationery kits and class vouchers.
+            <p className="text-slate-300 text-xs leading-relaxed">
+              Use your Edu Coins to purchase stationery, tech accessories, and classroom privileges.
             </p>
           </div>
 
-          {/* Edu Wallet Balance Ribbon */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3 sm:p-5 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 shrink-0 shadow-inner">
-            <div className="w-12 h-12 bg-amber-400/20 rounded-2xl flex items-center justify-center border border-amber-400/30">
-              <Coins className="w-7 h-7 text-amber-400 fill-amber-400" />
+          {/* Edu Wallet Ribbon */}
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 flex items-center space-x-4 shrink-0 shadow-inner">
+            <div className="w-10 h-10 bg-amber-400/20 rounded-xl flex items-center justify-center border border-amber-400/30">
+              <Coins className="w-6 h-6 text-amber-400 fill-amber-400" />
             </div>
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 block">Edu Wallet Balance</span>
-              <span className="text-2xl font-black text-amber-400 font-mono">{coins} 🪙</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 block">Wallet Balance</span>
+              <span className="text-xl font-black text-amber-400 font-mono">{coins} 🪙</span>
             </div>
             <button
               onClick={() => setShowCartDrawer(true)}
-              aria-label={`Open shopping cart, ${cartTotalCount} ${cartTotalCount === 1 ? 'item' : 'items'}`}
-              className="min-h-11 min-w-11 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-3 sm:px-4 py-2.5 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-1.5 ml-auto sm:ml-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+              className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-4 py-2 rounded-xl text-xs shadow-md transition flex items-center space-x-1.5 ml-2"
             >
               <ShoppingCart className="w-4 h-4" />
               <span>Cart ({cartTotalCount})</span>
@@ -211,16 +206,15 @@ export default function ShopTab({
         </div>
       </div>
 
-      {/* Modern Filter & Search Bar */}
-      <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-3 sm:p-4 shadow-xs space-y-3">
+      {/* Filter & Search Toolbar */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-xs space-y-3">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          {/* Category Pill Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 -mx-1 px-1">
+          <div className="flex items-center space-x-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
             {categories.map(cat => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-2.5 rounded-xl text-xs font-bold transition shrink-0 min-h-10 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 ${
                   selectedCategory === cat
                     ? 'bg-indigo-600 text-white shadow-xs'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -231,23 +225,22 @@ export default function ShopTab({
             ))}
           </div>
 
-          {/* Search Box & Teacher Publish Button */}
-          <div className="flex flex-col xs:flex-row sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64">
+          <div className="flex items-center space-x-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-64">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search rewards..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-3 sm:py-2 text-sm sm:text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-500"
+                placeholder="Search products..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-500"
               />
             </div>
 
             {canEditShop && (
               <button
                 onClick={() => setShowItemModal(true)}
-                className="bg-slate-900 hover:bg-slate-800 text-white font-black px-3 sm:px-4 py-3 sm:py-2 rounded-xl text-xs shadow-md transition shrink-0 flex items-center justify-center gap-1"
+                className="bg-slate-900 hover:bg-slate-800 text-white font-black px-4 py-2 rounded-xl text-xs shadow-md transition shrink-0 flex items-center space-x-1"
               >
                 <Plus className="w-4 h-4 text-amber-400" />
                 <span>Publish Item</span>
@@ -257,20 +250,20 @@ export default function ShopTab({
         </div>
       </div>
 
-      {/* Navigation Sub-Tabs */}
-      <div className="flex gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
+      {/* Sub Navigation Tabs */}
+      <div className="flex space-x-2 border-b border-slate-200 pb-2">
         <button
           onClick={() => setActiveTab('store')}
-          className={`px-3 sm:px-4 py-2.5 font-bold rounded-xl text-xs transition shrink-0 whitespace-nowrap ${
+          className={`px-4 py-2 font-bold rounded-xl text-xs transition ${
             activeTab === 'store' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700'
           }`}
         >
-          Store Catalog ({filteredItems.length})
+          Product Catalog ({filteredItems.length})
         </button>
 
         <button
           onClick={() => setActiveTab('orders')}
-          className={`px-3 sm:px-4 py-2.5 font-bold rounded-xl text-xs transition shrink-0 whitespace-nowrap flex items-center space-x-1.5 ${
+          className={`px-4 py-2 font-bold rounded-xl text-xs transition flex items-center space-x-1.5 ${
             activeTab === 'orders' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700'
           }`}
         >
@@ -280,7 +273,7 @@ export default function ShopTab({
 
         <button
           onClick={() => setActiveTab('wallet_history')}
-          className={`px-3 sm:px-4 py-2.5 font-bold rounded-xl text-xs transition shrink-0 whitespace-nowrap flex items-center space-x-1.5 ${
+          className={`px-4 py-2 font-bold rounded-xl text-xs transition flex items-center space-x-1.5 ${
             activeTab === 'wallet_history' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700'
           }`}
         >
@@ -289,7 +282,7 @@ export default function ShopTab({
         </button>
       </div>
 
-      {/* Main Views */}
+      {/* Storefront Grid (1:1 Square Images) */}
       {activeTab === 'store' ? (
         filteredItems.length === 0 ? (
           <div className="bg-white border border-slate-200 rounded-3xl p-16 text-center text-slate-400 text-xs font-medium space-y-2">
@@ -297,7 +290,7 @@ export default function ShopTab({
             <p>No reward items found matching "{searchQuery}".</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 min-[520px]:grid-cols-2 xl:grid-cols-3 gap-2.5 min-[400px]:gap-3 min-[520px]:gap-4 xl:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
             {filteredItems.map((item) => {
               const isGradeRestricted = item.target_grade !== 'All';
               const isStudentLocked = role === 'student' && isGradeRestricted && parseInt(item.target_grade) !== parseInt(studentGrade);
@@ -305,28 +298,29 @@ export default function ShopTab({
               const inCart = cart.find(ci => ci.item.id === item.id);
 
               return (
-                <div key={item.id} className="bg-white border border-slate-200/90 rounded-xl min-[400px]:rounded-2xl sm:rounded-3xl overflow-hidden hover:shadow-xl hover:border-indigo-200 transition duration-300 flex flex-col group min-w-0 w-full focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2">
-                  {/* Image & Badges Overlay */}
-                  <div className="h-28 min-[360px]:h-32 min-[400px]:h-36 min-[520px]:h-44 xl:h-52 bg-slate-100 relative overflow-hidden border-b border-slate-100">
+                <div 
+                  key={item.id} 
+                  className="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:shadow-lg hover:border-indigo-300 transition duration-300 flex flex-col justify-between group"
+                >
+                  {/* Square Image Box (1:1 ratio) */}
+                  <div className="aspect-square bg-slate-50 relative overflow-hidden p-4 flex items-center justify-center border-b border-slate-100 group-hover:bg-slate-100/60 transition">
                     <img 
                       src={item.image_url} 
                       alt={item.name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
+                      className="w-full h-full object-contain group-hover:scale-105 transition duration-300 drop-shadow-xs" 
                     />
                     
-                    {/* Price Tag */}
-                    <span className="absolute top-2 right-2 min-[520px]:top-3 min-[520px]:right-3 bg-white/95 backdrop-blur-md text-slate-950 px-2.5 py-1.5 min-[520px]:px-3 min-[520px]:py-2 rounded-lg min-[520px]:rounded-xl shadow-lg border border-white/70 flex flex-col items-end leading-tight max-w-[68%]">
-                      <span className="flex items-center gap-1 text-[9px] min-[520px]:text-[10px] font-extrabold uppercase tracking-wide text-slate-700">
-                        <Coins className="w-3 h-3 text-amber-500 fill-amber-400" /> Edu Coins
-                      </span>
-                      <span className="text-lg min-[520px]:text-xl font-black text-slate-950 tracking-tight tabular-nums">{item.cost}</span>
+                    {/* Floating Price Badge */}
+                    <span className="absolute top-2.5 right-2.5 bg-slate-900/90 backdrop-blur-md text-amber-400 font-mono font-black text-xs px-2.5 py-1 rounded-lg shadow-xs border border-slate-800 flex items-center space-x-1">
+                      <Coins className="w-3 h-3 fill-amber-400" />
+                      <span>{item.cost}</span>
                     </span>
 
-                    {/* Grade Restriction Tag */}
+                    {/* Grade Lock Overlay */}
                     {isGradeRestricted && (
-                      <span className="absolute top-2 left-2 min-[520px]:top-3 min-[520px]:left-3 bg-purple-600 text-white text-[10px] min-[520px]:text-[11px] font-bold px-2 py-1 rounded-lg min-[520px]:rounded-xl flex items-center space-x-1 shadow-md max-w-[58%]">
-                        <Lock className="w-3 h-3" />
-                        <span>Grade {item.target_grade} Reserved</span>
+                      <span className="absolute top-2.5 left-2.5 bg-purple-600/90 backdrop-blur-xs text-white text-[9px] font-bold px-2 py-0.5 rounded-md flex items-center space-x-1 shadow-xs">
+                        <Lock className="w-2.5 h-2.5" />
+                        <span>Gr {item.target_grade}</span>
                       </span>
                     )}
 
@@ -334,60 +328,55 @@ export default function ShopTab({
                     {canEditShop && (
                       <button
                         onClick={() => handleDeleteItem(item)}
-                        aria-label={`Delete product ${item.name}`} title={`Delete product ${item.name}`} className="absolute bottom-3 right-3 min-h-11 min-w-11 flex items-center justify-center bg-rose-700 hover:bg-rose-800 text-white p-2 rounded-xl text-xs shadow-md transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-300 focus-visible:ring-offset-2"
+                        className="absolute bottom-2.5 right-2.5 bg-rose-600 hover:bg-rose-700 text-white p-1.5 rounded-lg text-xs shadow-md transition"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
 
-                  {/* Content & Actions */}
-                  <div className="p-2.5 min-[360px]:p-3 min-[520px]:p-4 xl:p-5 space-y-2.5 min-[400px]:space-y-3 min-[520px]:space-y-4 flex-1 flex flex-col justify-between min-w-0">
-                    <div className="space-y-1.5 min-[400px]:space-y-2 min-[520px]:space-y-2.5 min-w-0">
-                      <div className="flex flex-wrap items-start justify-between gap-1.5 min-[400px]:gap-2 min-w-0">
-                        <span className="text-[10px] min-[400px]:text-[11px] font-extrabold text-indigo-800 bg-indigo-50 border border-indigo-100 px-1.5 min-[400px]:px-2 py-0.5 min-[520px]:px-2.5 min-[520px]:py-1 rounded-md min-[520px]:rounded-lg uppercase tracking-wide max-w-full min-w-0 whitespace-normal break-words [overflow-wrap:anywhere]">
-                          {item.category || 'Stationery'}
-                        </span>
-                        {item.stock !== undefined && item.stock !== null && (
-                          <span className={`inline-flex items-center gap-1 text-[10px] min-[400px]:text-[11px] min-[520px]:text-xs leading-tight font-extrabold px-1.5 min-[400px]:px-2 min-[520px]:px-2.5 py-0.5 min-[520px]:py-1 rounded-md min-[520px]:rounded-lg border max-w-full min-w-0 whitespace-normal break-words [overflow-wrap:anywhere] ${Number(item.stock) <= 0 ? 'bg-rose-50 text-rose-700 border-rose-200' : Number(item.stock) <= 5 ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`} >
-                            <span className={`w-1.5 h-1.5 rounded-full ${Number(item.stock) <= 0 ? 'bg-rose-500' : Number(item.stock) <= 5 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                            {Number(item.stock) <= 0 ? 'Out of stock' : Number(item.stock) <= 5 ? `Only ${item.stock} left` : `${item.stock} in stock`}
-                          </span>
-                        )}
+                  {/* Compact Product Details */}
+                  <div className="p-3.5 space-y-2.5 flex-1 flex flex-col justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold">
+                        <span className="text-indigo-600 font-bold uppercase">{item.category || 'Stationery'}</span>
+                        <div className="flex items-center space-x-0.5 text-amber-500">
+                          <Star className="w-3 h-3 fill-amber-400" />
+                          <span>4.9</span>
+                        </div>
                       </div>
 
-                      <h3 className="font-extrabold text-slate-900 text-sm min-[360px]:text-[15px] min-[400px]:text-base min-[520px]:text-lg leading-snug tracking-tight min-w-0 break-words [overflow-wrap:anywhere]">{item.name}</h3>
-                      <p className="text-xs min-[400px]:text-[13px] min-[520px]:text-sm text-slate-700 leading-[1.45] min-[520px]:leading-relaxed min-w-0 whitespace-normal break-words [overflow-wrap:anywhere]">{item.desc}</p>
+                      <h3 className="font-bold text-slate-900 text-xs sm:text-sm line-clamp-1 leading-snug">{item.name}</h3>
+                      <p className="text-[11px] text-slate-500 line-clamp-2 leading-tight">{item.desc}</p>
                     </div>
 
-                    {/* Purchase / Add to Cart Controls */}
+                    {/* Action Button */}
                     {role === 'student' && (
                       <button
                         onClick={() => addToCart(item)}
                         disabled={isStudentLocked}
-                        aria-label={isStudentLocked ? `Unavailable: ${item.name}, reserved for Grade ${item.target_grade}` : !isAffordable ? `Add ${item.name} to cart unavailable: need ${item.cost - coins} more Edu Coins` : inCart ? `Add another ${item.name} to cart; ${inCart.quantity} already in cart` : `Add ${item.name} to Edu Cart for ${item.cost} coins`}
-                        className={`w-full min-w-0 min-h-11 px-2.5 py-2 min-[400px]:px-3 min-[520px]:py-3.5 rounded-lg min-[520px]:rounded-2xl text-xs min-[400px]:text-sm font-bold shadow-md transition flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center leading-tight whitespace-normal break-words [overflow-wrap:anywhere] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300 focus-visible:ring-offset-2 ${
+                        className={`w-full font-bold py-2 rounded-xl text-[11px] transition flex items-center justify-center space-x-1.5 shadow-xs ${
                           isStudentLocked
-                            ? 'bg-slate-100 text-slate-700 cursor-not-allowed border border-slate-300'
+                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
                             : !isAffordable
-                              ? 'bg-amber-50 border border-amber-400 text-amber-900 hover:bg-amber-100'
-                              : 'bg-indigo-700 hover:bg-indigo-800 text-white'
+                              ? 'bg-amber-500/10 border border-amber-300 text-amber-800 hover:bg-amber-500/20'
+                              : 'bg-indigo-600 hover:bg-indigo-700 text-white'
                         }`}
                       >
                         {!isAffordable && !isStudentLocked ? (
                           <>
-                            <AlertCircle className="w-4 h-4 text-amber-600" />
-                            <span className="min-w-0">Needs {item.cost - coins} More Coins</span>
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                            <span>Need +{item.cost - coins} Coins</span>
                           </>
                         ) : (
                           <>
-                            <ShoppingCart className="w-4 h-4" />
-                            <span className="min-w-0 max-w-full">
+                            <ShoppingCart className="w-3.5 h-3.5" />
+                            <span>
                               {isStudentLocked 
-                                ? `Locked to Grade ${item.target_grade}` 
+                                ? `Grade ${item.target_grade} Only` 
                                 : inCart 
-                                  ? `Add More (${inCart.quantity} in cart)` 
-                                  : 'Add to Edu Cart'}
+                                  ? `In Cart (${inCart.quantity})` 
+                                  : 'Add to Cart'}
                             </span>
                           </>
                         )}
@@ -401,7 +390,7 @@ export default function ShopTab({
         )
       ) : activeTab === 'orders' ? (
         /* Orders View */
-        <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-3 sm:p-6 shadow-xs space-y-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
           <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
             <Package className="w-5 h-5 text-indigo-600" />
             <span>{canEditShop ? 'Student Store Voucher Receipts' : 'My Claimed Vouchers'}</span>
@@ -426,16 +415,16 @@ export default function ShopTab({
                 <tbody className="divide-y divide-slate-100 font-medium">
                   {orders.map((ord) => (
                     <tr key={ord.id} className="hover:bg-slate-50 transition">
-                      <td className="py-3.5 px-3 font-mono font-bold text-slate-600">{ord.id}</td>
-                      <td className="py-3.5 px-3 font-bold text-slate-900">{ord.student_name}</td>
-                      <td className="py-3.5 px-3 font-bold text-slate-800">{ord.name}</td>
-                      <td className="py-3.5 px-3 font-bold text-amber-600">{ord.cost} 🪙</td>
-                      <td className="py-3.5 px-3">
-                        <span className="font-mono font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-lg">
+                      <td className="py-3 px-3 font-mono font-bold text-slate-600">{ord.id}</td>
+                      <td className="py-3 px-3 font-bold text-slate-900">{ord.student_name}</td>
+                      <td className="py-3 px-3 font-bold text-slate-800">{ord.name}</td>
+                      <td className="py-3 px-3 font-bold text-amber-600">{ord.cost} 🪙</td>
+                      <td className="py-3 px-3">
+                        <span className="font-mono font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md">
                           {ord.code}
                         </span>
                       </td>
-                      <td className="py-3.5 px-3">
+                      <td className="py-3 px-3">
                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${
                           ord.status.includes('Delivered') ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                         }`}>
@@ -443,11 +432,11 @@ export default function ShopTab({
                         </span>
                       </td>
                       {canEditShop && (
-                        <td className="py-3.5 px-3 text-right">
+                        <td className="py-3 px-3 text-right">
                           {!ord.status.includes('Delivered') && (
                             <button
                               onClick={() => handleFulfillOrder(ord.id)}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-[11px] shadow-xs"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1 rounded-lg text-[11px] shadow-xs"
                             >
                               Mark Delivered ✅
                             </button>
@@ -463,84 +452,84 @@ export default function ShopTab({
         </div>
       ) : (
         /* Statement Log View */
-        <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-3 sm:p-6 shadow-xs space-y-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
           <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
             <History className="w-5 h-5 text-indigo-600" />
             <span>Edu Wallet Account Transaction Statement</span>
           </h3>
 
-          <div className="space-y-3 font-mono text-xs">
-            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div className="space-y-2.5 font-mono text-xs">
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex justify-between items-center">
               <div>
                 <span className="font-bold text-emerald-900 block">Quiz Completion Credit</span>
                 <span className="text-[10px] text-emerald-700">Practice & Challenge Mode Rewards</span>
               </div>
-              <span className="font-black text-emerald-700 text-sm">+250 Coins 🪙</span>
+              <span className="font-black text-emerald-700 text-xs sm:text-sm">+250 Coins 🪙</span>
             </div>
 
-            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex justify-between items-center">
               <div>
                 <span className="font-bold text-emerald-900 block">E-Library Auto-Timer Claim</span>
                 <span className="text-[10px] text-emerald-700">Digital Book Reading Session</span>
               </div>
-              <span className="font-black text-emerald-700 text-sm">+100 Coins 🪙</span>
+              <span className="font-black text-emerald-700 text-xs sm:text-sm">+100 Coins 🪙</span>
             </div>
 
             {orders.map((ord) => (
-              <div key={ord.id} className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div key={ord.id} className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex justify-between items-center">
                 <div>
                   <span className="font-bold text-rose-900 block">Store Merchandise Purchase</span>
                   <span className="text-[10px] text-rose-700">Item: {ord.name} ({ord.code})</span>
                 </div>
-                <span className="font-black text-rose-700 text-sm">-{ord.cost} Coins 🪙</span>
+                <span className="font-black text-rose-700 text-xs sm:text-sm">-{ord.cost} Coins 🪙</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Cart Drawer Modal */}
+      {/* Cart Drawer */}
       {showCartDrawer && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex justify-end">
-          <div role="dialog" aria-modal="true" aria-label="My Edu Cart" className="bg-white max-w-md w-full h-full p-3 min-[375px]:p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col justify-between shadow-2xl overflow-y-auto animate-fade-in">
+          <div className="bg-white max-w-md w-full h-full p-6 space-y-6 flex flex-col justify-between shadow-2xl overflow-y-auto">
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-4">
+              <div className="flex justify-between items-center border-b pb-4">
                 <div className="flex items-center space-x-2">
                   <ShoppingCart className="w-5 h-5 text-indigo-600" />
-                  <h3 className="font-black text-slate-900 text-lg">My Edu Cart</h3>
+                  <h3 className="font-black text-slate-900 text-lg">My Shopping Cart</h3>
                 </div>
-                <button onClick={() => setShowCartDrawer(false)} aria-label="Close shopping cart" className="min-h-11 min-w-11 p-2 text-slate-700 hover:bg-slate-100 hover:text-slate-950 rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300 focus-visible:ring-offset-2">
-                  <X className="w-5 h-5 mx-auto" />
+                <button onClick={() => setShowCartDrawer(false)} className="p-2 text-slate-400 hover:text-slate-700">
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
               {cart.length === 0 ? (
-                <div className="text-center py-16 text-slate-600 space-y-2">
+                <div className="text-center py-16 text-slate-400 space-y-2">
                   <ShoppingBag className="w-12 h-12 mx-auto text-slate-300" />
-                  <p className="text-sm font-bold text-slate-700">Your Edu Cart is currently empty.</p>
+                  <p className="text-xs font-bold">Your cart is empty.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {cart.map(({ item, quantity }) => (
-                    <div key={item.id} className="bg-slate-50 border border-slate-300 p-3 rounded-2xl flex flex-wrap min-[375px]:flex-nowrap items-center gap-3 justify-between">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <img src={item.image_url} alt={item.name} className="w-12 h-12 rounded-xl object-cover border" />
+                    <div key={item.id} className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <img src={item.image_url} alt={item.name} className="w-12 h-12 rounded-lg object-contain bg-white border p-1" />
                         <div>
-                          <h4 className="font-bold text-slate-950 text-xs leading-snug break-words [overflow-wrap:anywhere]">{item.name}</h4>
-                          <span className="text-xs font-bold text-amber-800">{item.cost * quantity} Coins</span>
+                          <h4 className="font-bold text-slate-900 text-xs">{item.name}</h4>
+                          <span className="text-[10px] font-bold text-amber-600">{item.cost * quantity} Coins</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1 bg-white border border-slate-300 rounded-xl p-1 shrink-0" aria-label={`Quantity controls for ${item.name}`}>
-                        <button type="button" onClick={() => updateQuantity(item.id, -1)} aria-label={`Decrease quantity of ${item.name}`} className="min-h-11 min-w-11 p-2 hover:bg-slate-100 text-slate-900 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300 focus-visible:ring-inset">
-                          <Minus className="w-4 h-4 mx-auto" />
+                      <div className="flex items-center space-x-2 bg-white border border-slate-200 rounded-lg p-1">
+                        <button onClick={() => updateQuantity(item.id, -1)} className="p-1 hover:bg-slate-100 rounded">
+                          <Minus className="w-3 h-3 text-slate-600" />
                         </button>
-                        <span className="text-sm font-black text-slate-950 min-w-5 text-center" aria-label={`Quantity ${quantity}`}>{quantity}</span>
-                        <button type="button" onClick={() => updateQuantity(item.id, 1)} aria-label={`Increase quantity of ${item.name}`} className="min-h-11 min-w-11 p-2 hover:bg-slate-100 text-slate-900 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300 focus-visible:ring-inset">
-                          <Plus className="w-4 h-4 mx-auto" />
+                        <span className="text-xs font-black px-1.5">{quantity}</span>
+                        <button onClick={() => updateQuantity(item.id, 1)} className="p-1 hover:bg-slate-100 rounded">
+                          <Plus className="w-3 h-3 text-slate-600" />
                         </button>
-                        <button type="button" onClick={() => removeFromCart(item.id)} aria-label={`Remove ${item.name} from cart`} className="min-h-11 min-w-11 p-2 text-rose-800 hover:bg-rose-50 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-300 focus-visible:ring-inset">
-                          <Trash2 className="w-4 h-4 mx-auto" />
+                        <button onClick={() => removeFromCart(item.id)} className="p-1 text-rose-600 hover:bg-rose-50 rounded">
+                          <Trash2 className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
@@ -551,47 +540,35 @@ export default function ShopTab({
 
             {/* Checkout Footer */}
             {cart.length > 0 && (
-              <div className="border-t border-slate-200 pt-4 space-y-4">
-                <div className="space-y-1.5 text-sm" aria-label="Checkout summary">
-                  <div className="flex justify-between gap-3 text-slate-700">
+              <div className="border-t border-slate-100 pt-4 space-y-4">
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between text-slate-500">
                     <span>Edu Wallet Balance:</span>
-                    <span className="font-bold text-slate-950">{coins} 🪙</span>
+                    <span className="font-bold text-slate-900">{coins} 🪙</span>
                   </div>
-                  <div className="flex justify-between gap-3 text-slate-700">
+                  <div className="flex justify-between text-slate-500">
                     <span>Cart Total:</span>
-                    <span className="font-bold text-amber-800">{cartTotalCost} 🪙</span>
+                    <span className="font-bold text-amber-600">{cartTotalCost} 🪙</span>
                   </div>
-                  <div className="flex justify-between gap-3 text-slate-950 font-black text-sm pt-2 border-t border-slate-300">
+                  <div className="flex justify-between text-slate-900 font-black text-sm pt-2 border-t">
                     <span>Balance After Payment:</span>
-                    <span className={coins >= cartTotalCost ? 'text-emerald-800' : 'text-rose-800'} aria-label={coins >= cartTotalCost ? 'Sufficient balance after payment' : 'Insufficient balance'}>
+                    <span className={coins >= cartTotalCost ? 'text-emerald-600' : 'text-rose-600'}>
                       {coins - cartTotalCost} 🪙
                     </span>
                   </div>
                 </div>
 
-                {coins < cartTotalCost && (
-                  <div role="status" aria-live="polite" className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-3 text-sm font-semibold leading-snug text-rose-900">
-                    <span className="block font-black">Not enough Edu Coins to check out</span>
-                    <span className="block mt-1">You need {cartTotalCost - coins} more coins. Earn coins through quizzes or the E-Library, then try again.</span>
-                  </div>
-                )}
-                {coins >= cartTotalCost && (
-                  <p role="status" aria-live="polite" className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold leading-snug text-emerald-900">
-                    Your balance covers this purchase. Select the button below to confirm checkout.
-                  </p>
-                )}
                 <button
                   onClick={handleWalletCheckout}
                   disabled={coins < cartTotalCost}
-                  aria-label={coins < cartTotalCost ? `Checkout unavailable: need ${cartTotalCost - coins} more Edu Coins` : `Confirm purchase for ${cartTotalCost} Edu Coins using Edu Wallet`}
-                  className={`w-full min-h-12 px-3 py-3 font-black rounded-2xl text-sm leading-snug shadow-lg transition flex flex-wrap items-center justify-center gap-2 text-center break-words focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300 focus-visible:ring-offset-2 ${
+                  className={`w-full font-black py-3.5 rounded-xl text-xs shadow-md transition flex items-center justify-center space-x-2 ${
                     coins < cartTotalCost
-                      ? 'bg-slate-200 text-slate-600 border border-slate-400 cursor-not-allowed'
-                      : 'bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-slate-950 border border-amber-700'
+                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950'
                   }`}
                 >
                   <CreditCard className="w-4 h-4" />
-                  <span>{coins < cartTotalCost ? `Need ${cartTotalCost - coins} More Coins` : `Confirm Purchase · ${cartTotalCost} Edu Coins`}</span>
+                  <span>Pay {cartTotalCost} Coins with Edu Wallet</span>
                 </button>
               </div>
             )}
@@ -601,9 +578,9 @@ export default function ShopTab({
 
       {/* Teacher Publish Modal */}
       {showItemModal && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs z-50 flex items-center justify-center p-2 sm:p-4">
-          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-md w-full max-h-[95dvh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-3">
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b pb-3">
               <h3 className="font-black text-slate-900 text-base">Publish Store Item</h3>
               <button onClick={() => setShowItemModal(false)} className="text-slate-400 font-bold">✕</button>
             </div>
@@ -611,10 +588,10 @@ export default function ShopTab({
             <form onSubmit={handleCreateShopItem} className="space-y-3 text-xs font-medium">
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Item Title</label>
-                <input type="text" value={itemName} onChange={(e) => setItemName(e.target.value)} placeholder="e.g. Deluxe Geometry Compass" className="w-full bg-slate-50 border rounded-xl p-2.5" required />
+                <input type="text" value={itemName} onChange={(e) => setItemName(e.target.value)} placeholder="e.g. Geometry Kit Set" className="w-full bg-slate-50 border rounded-xl p-2.5" required />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Category</label>
                   <select value={itemCategory} onChange={(e) => setItemCategory(e.target.value)} className="w-full bg-slate-50 border rounded-xl p-2.5 font-bold text-indigo-700">
@@ -643,7 +620,7 @@ export default function ShopTab({
 
               <div className="space-y-1">
                 <label className="font-bold text-slate-700 block">Upload Product Photo OR Web Image URL</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <input type="text" value={itemImageUrl} onChange={(e) => setItemImageUrl(e.target.value)} placeholder="https://..." className="bg-slate-50 border rounded-xl p-2 text-xs" />
                   <label className="cursor-pointer bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded-xl p-2 text-center flex items-center justify-center space-x-1">
                     <Upload className="w-3.5 h-3.5" />
