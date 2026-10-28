@@ -35,9 +35,11 @@ export const getDefaultTabForRole = (userRole) => {
   }
 };
 
+// PERMISSION HELPERS
 export const canUserCRUDPracticeVault = (role) => ['teacher', 'super_admin'].includes(role);
 export const canUserCRUDOLevel = (role) => role === 'super_admin';
 export const canUserCRUDShop = (role) => ['teacher', 'shop_admin', 'super_admin'].includes(role);
+export const canUserCRUDLibrary = (role) => ['teacher', 'super_admin'].includes(role);
 
 export const isRTLSubject = (subject) => {
   return subject === 'Dhivehi' || subject === 'Islam' || subject === 'ދިވެހި' || subject === 'އިސްލާމް';
@@ -50,6 +52,7 @@ export const getQuizTimeLimit = (quiz) => {
   return ['maths', 'physics', 'chemistry', 'accounting', 'economics'].includes(subj) ? 120 : 60;
 };
 
+// HYPER-LENIENT SEARCH HELPER
 export const lenientMatch = (targetContent, searchQuery) => {
   if (!searchQuery || searchQuery.trim() === '' || searchQuery === 'All') return true;
 
