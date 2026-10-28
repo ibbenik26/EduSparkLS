@@ -365,21 +365,27 @@ export default function App() {
     }
   };
 
+  // Render Logged-Out Views with Toast Container
   if (!user) {
-    if (authView === 'landing') {
-      return (
-        <LandingPage
-          onGoLogin={() => setAuthView('login')}
-          onGoRegister={() => setAuthView('register')}
-          sponsors={sponsors}
-          setSponsors={setSponsors}
-          showToast={showToast}
-        />
-      );
-    }
-    return <AuthForm authView={authView} setAuthView={setAuthView} showToast={showToast} />;
+    return (
+      <>
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+        {authView === 'landing' ? (
+          <LandingPage
+            onGoLogin={() => setAuthView('login')}
+            onGoRegister={() => setAuthView('register')}
+            sponsors={sponsors}
+            setSponsors={setSponsors}
+            showToast={showToast}
+          />
+        ) : (
+          <AuthForm authView={authView} setAuthView={setAuthView} showToast={showToast} />
+        )}
+      </>
+    );
   }
 
+  // Render Logged-In Application Views
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
       <ToastContainer toasts={toasts} removeToast={removeToast} />

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Sparkles, ArrowRight, HeartHandshake, Building2, Check, X, Phone, Mail, User, ShieldAlert 
+  Sparkles, ArrowRight, HeartHandshake, Building2, Check, X, Phone, Mail, User, ShieldAlert, AlertCircle 
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -318,10 +318,12 @@ export function AuthForm({ authView, setAuthView, showToast }) {
   const [fullName, setFullName] = useState('');
   const [studentGrade, setStudentGrade] = useState(7);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMessage('');
 
     try {
       if (authView === 'login') {
@@ -335,7 +337,7 @@ export function AuthForm({ authView, setAuthView, showToast }) {
           options: {
             data: {
               full_name: fullName,
-              role: 'student', // Hardcoded as Student
+              role: 'student',
               grade: parseInt(studentGrade)
             }
           }
@@ -344,7 +346,12 @@ export function AuthForm({ authView, setAuthView, showToast }) {
         showToast("Registration successful! Check email to confirm.", "success");
       }
     } catch (err) {
-      showToast(err.message || "Authentication error", "error");
+      const formattedMsg = err.message === 'Invalid login credentials' 
+        ? '❌ Incorrect email or password. Please check your credentials and try again.' 
+        : `❌ ${err.message || 'Authentication error'}`;
+
+      setErrorMessage(formattedMsg);
+      if (showToast) showToast(formattedMsg, "error");
     } finally {
       setLoading(false);
     }
@@ -361,6 +368,14 @@ export function AuthForm({ authView, setAuthView, showToast }) {
             {authView === 'login' ? 'Sign In to EduSpark' : 'Student Account Registration'}
           </h2>
         </div>
+
+        {/* Inline Error Alert Box */}
+        {errorMessage && (
+          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-3.5 rounded-2xl flex items-start space-x-2 text-xs leading-relaxed">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <span className="font-semibold">{errorMessage}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs font-medium">
           {authView === 'register' && (
@@ -434,14 +449,14 @@ export function AuthForm({ authView, setAuthView, showToast }) {
           {authView === 'login' ? (
             <p>
               Don't have a student account?{' '}
-              <button onClick={() => setAuthView('register')} className="text-indigo-400 font-bold hover:underline">
+              <button onClick={() => { setErrorMessage(''); setAuthView('register'); }} className="text-indigo-400 font-bold hover:underline">
                 Register here
               </button>
             </p>
           ) : (
             <p>
               Already registered?{' '}
-              <button onClick={() => setAuthView('login')} className="text-indigo-400 font-bold hover:underline">
+              <button onClick={() => { setErrorMessage(''); setAuthView('login'); }} className="text-indigo-400 font-bold hover:underline">
                 Sign in here
               </button>
             </p>
