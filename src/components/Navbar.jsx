@@ -10,7 +10,6 @@ export default function Navbar({
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const allowedTabs = ROLE_TABS[role] || ROLE_TABS.student;
-  const rank = getStudentRank(xp);
 
   const handleTabClick = (tabName) => {
     navigateToTab(tabName);
@@ -121,7 +120,7 @@ export default function Navbar({
           )}
         </nav>
 
-        {/* User Badges, Profile Name & Mobile Toggle */}
+        {/* User Badges, Profile & Mobile Toggle */}
         <div className="flex items-center space-x-2 sm:space-x-3">
           {role === 'student' && (
             <div className="flex items-center space-x-2 bg-slate-800 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-700 text-xs font-mono font-bold">
@@ -150,18 +149,16 @@ export default function Navbar({
             <LogOut className="w-4 h-4" />
           </button>
 
-          {/* Hamburger Menu Button for Mobile View */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="md:hidden p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition focus:outline-none"
-            aria-label="Toggle Navigation Menu"
           >
             {isMobileMenuOpen ? <X className="w-6 h-6 text-cyan-400" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Navigation Dropdown Menu */}
+      {/* Mobile Menu Drawer */}
       {isMobileMenuOpen && (
         <div className="md:hidden bg-slate-950 border-t border-slate-800 px-4 py-4 space-y-2 shadow-2xl">
           <div className="pb-3 border-b border-slate-800/80 flex justify-between items-center sm:hidden">
