@@ -1,130 +1,187 @@
-import React from 'react';
-import { Sparkles, Coins, Trophy, LogOut, User, BookOpen, ShoppingBag, GraduationCap, Shield, Award } from 'lucide-react';
-import { getStudentRank, ROLE_TABS } from '../utils/helpers';
+import React, { useState } from 'react';
+import { 
+  Sparkles, Coins, LogOut, Menu, X, LayoutDashboard, Trophy, 
+  BookOpen, ShoppingBag, Shield, User, Award, HeartHandshake 
+} from 'lucide-react';
+import { ROLE_TABS } from '../utils/helpers';
 
-export default function Navbar({ authName, role, studentGrade, coins, xp, activeTab, navigateToTab, handleLogout }) {
-  const rank = getStudentRank(xp);
+export default function Navbar({
+  authName,
+  role,
+  studentGrade,
+  coins,
+  xp,
+  activeTab,
+  navigateToTab,
+  handleLogout
+}) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   const allowedTabs = ROLE_TABS[role] || ROLE_TABS.student;
-  const isGrade8Plus = studentGrade >= 8 || role !== 'student';
+
+  const tabLabels = {
+    dashboard: { label: 'Practice Vault', icon: <LayoutDashboard className="w-4 h-4" /> },
+    olevel: { label: 'O-Level Arena', icon: <Trophy className="w-4 h-4" /> },
+    leaderboard: { label: 'Leaderboard', icon: <Award className="w-4 h-4" /> },
+    library: { label: 'E-Library', icon: <BookOpen className="w-4 h-4" /> },
+    shop: { label: 'Reward Store', icon: <ShoppingBag className="w-4 h-4" /> },
+    studio: { label: 'Teacher Studio', icon: <Shield className="w-4 h-4" /> },
+    profile: { label: 'My Profile', icon: <User className="w-4 h-4" /> }
+  };
+
+  const handleMobileNav = (tabKey) => {
+    navigateToTab(tabKey);
+    setIsMobileMenuOpen(false);
+  };
 
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigateToTab(allowedTabs[0])}>
-          <div className="bg-gradient-to-tr from-indigo-600 to-indigo-700 p-2.5 rounded-2xl shadow-sm">
+    <header className="bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-40 shadow-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        
+        {/* Brand Logo */}
+        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => handleMobileNav(allowedTabs[0])}>
+          <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-md">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-black text-slate-900 tracking-tight">EduSpark <span className="text-indigo-600">IQ</span></h1>
-            <p className="text-[10px] text-slate-400 font-medium">Digital School Portal</p>
+            <h1 className="font-black text-lg tracking-tight text-white flex items-center space-x-1.5">
+              <span>EduSpark</span>
+              <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">
+                v2.0
+              </span>
+            </h1>
+            <p className="text-[10px] text-slate-400 font-medium hidden sm:block">National Secondary Learning Platform</p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          {role === 'student' && (
-            <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-2xl">
-              <div className="flex items-center space-x-1 text-amber-600 font-black text-xs">
-                <Coins className="w-4 h-4 fill-amber-400 text-amber-600" />
-                <span>{coins}</span>
-              </div>
-              <span className="text-slate-300">|</span>
-              <div className="flex items-center space-x-1 font-bold text-xs">
-                <Trophy className={`w-3.5 h-3.5 ${rank.text}`} />
-                <span className={rank.text}>{rank.title}</span>
-              </div>
+        {/* Desktop Navigation Tabs */}
+        <nav className="hidden md:flex items-center space-x-1">
+          {allowedTabs.map((tabKey) => {
+            const tabObj = tabLabels[tabKey];
+            if (!tabObj) return null;
+            const isActive = activeTab === tabKey;
+
+            return (
+              <button
+                key={tabKey}
+                onClick={() => navigateToTab(tabKey)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 ${
+                  isActive
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                {tabObj.icon}
+                <span>{tabObj.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Desktop Profile & Actions */}
+        <div className="hidden md:flex items-center space-x-3">
+          {/* Coins Display */}
+          <div className="bg-slate-800/90 border border-amber-500/30 px-3 py-1.5 rounded-xl flex items-center space-x-1.5 shadow-inner">
+            <Coins className="w-4 h-4 fill-amber-400 text-amber-400" />
+            <span className="font-mono font-black text-xs text-amber-400">{coins} 🪙</span>
+          </div>
+
+          {/* User Badge */}
+          <div className="flex items-center space-x-2.5 bg-slate-800/80 border border-slate-700/80 px-3 py-1.5 rounded-xl">
+            <div className="w-7 h-7 bg-indigo-600 text-white font-black rounded-lg flex items-center justify-center text-xs">
+              {authName ? authName[0].toUpperCase() : 'U'}
             </div>
-          )}
+            <div className="text-left">
+              <span className="text-xs font-bold text-slate-200 block leading-tight">{authName}</span>
+              <span className="text-[9px] font-bold uppercase text-indigo-400">
+                {role === 'student' ? `Grade ${studentGrade}` : role}
+              </span>
+            </div>
+          </div>
 
+          {/* Logout Button */}
           <button
-            onClick={() => navigateToTab('profile')}
-            className="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 transition px-3 py-1.5 rounded-xl text-xs font-bold text-slate-800"
+            onClick={handleLogout}
+            className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-xl transition"
+            title="Sign Out"
           >
-            <User className="w-4 h-4 text-indigo-600" />
-            <span className="hidden sm:inline">{authName}</span>
-            <span className="bg-indigo-100 text-indigo-800 text-[9px] uppercase px-1.5 py-0.5 rounded font-black">{role}</span>
-          </button>
-
-          <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition">
             <LogOut className="w-4 h-4" />
           </button>
         </div>
-      </div>
 
-      <div className="bg-slate-50 border-t border-slate-200/60">
-        <div className="max-w-7xl mx-auto px-4 flex items-center space-x-1 overflow-x-auto py-2 scrollbar-none whitespace-nowrap">
-          {allowedTabs.includes('dashboard') && (
-            <button
-              onClick={() => navigateToTab('dashboard')}
-              className={`px-3.5 py-1.5 font-bold rounded-xl text-xs transition flex items-center space-x-1.5 ${
-                activeTab === 'dashboard' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
-              }`}
-            >
-              <GraduationCap className="w-3.5 h-3.5" />
-              <span>Practice Vault</span>
-            </button>
-          )}
+        {/* Mobile Hamburger Toggle */}
+        <div className="flex md:hidden items-center space-x-2">
+          <div className="bg-slate-800 border border-amber-500/30 px-2.5 py-1 rounded-lg flex items-center space-x-1">
+            <Coins className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+            <span className="font-mono font-black text-xs text-amber-400">{coins}</span>
+          </div>
 
-          {allowedTabs.includes('olevel') && isGrade8Plus && (
-            <button
-              onClick={() => navigateToTab('olevel')}
-              className={`px-3.5 py-1.5 font-bold rounded-xl text-xs transition flex items-center space-x-1.5 ${
-                activeTab === 'olevel' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>O-Level Arena (Grade 8+)</span>
-            </button>
-          )}
-
-          {allowedTabs.includes('leaderboard') && (
-            <button
-              onClick={() => navigateToTab('leaderboard')}
-              className={`px-3.5 py-1.5 font-bold rounded-xl text-xs transition flex items-center space-x-1.5 ${
-                activeTab === 'leaderboard' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
-              }`}
-            >
-              <Award className="w-3.5 h-3.5" />
-              <span>Leaderboard</span>
-            </button>
-          )}
-
-          {allowedTabs.includes('library') && (
-            <button
-              onClick={() => navigateToTab('library')}
-              className={`px-3.5 py-1.5 font-bold rounded-xl text-xs transition flex items-center space-x-1.5 ${
-                activeTab === 'library' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
-              }`}
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>E-Library</span>
-            </button>
-          )}
-
-          {allowedTabs.includes('shop') && (
-            <button
-              onClick={() => navigateToTab('shop')}
-              className={`px-3.5 py-1.5 font-bold rounded-xl text-xs transition flex items-center space-x-1.5 ${
-                activeTab === 'shop' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
-              }`}
-            >
-              <ShoppingBag className="w-3.5 h-3.5" />
-              <span>Reward Store</span>
-            </button>
-          )}
-
-          {allowedTabs.includes('studio') && (
-            <button
-              onClick={() => navigateToTab('studio')}
-              className={`px-3.5 py-1.5 font-bold rounded-xl text-xs transition flex items-center space-x-1.5 ${
-                activeTab === 'studio' ? 'bg-indigo-800 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
-              }`}
-            >
-              <Shield className="w-3.5 h-3.5" />
-              <span>Teacher Studio (CRUD)</span>
-            </button>
-          )}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition"
+          >
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Menu Drawer Overlay */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden bg-slate-900 border-b border-slate-800 px-4 pt-3 pb-6 space-y-4 animate-fade-in">
+          {/* User Info Bar */}
+          <div className="bg-slate-800/80 border border-slate-700/80 p-3 rounded-2xl flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-indigo-600 text-white font-black rounded-xl flex items-center justify-center text-sm">
+                {authName ? authName[0].toUpperCase() : 'U'}
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-100 text-xs">{authName}</h4>
+                <span className="text-[10px] font-bold uppercase text-indigo-400">
+                  {role === 'student' ? `Grade ${studentGrade} Student` : role}
+                </span>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <span className="text-[10px] text-slate-400 uppercase font-mono block">XP Points</span>
+              <span className="text-xs font-black text-purple-400">{xp} XP</span>
+            </div>
+          </div>
+
+          {/* Navigation Links */}
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            {allowedTabs.map((tabKey) => {
+              const tabObj = tabLabels[tabKey];
+              if (!tabObj) return null;
+              const isActive = activeTab === tabKey;
+
+              return (
+                <button
+                  key={tabKey}
+                  onClick={() => handleMobileNav(tabKey)}
+                  className={`p-3 rounded-xl text-xs font-bold transition flex items-center space-x-2 ${
+                    isActive
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  {tabObj.icon}
+                  <span>{tabObj.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Logout Mobile Action */}
+          <button
+            onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }}
+            className="w-full bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 font-black py-3 rounded-xl text-xs transition flex items-center justify-center space-x-2 pt-3"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out of Account</span>
+          </button>
+        </div>
+      )}
     </header>
   );
 }
