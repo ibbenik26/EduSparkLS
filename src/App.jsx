@@ -70,7 +70,30 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const [lockedChallengeQuizIds, setLockedChallengeQuizIds] = useState([]);
+  
+  // USER-SPECIFIC Completion State
   const [completedQuizModes, setCompletedQuizModes] = useState([]);
+
+  // Sync completion history whenever active user changes
+  useEffect(() => {
+    if (user?.id) {
+      const savedUserCompletions = localStorage.getItem(`edusparkls_completed_${user.id}`);
+      setCompletedQuizModes(savedUserCompletions ? JSON.parse(savedUserCompletions) : []);
+    } else {
+      setCompletedQuizModes([]);
+    }
+  }, [user]);
+
+  // Persist completions specifically for active student ID
+  const recordUserCompletion = (completionKey) => {
+    setCompletedQuizModes(prev => {
+      const updated = [...prev, completionKey];
+      if (user?.id) {
+        localStorage.setItem(`edusparkls_completed_${user.id}`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+  };
 
   // Toast State
   const [toasts, setToasts] = useState([]);
@@ -266,16 +289,17 @@ export default function App() {
     await supabase.auth.signOut();
     setUser(null);
     setActiveQuiz(null);
+    setCompletedQuizModes([]);
     setAuthView('landing');
     showToast("Signed out successfully.", "info");
   };
 
-  // Guard retaking completed timed quizzes
+  // Guard retaking completed timed quizzes for active student
   const startQuiz = (quiz, mode) => {
     const completionKey = `${quiz.id}_${mode}`;
 
     if ((mode === 'challenge' || mode === 'olevel') && completedQuizModes.includes(completionKey)) {
-      showToast("🔒 Quiz Completed! Timed simulation quizzes can only be taken once.", "warning");
+      showToast("🔒 Quiz Completed! You have already claimed your coins for this quiz.", "warning");
       return;
     }
 
@@ -342,8 +366,10 @@ export default function App() {
 
       if (quizMode === 'practice') {
         setLockedChallengeQuizIds(prev => prev.filter(id => id !== activeQuiz.id));
+        recordUserCompletion(completionKey);
         showToast("📖 Practice Mode Completed! Challenge Mode UNLOCKED 🔓 (0 Coins & 0 XP awarded in Practice)", "info");
       } else {
+        // Challenge / O-Level mode: 2 coins per correct answer + 5 bonus coins for 5 hearts intact
         const baseCoins = score * 2;
         const heartBonus = (hearts === 5 && score === activeQuiz.questions.length) ? 5 : 0;
         const totalCoins = baseCoins + heartBonus;
@@ -353,10 +379,10 @@ export default function App() {
           playSound('coin');
           setCoins(c => c + totalCoins);
           setXp(x => x + earnedXp);
-          setCompletedQuizModes(prev => [...prev, completionKey]);
+          recordUserCompletion(completionKey);
 
           const bonusText = heartBonus > 0 ? " (includes +5 Perfect 5-Heart Bonus!)" : "";
-          showToast(`🏆 Challenge Passed! +${totalCoins} Coins${bonusText} & +${earnedXp} XP! Quiz locked for retakes.`, "success");
+          showToast(`🏆 Quiz Passed! +${totalCoins} Coins${bonusText} & +${earnedXp} XP! Quiz locked for retakes.`, "success");
         }
       }
     }

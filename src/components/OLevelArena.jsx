@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Clock, Image as ImageIcon, Play, Filter, BookOpen, Trash2, Search } from 'lucide-react';
+import { Clock, Image as ImageIcon, Play, Filter, BookOpen, Trash2, Search, Check, CheckCircle2 } from 'lucide-react';
 import { ALL_SUBJECTS, isRTLSubject, canUserCRUDOLevel, lenientMatch } from '../utils/helpers';
 
 export default function OLevelArena({
@@ -7,6 +7,7 @@ export default function OLevelArena({
   quizzes,
   setQuizzes,
   startQuiz,
+  completedQuizModes = [],
   onOpenDiagramUpload,
   showToast,
   askConfirm
@@ -15,7 +16,6 @@ export default function OLevelArena({
   const [selectedYear, setSelectedYear] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // O-Level CRUD reserved strictly for Super Admin
   const canEditOLevel = canUserCRUDOLevel(role);
 
   const olevelPapers = quizzes.filter(q => {
@@ -54,7 +54,6 @@ export default function OLevelArena({
           </p>
         </div>
 
-        {/* Super Admin Only Upload Button */}
         {canEditOLevel && (
           <button
             onClick={onOpenDiagramUpload}
@@ -66,15 +65,14 @@ export default function OLevelArena({
         )}
       </div>
 
-      {/* Multi-Parameter & Lenient Search Panel */}
+      {/* Search & Filter Panel */}
       <div className="bg-white border border-slate-200 p-4 rounded-3xl shadow-xs space-y-3">
         <div className="flex items-center space-x-2 text-xs font-bold text-slate-700">
           <Filter className="w-4 h-4 text-purple-600" />
-          <span>Filter Cambridge Papers (Hyper-Lenient Search)</span>
+          <span>Filter Cambridge Papers</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Subject Filter */}
           <div>
             <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Subject</label>
             <select
@@ -87,7 +85,6 @@ export default function OLevelArena({
             </select>
           </div>
 
-          {/* Exam Year Filter */}
           <div>
             <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Exam Year</label>
             <select
@@ -102,16 +99,15 @@ export default function OLevelArena({
             </select>
           </div>
 
-          {/* Lenient Search Box */}
           <div>
-            <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Lenient Paper/Topic Search</label>
+            <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Search Keywords</label>
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Type '2', 'paper 12', 'optics'..."
+                placeholder="Search year or paper..."
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs font-medium text-slate-900 focus:outline-none focus:border-purple-500"
               />
             </div>
@@ -127,6 +123,7 @@ export default function OLevelArena({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {olevelPapers.map((paper) => {
             const isDhivehi = isRTLSubject(paper.subject);
+            const isSimulationCompleted = completedQuizModes.includes(`${paper.id}_olevel`);
 
             return (
               <div key={paper.id} className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 hover:shadow-md transition relative group">
@@ -141,12 +138,10 @@ export default function OLevelArena({
                       <span>{paper.time_limit || 120}s limit</span>
                     </span>
 
-                    {/* Super Admin Delete Action */}
                     {canEditOLevel && (
                       <button
                         onClick={() => handleDeletePaper(paper)}
                         className="text-slate-300 hover:text-rose-600 p-1 rounded-lg transition"
-                        title="Delete O-Level Paper"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -154,9 +149,18 @@ export default function OLevelArena({
                   </div>
                 </div>
 
-                <h3 className={`font-black text-slate-900 text-lg leading-snug ${isDhivehi ? 'font-dhivehi' : ''}`}>
-                  {paper.title}
-                </h3>
+                <div>
+                  <h3 className={`font-black text-slate-900 text-lg leading-snug ${isDhivehi ? 'font-dhivehi' : ''}`}>
+                    {paper.title}
+                  </h3>
+
+                  {isSimulationCompleted && (
+                    <span className="inline-flex items-center space-x-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md mt-1.5">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      <span>Simulation Completed ✅</span>
+                    </span>
+                  )}
+                </div>
 
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <button
@@ -169,10 +173,24 @@ export default function OLevelArena({
 
                   <button
                     onClick={() => startQuiz(paper, 'olevel')}
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1 shadow-xs"
+                    disabled={isSimulationCompleted}
+                    className={`font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1 shadow-xs ${
+                      isSimulationCompleted
+                        ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 cursor-not-allowed font-black'
+                        : 'bg-purple-600 hover:bg-purple-700 text-white'
+                    }`}
                   >
-                    <Play className="w-3.5 h-3.5" />
-                    <span>Timed Simulation</span>
+                    {isSimulationCompleted ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Completed ✅</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5" />
+                        <span>Timed Simulation</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
