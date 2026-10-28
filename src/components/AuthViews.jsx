@@ -21,11 +21,11 @@ export function LandingPage({ onGoLogin, onGoRegister, sponsors, setSponsors, sh
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-600/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Navigation Header */}
+      {/* Navigation Header (Cleaned - "Become a Partner" tab removed from top) */}
       <header className="max-w-7xl w-full mx-auto p-6 flex justify-between items-center relative z-10">
         <div className="flex items-center space-x-3">
           <img 
-            src="Lhohi School Logo PNG.png" 
+            src="/logo.png" 
             alt="Edusparkls Logo" 
             className="w-10 h-10 object-contain drop-shadow-md" 
           />
@@ -36,14 +36,6 @@ export function LandingPage({ onGoLogin, onGoRegister, sponsors, setSponsors, sh
         </div>
 
         <div className="flex items-center space-x-3">
-          <button
-            onClick={() => setShowSponsorModal(true)}
-            className="text-slate-300 hover:text-white text-xs font-bold px-4 py-2 rounded-xl transition flex items-center space-x-1.5 bg-white/5 border border-white/10 hover:bg-white/10"
-          >
-            <HeartHandshake className="w-4 h-4 text-rose-400" />
-            <span>Become a Partner</span>
-          </button>
-
           <button
             onClick={onGoLogin}
             className="text-xs font-bold text-slate-300 hover:text-white px-4 py-2 rounded-xl transition"
@@ -60,7 +52,7 @@ export function LandingPage({ onGoLogin, onGoRegister, sponsors, setSponsors, sh
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* Hero Section (Partner Form retained here in the landing page area) */}
       <main className="max-w-5xl w-full mx-auto px-6 py-12 text-center space-y-8 relative z-10 my-auto">
         <span className="bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 font-bold px-4 py-1.5 rounded-full text-xs uppercase tracking-widest inline-flex items-center space-x-2">
           <span>Students Learning Platform</span>
@@ -115,7 +107,7 @@ export function LandingPage({ onGoLogin, onGoRegister, sponsors, setSponsors, sh
         </div>
       </main>
 
-      {/* Updated Footer */}
+      {/* Footer */}
       <footer className="max-w-7xl w-full mx-auto p-6 text-center text-xs text-slate-500 border-t border-slate-900 relative z-10">
         © 2026 Edusparkls - Students Learning Platform. Designed for Maldivian Curriculum & Secondary Schools.
       </footer>
@@ -372,7 +364,7 @@ export function AuthForm({ authView, setAuthView, showToast }) {
       <div className="bg-slate-900 border border-slate-800 max-w-md w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative">
         <div className="text-center space-y-2">
           <img 
-            src="Lhohi School Logo PNG.png" 
+            src="/logo.png" 
             alt="Edusparkls Logo" 
             className="w-14 h-14 object-contain mx-auto drop-shadow-md" 
           />
