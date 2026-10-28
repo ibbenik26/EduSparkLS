@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Upload, Code, Image as ImageIcon, Trash2, Award, Plus, Sparkles, Shield, Lock } from 'lucide-react';
+import { Upload, Code, Image as ImageIcon, Trash2, Award, Plus, Sparkles, Shield, HeartHandshake, Mail, Phone } from 'lucide-react';
 import { ALL_SUBJECTS, canUserCRUDQuizzes } from '../utils/helpers';
 
 export default function TeacherStudio({
   role, teacherSubject = 'Physics', quizzes, setQuizzes,
   badges, setBadges, ranks, setRanks,
+  sponsors = [], setSponsors,
   showDiagramUploadModal, setShowDiagramUploadModal, showToast, askConfirm
 }) {
-  const [studioTab, setStudioTab] = useState('diagnostics'); // 'diagnostics', 'manage_quizzes', 'json_upload', 'badges_ranks'
+  const [studioTab, setStudioTab] = useState('diagnostics'); // 'diagnostics', 'manage_quizzes', 'json_upload', 'badges_ranks', 'sponsors'
   const [jsonInput, setJsonInput] = useState(`[
   {
     "topic": "Registered Subject Focus",
@@ -95,6 +96,19 @@ export default function TeacherStudio({
     showToast("Updated Rank XP Threshold!", "success");
   };
 
+  // SPONSOR STATUS MANAGEMENT
+  const handleUpdateSponsorStatus = (sponsorId, newStatus) => {
+    setSponsors(sponsors.map(s => s.id === sponsorId ? { ...s, status: newStatus } : s));
+    showToast(`Updated sponsor status to "${newStatus}"!`, "success");
+  };
+
+  const handleDeleteSponsor = (sponsorId) => {
+    askConfirm("Delete Sponsor Application", "Remove this application entry?", () => {
+      setSponsors(sponsors.filter(s => s.id !== sponsorId));
+      showToast("Removed sponsor proposal.", "info");
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-indigo-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
@@ -104,7 +118,7 @@ export default function TeacherStudio({
           </span>
           <h2 className="text-2xl sm:text-3xl font-black">Teacher & Admin Management Studio</h2>
           <p className="text-indigo-200 text-xs max-w-lg">
-            Manage quizzes, student weak topic diagnostics, fast JSON uploads, and custom Academic Badges & Rank levels.
+            Manage quizzes, diagnostics, fast JSON uploads, Academic Badges, and review Sponsor/Partner applications.
           </p>
         </div>
 
@@ -126,7 +140,7 @@ export default function TeacherStudio({
             studioTab === 'diagnostics' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
           }`}
         >
-          Class Topic Diagnostics
+          Class Diagnostics
         </button>
 
         <button
@@ -135,7 +149,17 @@ export default function TeacherStudio({
             studioTab === 'manage_quizzes' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
           }`}
         >
-          Manage Class Papers ({myClassQuizzes.length})
+          Class Papers ({myClassQuizzes.length})
+        </button>
+
+        <button
+          onClick={() => setStudioTab('sponsors')}
+          className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 flex items-center space-x-1 font-bold ${
+            studioTab === 'sponsors' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
+          }`}
+        >
+          <HeartHandshake className="w-3.5 h-3.5 text-rose-400" />
+          <span>Sponsor Proposals ({sponsors.length})</span>
         </button>
 
         <button
@@ -156,7 +180,7 @@ export default function TeacherStudio({
             }`}
           >
             <Code className="w-3.5 h-3.5" />
-            <span>Fast JSON Importer</span>
+            <span>JSON Importer</span>
           </button>
         )}
       </div>
@@ -165,6 +189,77 @@ export default function TeacherStudio({
         <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-xs">
           <h3 className="font-black text-slate-900 text-base">Student Performance Diagnostic ({teacherSubject})</h3>
           <p className="text-xs text-slate-500">Real-time weak topic diagnostics for your registered class.</p>
+        </div>
+      ) : studioTab === 'sponsors' ? (
+        /* SPONSORS & PARTNERS MANAGEMENT VIEW */
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-xs">
+          <div className="flex justify-between items-center border-b pb-4">
+            <div>
+              <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
+                <HeartHandshake className="w-5 h-5 text-rose-600" />
+                <span>Partner & Sponsor Proposals Portal</span>
+              </h3>
+              <p className="text-xs text-slate-500">Review applications submitted from the landing page by parents, businesses, and alumni.</p>
+            </div>
+          </div>
+
+          {sponsors.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 text-xs">No sponsor proposals submitted yet.</div>
+          ) : (
+            <div className="space-y-4">
+              {sponsors.map((sp) => (
+                <div key={sp.id} className="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-3 relative">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-200/80 pb-3">
+                    <div>
+                      <span className="text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-md">
+                        {sp.partnerType} • {sp.contributionType}
+                      </span>
+                      <h4 className="font-black text-slate-900 text-base mt-1">{sp.applicantName}</h4>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <select
+                        value={sp.status || 'Pending Review'}
+                        onChange={(e) => handleUpdateSponsorStatus(sp.id, e.target.value)}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-xl border focus:outline-none ${
+                          sp.status === 'Approved Partner ✅' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                          sp.status === 'Contacted 📞' ? 'bg-indigo-100 text-indigo-800 border-indigo-300' :
+                          'bg-amber-100 text-amber-800 border-amber-300'
+                        }`}
+                      >
+                        <option value="Pending Review">Pending Review ⏳</option>
+                        <option value="Contacted 📞">Contacted 📞</option>
+                        <option value="Approved Partner ✅">Approved Partner ✅</option>
+                      </select>
+
+                      <button
+                        onClick={() => handleDeleteSponsor(sp.id)}
+                        className="p-1.5 text-rose-600 hover:bg-rose-100 rounded-xl transition"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-700 leading-relaxed bg-white border border-slate-100 p-3 rounded-xl">
+                    "{sp.message}"
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500 pt-1">
+                    <span className="flex items-center space-x-1">
+                      <Mail className="w-3.5 h-3.5 text-indigo-600" />
+                      <a href={`mailto:${sp.email}`} className="text-indigo-600 font-bold hover:underline">{sp.email}</a>
+                    </span>
+                    <span className="flex items-center space-x-1">
+                      <Phone className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{sp.phone}</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono ml-auto">Submitted: {sp.date}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ) : studioTab === 'manage_quizzes' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -186,7 +281,6 @@ export default function TeacherStudio({
       ) : studioTab === 'badges_ranks' ? (
         /* BADGES & RANKS MANAGER VIEW */
         <div className="space-y-6">
-          {/* Rank XP Levels Editor */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-xs">
             <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
               <Sparkles className="w-5 h-5 text-indigo-600" />
@@ -213,7 +307,6 @@ export default function TeacherStudio({
             </div>
           </div>
 
-          {/* Badges CRUD */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-6 shadow-xs">
             <div className="flex justify-between items-center border-b pb-4">
               <div>
@@ -225,7 +318,6 @@ export default function TeacherStudio({
               </div>
             </div>
 
-            {/* Add Badge Form */}
             <form onSubmit={handleAddBadge} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3 text-xs">
               <h4 className="font-bold text-slate-800">Add New Achievement Badge</h4>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
@@ -262,12 +354,11 @@ export default function TeacherStudio({
                 type="text"
                 value={badgeDesc}
                 onChange={(e) => setBadgeDesc(e.target.value)}
-                placeholder="Badge Criteria Description (e.g. Complete 3 Science Past Papers)"
+                placeholder="Badge Criteria Description"
                 className="w-full bg-white border rounded-xl p-2.5 text-slate-900"
               />
             </form>
 
-            {/* Existing Badges Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {badges.map(b => (
                 <div key={b.id} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex items-center justify-between">
