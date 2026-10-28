@@ -1,20 +1,26 @@
 import React, { useState } from 'react';
 import { 
   Sparkles, BookOpen, Trophy, ShoppingBag, ShieldCheck, ArrowRight, 
-  HeartHandshake, Building2, Gift, Check, X, Phone, Mail, User
+  HeartHandshake, Building2, Gift, Check, X, Phone, Mail, User, Award, ExternalLink
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-export function LandingPage({ onGoLogin, onGoRegister }) {
+export function LandingPage({ onGoLogin, onGoRegister, sponsors, setSponsors, showToast }) {
   const [showSponsorModal, setShowSponsorModal] = useState(false);
+
+  const partnerLogos = [
+    { name: 'Ministry of Education', icon: '🇲🇻', type: 'Government Partner' },
+    { name: 'Bank of Maldives', icon: '🏦', type: 'Fintech Sponsor' },
+    { name: 'Dhiraagu Telecom', icon: '📡', type: 'Digital Connectivity' },
+    { name: 'Ooredoo Maldives', icon: '📱', type: 'EdTech Sponsor' },
+    { name: 'Majeedhiyya Alumni', icon: '🎓', type: 'School Foundation' }
+  ];
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-between font-sans relative overflow-hidden">
-      {/* Background Lighting */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Top Navigation */}
       <header className="max-w-7xl w-full mx-auto p-6 flex justify-between items-center relative z-10">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
@@ -29,7 +35,7 @@ export function LandingPage({ onGoLogin, onGoRegister }) {
             className="text-slate-300 hover:text-white text-xs font-bold px-4 py-2 rounded-xl transition flex items-center space-x-1.5 bg-white/5 border border-white/10 hover:bg-white/10"
           >
             <HeartHandshake className="w-4 h-4 text-rose-400" />
-            <span>Become a Sponsor / Partner</span>
+            <span>Become a Partner</span>
           </button>
 
           <button
@@ -48,11 +54,10 @@ export function LandingPage({ onGoLogin, onGoRegister }) {
         </div>
       </header>
 
-      {/* Hero Content */}
-      <main className="max-w-4xl w-full mx-auto px-6 py-16 text-center space-y-8 relative z-10 my-auto">
+      <main className="max-w-5xl w-full mx-auto px-6 py-12 text-center space-y-8 relative z-10 my-auto">
         <span className="bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 font-bold px-4 py-1.5 rounded-full text-xs uppercase tracking-widest inline-flex items-center space-x-2">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Interactive Student Learning Platform</span>
+          <span>National Educational Ecosystem v2.0</span>
         </span>
 
         <h1 className="text-4xl sm:text-6xl font-black text-white leading-tight tracking-tight">
@@ -63,7 +68,7 @@ export function LandingPage({ onGoLogin, onGoRegister }) {
           Empowering students with curriculum-aligned practice vaults, 5-heart challenges, automated e-library rewards, and dynamic rank progression.
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
           <button
             onClick={onGoRegister}
             className="w-full sm:w-auto bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 hover:opacity-95 text-white font-black px-8 py-4 rounded-2xl text-sm shadow-xl transition flex items-center justify-center space-x-2"
@@ -80,22 +85,46 @@ export function LandingPage({ onGoLogin, onGoRegister }) {
             <span>Sponsor Rewards / Partner Form</span>
           </button>
         </div>
+
+        <div className="pt-12 border-t border-slate-800/80 space-y-4">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            Trusted & Supported By Secondary Education Partners
+          </span>
+
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+            {partnerLogos.map((p, idx) => (
+              <div
+                key={idx}
+                className="bg-slate-900/80 border border-slate-800 hover:border-slate-700 px-4 py-2.5 rounded-2xl flex items-center space-x-2.5 transition"
+              >
+                <span className="text-xl">{p.icon}</span>
+                <div className="text-left">
+                  <span className="text-xs font-bold text-slate-200 block">{p.name}</span>
+                  <span className="text-[9px] text-indigo-400 font-medium">{p.type}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </main>
 
-      {/* Footer */}
       <footer className="max-w-7xl w-full mx-auto p-6 text-center text-xs text-slate-500 border-t border-slate-900 relative z-10">
         © 2026 EduSpark Learning Platform. Designed for Maldivian Curriculum & Secondary Schools.
       </footer>
 
-      {/* Sponsor & Partner Registration Modal */}
       {showSponsorModal && (
-        <SponsorPartnerModal onClose={() => setShowSponsorModal(false)} />
+        <SponsorPartnerModal
+          sponsors={sponsors}
+          setSponsors={setSponsors}
+          showToast={showToast}
+          onClose={() => setShowSponsorModal(false)}
+        />
       )}
     </div>
   );
 }
 
-function SponsorPartnerModal({ onClose }) {
+function SponsorPartnerModal({ sponsors, setSponsors, showToast, onClose }) {
   const [applicantName, setApplicantName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -104,9 +133,42 @@ function SponsorPartnerModal({ onClose }) {
   const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const newSponsorEntry = {
+      id: `sp_${Date.now()}`,
+      applicantName,
+      email,
+      phone,
+      partnerType,
+      contributionType,
+      message,
+      status: 'Pending Review ⏳',
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    // 1. Update React State & Local Cache
+    setSponsors(prev => [newSponsorEntry, ...(prev || [])]);
     setSubmitted(true);
+
+    // 2. Direct Sync to Supabase Table
+    try {
+      await supabase.from('sponsors').insert([{
+        id: newSponsorEntry.id,
+        applicant_name: applicantName,
+        email: email,
+        phone: phone,
+        partner_type: partnerType,
+        contribution_type: contributionType,
+        message: message,
+        status: 'Pending Review ⏳'
+      }]);
+    } catch (err) {
+      console.warn("Supabase insert error (cached locally):", err);
+    }
+
+    if (showToast) showToast("🎉 Partnership Proposal Submitted!", "success");
   };
 
   return (
@@ -121,9 +183,9 @@ function SponsorPartnerModal({ onClose }) {
             <div className="space-y-1">
               <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 bg-rose-500/20 px-3 py-1 rounded-full border border-rose-500/30 inline-flex items-center space-x-1.5">
                 <HeartHandshake className="w-3.5 h-3.5" />
-                <span>Partner & Sponsor Application</span>
+                <span>Partner & Sponsor Portal</span>
               </span>
-              <h3 className="text-xl sm:text-2xl font-black text-white pt-1">Become an EduSpark Sponsor</h3>
+              <h3 className="text-xl sm:text-2xl font-black text-white pt-1">Become an EduSpark Partner</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Parents, corporate sponsors, and alumni can partner with us to fund student physical merchandise, stationery rewards, or school grants.
               </p>
@@ -236,7 +298,7 @@ function SponsorPartnerModal({ onClose }) {
             <div className="space-y-1">
               <h3 className="text-xl font-black text-white">Application Received!</h3>
               <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
-                Thank you, <strong className="text-white font-bold">{applicantName}</strong>. Our school administration team will review your sponsorship details and reach out to you at <strong className="text-indigo-400 font-bold">{email}</strong>.
+                Thank you, <strong className="text-white font-bold">{applicantName}</strong>. Our school administration team will review your sponsorship proposal and reach out to you at <strong className="text-indigo-400 font-bold">{email}</strong>.
               </p>
             </div>
 

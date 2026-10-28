@@ -34,9 +34,31 @@ export default function App() {
   const [readingHours, setReadingHours] = useState(5.5);
   const [claimedCodes, setClaimedCodes] = useState([]);
 
-  // Badges & Ranks Global State
+  // Badges & Ranks State
   const [badges, setBadges] = useState(INITIAL_BADGES);
   const [ranks, setRanks] = useState(INITIAL_RANKS);
+
+  // Persistent Sponsor Proposals State
+  const [sponsors, setSponsors] = useState(() => {
+    const saved = localStorage.getItem('eduspark_sponsors');
+    return saved ? JSON.parse(saved) : [
+      {
+        id: 'sp_1',
+        applicantName: 'Bank of Maldives CSR Team',
+        email: 'csr@bml.com.mv',
+        phone: '+960 333-0200',
+        partnerType: 'Corporate Partner',
+        contributionType: 'Physical Goods / Stationery',
+        message: 'We wish to sponsor 100 Geometry Kits and Stationery sets for top student quiz scorers.',
+        status: 'Approved Partner ✅',
+        date: '2026-10-24'
+      }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('eduspark_sponsors', JSON.stringify(sponsors));
+  }, [sponsors]);
 
   const [quizzes, setQuizzes] = useState(INITIAL_QUIZZES);
   const [books, setBooks] = useState(INITIAL_BOOKS);
@@ -47,10 +69,7 @@ export default function App() {
   const [allProfiles, setAllProfiles] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // Track Quizzes with Locked Challenge Mode (when hearts hit 0)
   const [lockedChallengeQuizIds, setLockedChallengeQuizIds] = useState([]);
-
-  // Anti-Coin Farming Completion Tracker: Stores "quizId_mode" keys that already claimed coins
   const [completedQuizModes, setCompletedQuizModes] = useState([]);
 
   // Toast State
@@ -73,7 +92,7 @@ export default function App() {
     });
   };
 
-  // Quiz Execution Modal State
+  // Quiz Modal State
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [quizMode, setQuizMode] = useState('practice');
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
@@ -88,7 +107,6 @@ export default function App() {
 
   const [showDiagramUploadModal, setShowDiagramUploadModal] = useState(false);
 
-  // SPA History Back Button Handler
   useEffect(() => {
     const handlePopState = () => {
       if (activeQuiz) {
@@ -119,7 +137,6 @@ export default function App() {
     window.history.pushState({ tab: tabName }, '', `#${tabName}`);
   };
 
-  // Active Quiz Countdown Timer
   useEffect(() => {
     let timer = null;
     if (activeQuiz && (quizMode === 'challenge' || quizMode === 'olevel') && !quizFinished && !gameOver) {
@@ -159,8 +176,31 @@ export default function App() {
     });
 
     fetchAllProfiles();
+    fetchSponsorsFromSupabase();
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchSponsorsFromSupabase = async () => {
+    try {
+      const { data } = await supabase.from('sponsors').select('*').order('created_at', { ascending: false });
+      if (data && data.length > 0) {
+        const mapped = data.map(d => ({
+          id: d.id,
+          applicantName: d.applicant_name,
+          email: d.email,
+          phone: d.phone,
+          partnerType: d.partner_type,
+          contributionType: d.contribution_type,
+          message: d.message,
+          status: d.status || 'Pending Review ⏳',
+          date: d.created_at ? d.created_at.split('T')[0] : new Date().toISOString().split('T')[0]
+        }));
+        setSponsors(mapped);
+      }
+    } catch (e) {
+      console.warn("Supabase sponsors fetch info:", e);
+    }
+  };
 
   const fetchAllProfiles = async () => {
     try {
@@ -231,7 +271,6 @@ export default function App() {
   };
 
   const startQuiz = (quiz, mode) => {
-    // Lock Guard: If Challenge Mode is locked because hearts ran out earlier
     if (mode === 'challenge' && lockedChallengeQuizIds.includes(quiz.id)) {
       showToast("🔒 Challenge Locked! Hearts ran out earlier. Complete Practice Mode first to re-unlock!", "warning");
       return;
@@ -295,7 +334,6 @@ export default function App() {
       const isFirstTimeCompletion = !completedQuizModes.includes(completionKey);
 
       if (quizMode === 'practice') {
-        // Unlocks Challenge Mode for this quiz ID
         setLockedChallengeQuizIds(prev => prev.filter(id => id !== activeQuiz.id));
 
         if (isFirstTimeCompletion) {
@@ -306,13 +344,11 @@ export default function App() {
           setCompletedQuizModes(prev => [...prev, completionKey]);
           showToast(`🎉 Practice Completed! Challenge Mode UNLOCKED 🔓 (+${earnedCoins} Coins & +${earnedXp} XP)`, "success");
         } else {
-          // Repeated completion: 0 extra coins, small token XP
           const tokenXp = score * 5;
           setXp(x => x + tokenXp);
           showToast(`📖 Practice Finished! (+${tokenXp} XP). No extra coins awarded for redoing the same quiz.`, "info");
         }
       } else {
-        // Challenge / O-Level Timed Mode
         if (isFirstTimeCompletion) {
           const earnedCoins = score * 20;
           const earnedXp = score * 40;
@@ -331,7 +367,15 @@ export default function App() {
 
   if (!user) {
     if (authView === 'landing') {
-      return <LandingPage onGoLogin={() => setAuthView('login')} onGoRegister={() => setAuthView('register')} />;
+      return (
+        <LandingPage
+          onGoLogin={() => setAuthView('login')}
+          onGoRegister={() => setAuthView('register')}
+          sponsors={sponsors}
+          setSponsors={setSponsors}
+          showToast={showToast}
+        />
+      );
     }
     return <AuthForm authView={authView} setAuthView={setAuthView} showToast={showToast} />;
   }
@@ -425,6 +469,8 @@ export default function App() {
             setBadges={setBadges}
             ranks={ranks}
             setRanks={setRanks}
+            sponsors={sponsors}
+            setSponsors={setSponsors}
             showDiagramUploadModal={showDiagramUploadModal}
             setShowDiagramUploadModal={setShowDiagramUploadModal}
             showToast={showToast}
