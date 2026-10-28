@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Sparkles, ArrowRight, HeartHandshake, Building2, Check, X, Phone, Mail, User, ShieldAlert, AlertCircle 
+  ArrowRight, HeartHandshake, Building2, Check, X, Phone, Mail, User, ShieldAlert, AlertCircle 
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -17,15 +17,22 @@ export function LandingPage({ onGoLogin, onGoRegister, sponsors, setSponsors, sh
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-between font-sans relative overflow-hidden">
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
+      {/* Background Lighting */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-600/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
 
+      {/* Navigation Header */}
       <header className="max-w-7xl w-full mx-auto p-6 flex justify-between items-center relative z-10">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-            <Sparkles className="w-5 h-5 text-white" />
+          <img 
+            src="Lhohi School Logo PNG.png" 
+            alt="Edusparkls Logo" 
+            className="w-10 h-10 object-contain drop-shadow-md" 
+          />
+          <div className="flex flex-col">
+            <span className="font-black text-xl tracking-tight text-white leading-none">Edusparkls</span>
+            <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-widest pt-0.5">Students Learning Platform</span>
           </div>
-          <span className="font-black text-xl tracking-tight">EduSpark</span>
         </div>
 
         <div className="flex items-center space-x-3">
@@ -46,17 +53,17 @@ export function LandingPage({ onGoLogin, onGoRegister, sponsors, setSponsors, sh
 
           <button
             onClick={onGoRegister}
-            className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-black text-xs px-5 py-2.5 rounded-xl shadow-lg transition"
+            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-black text-xs px-5 py-2.5 rounded-xl shadow-lg transition"
           >
             Student Register
           </button>
         </div>
       </header>
 
+      {/* Hero Section */}
       <main className="max-w-5xl w-full mx-auto px-6 py-12 text-center space-y-8 relative z-10 my-auto">
-        <span className="bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 font-bold px-4 py-1.5 rounded-full text-xs uppercase tracking-widest inline-flex items-center space-x-2">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>National Educational Ecosystem v2.0</span>
+        <span className="bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 font-bold px-4 py-1.5 rounded-full text-xs uppercase tracking-widest inline-flex items-center space-x-2">
+          <span>Students Learning Platform</span>
         </span>
 
         <h1 className="text-4xl sm:text-6xl font-black text-white leading-tight tracking-tight">
@@ -70,7 +77,7 @@ export function LandingPage({ onGoLogin, onGoRegister, sponsors, setSponsors, sh
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
           <button
             onClick={onGoRegister}
-            className="w-full sm:w-auto bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 hover:opacity-95 text-white font-black px-8 py-4 rounded-2xl text-sm shadow-xl transition flex items-center justify-center space-x-2"
+            className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:opacity-95 text-white font-black px-8 py-4 rounded-2xl text-sm shadow-xl transition flex items-center justify-center space-x-2"
           >
             <span>Join as Student</span>
             <ArrowRight className="w-4 h-4" />
@@ -85,6 +92,7 @@ export function LandingPage({ onGoLogin, onGoRegister, sponsors, setSponsors, sh
           </button>
         </div>
 
+        {/* Partner Logos Banner */}
         <div className="pt-12 border-t border-slate-800/80 space-y-4">
           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
             Trusted & Supported By Secondary Education Partners
@@ -99,7 +107,7 @@ export function LandingPage({ onGoLogin, onGoRegister, sponsors, setSponsors, sh
                 <span className="text-xl">{p.icon}</span>
                 <div className="text-left">
                   <span className="text-xs font-bold text-slate-200 block">{p.name}</span>
-                  <span className="text-[9px] text-indigo-400 font-medium">{p.type}</span>
+                  <span className="text-[9px] text-cyan-400 font-medium">{p.type}</span>
                 </div>
               </div>
             ))}
@@ -107,10 +115,12 @@ export function LandingPage({ onGoLogin, onGoRegister, sponsors, setSponsors, sh
         </div>
       </main>
 
+      {/* Updated Footer */}
       <footer className="max-w-7xl w-full mx-auto p-6 text-center text-xs text-slate-500 border-t border-slate-900 relative z-10">
-        © 2026 EduSpark Learning Platform. Designed for Maldivian Curriculum & Secondary Schools.
+        © 2026 Edusparkls - Students Learning Platform. Designed for Maldivian Curriculum & Secondary Schools.
       </footer>
 
+      {/* Sponsor Application Modal */}
       {showSponsorModal && (
         <SponsorPartnerModal
           sponsors={sponsors}
@@ -182,9 +192,9 @@ function SponsorPartnerModal({ sponsors, setSponsors, showToast, onClose }) {
                 <HeartHandshake className="w-3.5 h-3.5" />
                 <span>Partner & Sponsor Portal</span>
               </span>
-              <h3 className="text-xl sm:text-2xl font-black text-white pt-1">Become an EduSpark Partner</h3>
+              <h3 className="text-xl sm:text-2xl font-black text-white pt-1">Become an Edusparkls Partner</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Parents, corporate sponsors, and alumni can partner with us to fund student physical merchandise, stationery rewards, or school grants.
+                Parents, corporate sponsors, and alumni can partner with Edusparkls to fund student physical merchandise, stationery rewards, or school grants.
               </p>
             </div>
 
@@ -198,7 +208,7 @@ function SponsorPartnerModal({ sponsors, setSponsors, showToast, onClose }) {
                     value={applicantName}
                     onChange={(e) => setApplicantName(e.target.value)}
                     placeholder="e.g. Hassan Ibrahim (Parent) or Apex Maldives"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-white text-xs focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-white text-xs focus:outline-none focus:border-cyan-500"
                     required
                   />
                 </div>
@@ -214,7 +224,7 @@ function SponsorPartnerModal({ sponsors, setSponsors, showToast, onClose }) {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="sponsor@domain.com"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-white text-xs focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-white text-xs focus:outline-none focus:border-cyan-500"
                       required
                     />
                   </div>
@@ -229,7 +239,7 @@ function SponsorPartnerModal({ sponsors, setSponsors, showToast, onClose }) {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+960 790-0000"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-white text-xs focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-white text-xs focus:outline-none focus:border-cyan-500"
                       required
                     />
                   </div>
@@ -242,7 +252,7 @@ function SponsorPartnerModal({ sponsors, setSponsors, showToast, onClose }) {
                   <select
                     value={partnerType}
                     onChange={(e) => setPartnerType(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-indigo-300 font-bold focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-cyan-300 font-bold focus:outline-none"
                   >
                     <option value="Parent Sponsor">Parent Sponsor</option>
                     <option value="Corporate Partner">Corporate Partner</option>
@@ -273,14 +283,14 @@ function SponsorPartnerModal({ sponsors, setSponsors, showToast, onClose }) {
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Describe items you wish to donate or sponsorship details..."
                   rows={3}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs focus:outline-none focus:border-cyan-500"
                   required
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 hover:opacity-95 text-white font-black py-3.5 rounded-xl text-xs shadow-lg transition"
+                className="w-full bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:opacity-95 text-white font-black py-3.5 rounded-xl text-xs shadow-lg transition"
               >
                 Submit Partnership Application 🚀
               </button>
@@ -295,7 +305,7 @@ function SponsorPartnerModal({ sponsors, setSponsors, showToast, onClose }) {
             <div className="space-y-1">
               <h3 className="text-xl font-black text-white">Application Received!</h3>
               <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
-                Thank you, <strong className="text-white font-bold">{applicantName}</strong>. Our school administration team will review your sponsorship proposal and reach out to you at <strong className="text-indigo-400 font-bold">{email}</strong>.
+                Thank you, <strong className="text-white font-bold">{applicantName}</strong>. Our administration team will review your sponsorship proposal for <strong className="text-cyan-400 font-bold">Edusparkls</strong> and reach out to you at <strong className="text-cyan-400 font-bold">{email}</strong>.
               </p>
             </div>
 
@@ -361,12 +371,15 @@ export function AuthForm({ authView, setAuthView, showToast }) {
     <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4 font-sans">
       <div className="bg-slate-900 border border-slate-800 max-w-md w-full rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative">
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
-            <Sparkles className="w-6 h-6 text-white" />
-          </div>
+          <img 
+            src="Lhohi School Logo PNG.png" 
+            alt="Edusparkls Logo" 
+            className="w-14 h-14 object-contain mx-auto drop-shadow-md" 
+          />
           <h2 className="text-2xl font-black text-white tracking-tight">
-            {authView === 'login' ? 'Sign In to EduSpark' : 'Student Account Registration'}
+            {authView === 'login' ? 'Sign In to Edusparkls' : 'Student Account Registration'}
           </h2>
+          <p className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">Students Learning Platform</p>
         </div>
 
         {/* Inline Error Alert Box */}
@@ -387,7 +400,7 @@ export function AuthForm({ authView, setAuthView, showToast }) {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="e.g. Aminath Sarah"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs focus:outline-none focus:border-cyan-500"
                   required
                 />
               </div>
@@ -397,7 +410,7 @@ export function AuthForm({ authView, setAuthView, showToast }) {
                 <select
                   value={studentGrade}
                   onChange={(e) => setStudentGrade(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-purple-300 font-bold focus:outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-cyan-300 font-bold focus:outline-none"
                 >
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => (
                     <option key={g} value={g}>Grade {g}</option>
@@ -419,7 +432,7 @@ export function AuthForm({ authView, setAuthView, showToast }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="user@school.edu"
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs focus:outline-none focus:border-indigo-500"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs focus:outline-none focus:border-cyan-500"
               required
             />
           </div>
@@ -431,7 +444,7 @@ export function AuthForm({ authView, setAuthView, showToast }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs focus:outline-none focus:border-indigo-500"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs focus:outline-none focus:border-cyan-500"
               required
             />
           </div>
@@ -439,7 +452,7 @@ export function AuthForm({ authView, setAuthView, showToast }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 hover:opacity-95 text-white font-black py-3.5 rounded-xl text-xs shadow-lg transition"
+            className="w-full bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:opacity-95 text-white font-black py-3.5 rounded-xl text-xs shadow-lg transition"
           >
             {loading ? 'Processing...' : authView === 'login' ? 'Sign In' : 'Register Student Account'}
           </button>
@@ -449,14 +462,14 @@ export function AuthForm({ authView, setAuthView, showToast }) {
           {authView === 'login' ? (
             <p>
               Don't have a student account?{' '}
-              <button onClick={() => { setErrorMessage(''); setAuthView('register'); }} className="text-indigo-400 font-bold hover:underline">
+              <button onClick={() => { setErrorMessage(''); setAuthView('register'); }} className="text-cyan-400 font-bold hover:underline">
                 Register here
               </button>
             </p>
           ) : (
             <p>
               Already registered?{' '}
-              <button onClick={() => { setErrorMessage(''); setAuthView('login'); }} className="text-indigo-400 font-bold hover:underline">
+              <button onClick={() => { setErrorMessage(''); setAuthView('login'); }} className="text-cyan-400 font-bold hover:underline">
                 Sign in here
               </button>
             </p>
