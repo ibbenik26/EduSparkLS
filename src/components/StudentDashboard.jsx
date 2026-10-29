@@ -21,6 +21,9 @@ export default function StudentDashboard({
   const canEditVault = canUserCRUDPracticeVault(role);
 
   const filteredQuizzes = quizzes.filter(q => {
+    // O-Level past papers live in the Cambridge Arena only (otherwise they could be farmed for coins twice)
+    if (q.is_past_paper) return false;
+
     const matchesGrade = role === 'student'
       ? parseInt(q.grade) === parseInt(grade)
       : parseInt(q.grade) === parseInt(selectedGrade);

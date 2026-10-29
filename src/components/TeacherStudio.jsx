@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Upload, Code, Image as ImageIcon, Trash2, Award, Plus, Sparkles, HeartHandshake, Mail, Phone } from 'lucide-react';
+import { Upload, Code, Image as ImageIcon, Trash2, Award, Plus, Sparkles, HeartHandshake, Mail, Phone, Users } from 'lucide-react';
 import { canUserCRUDPracticeVault } from '../utils/helpers';
+import { normalizeQuestions } from '../utils/quizValidation';
+import TeacherStudentTracker from './TeacherStudentTracker';
 
 export default function TeacherStudio({
   role, teacherSubject = 'Physics', quizzes, onAddQuiz, onDeleteQuiz,
-  badges, setBadges, ranks, setRanks,
-  sponsors = [], setSponsors,
-  showDiagramUploadModal, setShowDiagramUploadModal, showToast, askConfirm
+  badges, onAddBadge, onDeleteBadge, ranks, setRanks,
+  sponsors = [], onUpdateSponsorStatus, onDeleteSponsor,
+  onOpenDiagramUpload, showToast, askConfirm
 }) {
   const [studioTab, setStudioTab] = useState('manage_quizzes');
   const [jsonInput, setJsonInput] = useState(`[
@@ -18,6 +20,7 @@ export default function TeacherStudio({
   }
 ]`);
 
+  const [importGrade, setImportGrade] = useState(10);
   const [badgeName, setBadgeName] = useState('');
   const [badgeIcon, setBadgeIcon] = useState('🏆');
   const [badgeDesc, setBadgeDesc] = useState('');
@@ -33,41 +36,46 @@ export default function TeacherStudio({
   const handleImportJson = async () => {
     if (!canEditVault) return showToast("❌ Permission Denied!", "error");
 
+    let parsed;
     try {
-      const parsed = JSON.parse(jsonInput);
-      if (!Array.isArray(parsed)) throw new Error("JSON must be an array of questions.");
-
-      const newQuiz = {
-        id: `quiz_json_${Date.now()}`,
-        title: `${teacherSubject} Grade 10 Practice Paper`,
-        subject: teacherSubject,
-        grade: 10,
-        subject_code: '0625',
-        exam_year: 2026,
-        variant: 'Teacher Custom',
-        is_past_paper: false,
-        has_diagrams: parsed.some(q => !!q.diagram_url),
-        questions: parsed
-      };
-
-      await onAddQuiz(newQuiz);
-      showToast(`🎉 Published ${teacherSubject} paper with ${parsed.length} questions to Supabase!`, "success");
+      parsed = JSON.parse(jsonInput);
     } catch (e) {
-      showToast("❌ Invalid JSON format: " + e.message, "error");
+      return showToast("❌ Invalid JSON format: " + e.message, "error");
     }
+
+    const { questions, errors } = normalizeQuestions(parsed, { defaultTopic: teacherSubject });
+    if (errors.length) {
+      return showToast(`❌ ${errors.slice(0, 3).join('\n')}${errors.length > 3 ? `\n...and ${errors.length - 3} more` : ''}`, "error");
+    }
+
+    const newQuiz = {
+      id: `quiz_json_${Date.now()}`,
+      title: `${teacherSubject} Grade ${importGrade} Practice Paper`,
+      subject: teacherSubject,
+      grade: parseInt(importGrade),
+      subject_code: '',
+      exam_year: null,
+      variant: 'Teacher Custom',
+      is_past_paper: false,
+      has_diagrams: questions.some(q => !!q.diagram_url),
+      questions
+    };
+
+    // handleAddQuiz in App shows its own success / error toast
+    await onAddQuiz(newQuiz);
   };
 
   const handleDeleteQuizAction = (quiz) => {
     if (!canEditVault) return;
-    askConfirm("Delete Exam Paper", `Remove "${quiz.title}" from the database?`, () => {
-      onDeleteQuiz(quiz.id);
-      showToast(`Deleted paper "${quiz.title}".`, "info");
+    askConfirm("Delete Exam Paper", `Remove "${quiz.title}" from the database?`, async () => {
+      const ok = await onDeleteQuiz(quiz.id);
+      if (ok) showToast(`Deleted paper "${quiz.title}".`, "info");
     });
   };
 
-  const handleAddBadge = (e) => {
+  const handleAddBadge = async (e) => {
     e.preventDefault();
-    if (!badgeName) return showToast("Enter badge name.", "warning");
+    if (!badgeName.trim()) return showToast("Enter badge name.", "warning");
 
     const newBadge = {
       id: `badge_${Date.now()}`,
@@ -77,33 +85,25 @@ export default function TeacherStudio({
       reqXp: parseInt(badgeReqXp)
     };
 
-    setBadges([...badges, newBadge]);
-    setBadgeName(''); setBadgeDesc('');
-    showToast(`🎉 Added new badge "${badgeName}"!`, "success");
+    const ok = await onAddBadge(newBadge);
+    if (ok) { setBadgeName(''); setBadgeDesc(''); }
   };
 
   const handleDeleteBadge = (badgeId) => {
-    askConfirm("Delete Badge", "Delete this achievement badge?", () => {
-      setBadges(badges.filter(b => b.id !== badgeId));
-      showToast("Deleted badge.", "info");
+    askConfirm("Delete Badge", "Delete this achievement badge?", async () => {
+      const ok = await onDeleteBadge(badgeId);
+      if (ok) showToast("Deleted badge.", "info");
     });
   };
 
   const handleUpdateRankMinXp = (rankId, newMinXp) => {
     setRanks(ranks.map(r => r.id === rankId ? { ...r, minXp: parseInt(newMinXp) || 0 } : r));
-    showToast("Updated Rank XP Threshold!", "success");
   };
 
-  const handleUpdateSponsorStatus = (sponsorId, newStatus) => {
-    setSponsors(sponsors.map(s => s.id === sponsorId ? { ...s, status: newStatus } : s));
-    showToast(`Updated sponsor status to "${newStatus}"!`, "success");
-  };
+  const handleUpdateSponsorStatus = (sponsorId, newStatus) => onUpdateSponsorStatus(sponsorId, newStatus);
 
   const handleDeleteSponsor = (sponsorId) => {
-    askConfirm("Delete Sponsor Application", "Remove this application entry?", () => {
-      setSponsors(sponsors.filter(s => s.id !== sponsorId));
-      showToast("Removed sponsor proposal.", "info");
-    });
+    askConfirm("Delete Sponsor Application", "Remove this application entry?", () => onDeleteSponsor(sponsorId));
   };
 
   return (
@@ -125,7 +125,7 @@ export default function TeacherStudio({
 
         {canEditVault && (
           <button
-            onClick={() => setShowDiagramUploadModal(true)}
+            onClick={onOpenDiagramUpload}
             className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-3 rounded-2xl text-xs shadow-md transition shrink-0 flex items-center space-x-1.5"
           >
             <ImageIcon className="w-4 h-4" />
@@ -167,6 +167,16 @@ export default function TeacherStudio({
             </button>
           </>
         )}
+
+        <button
+          onClick={() => setStudioTab('tracker')}
+          className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 flex items-center space-x-1.5 ${
+            studioTab === 'tracker' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-700'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>Student Tracker</span>
+        </button>
 
         <button
           onClick={() => setStudioTab('json_upload')}
@@ -288,6 +298,7 @@ export default function TeacherStudio({
                       type="number"
                       value={r.minXp}
                       onChange={(e) => handleUpdateRankMinXp(r.id, e.target.value)}
+                      onBlur={() => showToast("Rank XP threshold updated (applies for this session).", "info")}
                       className="w-full bg-white border rounded-lg p-1 text-center font-bold text-cyan-700 text-xs"
                     />
                   </div>
@@ -373,9 +384,20 @@ export default function TeacherStudio({
             </div>
           </div>
         </div>
+      ) : studioTab === 'tracker' ? (
+        <TeacherStudentTracker defaultSubject={teacherSubject} />
       ) : (
         <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-xs">
-          <h3 className="font-black text-slate-900 text-lg">Fast JSON Importer for {teacherSubject}</h3>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="font-black text-slate-900 text-lg">Fast JSON Importer for {teacherSubject}</h3>
+            <select
+              value={importGrade}
+              onChange={(e) => setImportGrade(e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-cyan-700"
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => <option key={g} value={g}>Grade {g}</option>)}
+            </select>
+          </div>
           <textarea
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
@@ -387,7 +409,7 @@ export default function TeacherStudio({
             className="bg-cyan-600 hover:bg-cyan-700 text-white font-black px-6 py-3 rounded-2xl text-xs shadow-md transition flex items-center space-x-2"
           >
             <Upload className="w-4 h-4" />
-            <span>Publish {teacherSubject} Paper to Supabase</span>
+            <span>Publish {teacherSubject} Paper (Grade {importGrade})</span>
           </button>
         </div>
       )}

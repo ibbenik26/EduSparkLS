@@ -149,11 +149,8 @@ function SponsorPartnerModal({ sponsors, setSponsors, showToast, onClose }) {
       date: new Date().toISOString().split('T')[0]
     };
 
-    setSponsors(prev => [newSponsorEntry, ...(prev || [])]);
-    setSubmitted(true);
-
     try {
-      await supabase.from('sponsors').insert([{
+      const { error: insertError } = await supabase.from('sponsors').insert([{
         id: newSponsorEntry.id,
         applicant_name: applicantName,
         email: email,
@@ -163,10 +160,15 @@ function SponsorPartnerModal({ sponsors, setSponsors, showToast, onClose }) {
         message: message,
         status: 'Pending Review ⏳'
       }]);
+      if (insertError) throw insertError;
     } catch (err) {
       console.warn("Supabase insert info:", err);
+      if (showToast) showToast("❌ Could not submit your proposal. Please try again in a moment.", "error");
+      return;
     }
 
+    setSponsors(prev => [newSponsorEntry, ...(prev || [])]);
+    setSubmitted(true);
     if (showToast) showToast("🎉 Partnership Proposal Submitted!", "success");
   };
 
@@ -333,6 +335,7 @@ export function AuthForm({ authView, setAuthView, showToast }) {
         if (error) throw error;
         showToast("Welcome back!", "success");
       } else {
+        if (password.length < 6) throw new Error('Password must be at least 6 characters.');
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -345,7 +348,12 @@ export function AuthForm({ authView, setAuthView, showToast }) {
           }
         });
         if (error) throw error;
-        showToast("Registration successful! Check email to confirm.", "success");
+        if (data?.session) {
+          showToast("Registration successful! Welcome to Edusparkls.", "success");
+        } else {
+          showToast("Registration successful! Check your email to confirm, then sign in.", "success");
+          setAuthView('login');
+        }
       }
     } catch (err) {
       const formattedMsg = err.message === 'Invalid login credentials' 

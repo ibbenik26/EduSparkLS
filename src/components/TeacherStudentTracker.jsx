@@ -5,8 +5,8 @@ import { RefreshCw, BarChart2, Award } from 'lucide-react';
 import PrintableCertificateModal from './PrintableCertificateModal';
 import StudentTopicDiagnosticModal from './StudentTopicDiagnosticModal';
 
-export default function TeacherStudentTracker({ subjects = ALL_SUBJECTS }) {
-  const [selectedSubj, setSelectedSubj] = useState('Physics');
+export default function TeacherStudentTracker({ subjects = ALL_SUBJECTS, defaultSubject = 'Physics' }) {
+  const [selectedSubj, setSelectedSubj] = useState(defaultSubject);
   const [selectedGradeFilter, setSelectedGradeFilter] = useState('All');
   const [studentProfiles, setStudentProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +63,7 @@ export default function TeacherStudentTracker({ subjects = ALL_SUBJECTS }) {
       subjectGrade: grade
     };
   })
-  .filter(s => selectedGradeFilter === 'All' || s.grade === parseInt(selectedGradeFilter))
+  .filter(s => selectedGradeFilter === 'All' || parseInt(s.grade) === parseInt(selectedGradeFilter))
   .sort((a, b) => b.subjectAccuracy - a.subjectAccuracy || b.subjectQuizzesDone - a.subjectQuizzesDone);
 
   return (

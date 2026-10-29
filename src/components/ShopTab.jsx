@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Plus, Trash2, CheckCircle, Tag, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Plus, Trash2, Image as ImageIcon } from 'lucide-react';
 import { canUserCRUDShop } from '../utils/helpers';
 
 export default function ShopTab({
   role, authName, studentGrade, shopItems, onAddShopItem, onDeleteShopItem,
-  coins, setCoins, orders, setOrders, showToast, askConfirm
+  onPurchase, coins, showToast, askConfirm
 }) {
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [itemName, setItemName] = useState('');
@@ -25,37 +25,20 @@ export default function ShopTab({
     { label: 'School Bag', url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600' }
   ];
 
-  const handlePurchase = (item) => {
-    if (coins < item.cost) {
-      showToast("❌ Not enough coins! Complete Timed Challenge Quizzes to earn more.", "error");
-      return;
-    }
+  // Students only see items meant for their grade (or for everyone)
+  const visibleItems = role === 'student'
+    ? shopItems.filter(i => !i.target_grade || i.target_grade === 'All' || String(i.target_grade) === String(studentGrade))
+    : shopItems;
 
-    askConfirm("Confirm Store Purchase", `Spend ${item.cost} Coins on "${item.name}"?`, () => {
-      setCoins(c => c - item.cost);
-      
-      const newOrder = {
-        id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-        student_name: authName,
-        name: item.name,
-        cost: item.cost,
-        date: new Date().toISOString().split('T')[0],
-        status: 'Pending Teacher Collection',
-        code: `GR${studentGrade}-${Math.floor(1000 + Math.random() * 9000)}`
-      };
-
-      setOrders(prev => [newOrder, ...prev]);
-      showToast(`🎉 Claimed ${item.name}! Show collection code '${newOrder.code}' to your teacher.`, "success");
-    });
-  };
-
-  const handleCreateShopItem = (e) => {
+  const handleCreateShopItem = async (e) => {
     e.preventDefault();
-    if (!itemName) return showToast("Enter item name", "warning");
+    if (!itemName.trim()) return showToast("Enter item name", "warning");
+    if (!(parseInt(cost) > 0)) return showToast("Cost must be at least 1 coin.", "warning");
+    if (!(parseInt(stock) >= 0)) return showToast("Stock cannot be negative.", "warning");
 
     const newItem = {
       id: `shop_${Date.now()}`,
-      name: itemName,
+      name: itemName.trim(),
       category,
       cost: parseInt(cost),
       stock: parseInt(stock),
@@ -66,15 +49,16 @@ export default function ShopTab({
       desc
     };
 
-    onAddShopItem(newItem);
+    const ok = await onAddShopItem(newItem);
+    if (!ok) return;
     setShowAddItemModal(false);
     setItemName(''); setDesc(''); setImageUrl('');
   };
 
   const handleDeleteItem = (itemId, name) => {
-    askConfirm("Delete Reward Item", `Remove "${name}" from the Reward Store permanently?`, () => {
-      onDeleteShopItem(itemId);
-      showToast(`Removed "${name}" from store.`, "info");
+    askConfirm("Delete Reward Item", `Remove "${name}" from the Reward Store permanently?`, async () => {
+      const ok = await onDeleteShopItem(itemId);
+      if (ok) showToast(`Removed "${name}" from store.`, "info");
     });
   };
 
@@ -104,8 +88,14 @@ export default function ShopTab({
       </div>
 
       {/* Item Cards Grid with Display Images */}
+      {visibleItems.length === 0 && (
+        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-400 text-xs font-medium">
+          No reward items are available for your grade yet.
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {shopItems.map((item) => (
+        {visibleItems.map((item) => (
           <div key={item.id} className="bg-white border border-slate-200 rounded-3xl p-5 space-y-3 shadow-xs hover:shadow-md transition flex flex-col justify-between group">
             <div className="space-y-3">
               {/* Product Card Image Banner */}
@@ -144,15 +134,16 @@ export default function ShopTab({
                   <span>🪙</span>
                   <span>{item.cost} Coins</span>
                 </span>
-                <span className="text-[10px] text-slate-400 block font-bold">Stock Remaining: {item.stock || 10}</span>
+                <span className="text-[10px] text-slate-400 block font-bold">Stock Remaining: {item.stock ?? 0}</span>
               </div>
 
               {role === 'student' ? (
                 <button
-                  onClick={() => handlePurchase(item)}
-                  className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs transition shadow-xs"
+                  onClick={() => onPurchase(item)}
+                  disabled={(item.stock ?? 0) <= 0}
+                  className="bg-amber-500 hover:bg-amber-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs transition shadow-xs"
                 >
-                  Claim Item
+                  {(item.stock ?? 0) <= 0 ? 'Out of Stock' : 'Claim Item'}
                 </button>
               ) : (
                 <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-xl">In Inventory</span>
@@ -219,6 +210,14 @@ export default function ShopTab({
               </div>
 
               <div>
+                <label className="font-bold block mb-1">Target Grade</label>
+                <select value={targetGrade} onChange={(e) => setTargetGrade(e.target.value)} className="w-full border rounded-xl p-2.5 font-bold">
+                  <option value="All">All Grades</option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => <option key={g} value={String(g)}>Grade {g}</option>)}
+                </select>
+              </div>
+
+              <div>
                 <label className="font-bold block mb-1">Item Image URL</label>
                 <input
                   type="url"
@@ -263,7 +262,7 @@ export default function ShopTab({
                   Cancel
                 </button>
                 <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-2.5 rounded-xl transition shadow-sm">
-                  Save to Supabase 🚀
+                  Save Item 🚀
                 </button>
               </div>
             </form>

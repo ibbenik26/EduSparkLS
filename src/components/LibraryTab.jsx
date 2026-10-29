@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BookOpen, Key, ArrowLeft, ArrowRight, X, Clock, Sparkles, Plus, Trash2, ShieldCheck, Award } from 'lucide-react';
 import { isRTLSubject, playSound, canUserCRUDLibrary } from '../utils/helpers';
 
-export default function LibraryTab({ role, books, setBooks, coins, setCoins, setXp, readingHours, setReadingHours, claimedCodes = [], setClaimedCodes }) {
+export default function LibraryTab({ role, books, setBooks, setCoins, setXp, setReadingHours, claimedCodes = [], setClaimedCodes, showToast, askConfirm }) {
   const [selectedBook, setSelectedBook] = useState(null);
   const [pageIndex, setPageIndex] = useState(0);
   const [inputCode, setInputCode] = useState('');
@@ -23,29 +23,32 @@ export default function LibraryTab({ role, books, setBooks, coins, setCoins, set
 
   const canEditLibrary = canUserCRUDLibrary(role);
 
-  // Online E-Reader Auto-Timer
+  // Each book can only pay out its online-reading reward once per student
+  const readKey = selectedBook ? `READ:${selectedBook.id}` : null;
+  const alreadyRead = !!readKey && claimedCodes.includes(readKey);
+
+  // Online E-Reader timer: only counts seconds (no side effects inside the state updater)
   useEffect(() => {
-    let timer = null;
-    if (selectedBook && !autoEarnedForBook) {
-      timer = setInterval(() => {
-        setSessionSeconds(prev => {
-          const nextSec = prev + 1;
-          const requiredSecs = Math.max(15, Math.round((selectedBook.reading_hours || 1) * 15));
-          
-          if (nextSec >= requiredSecs) {
-            setAutoEarnedForBook(true);
-            playSound('coin');
-            setCoins(c => c + 100);
-            setXp(x => x + 150);
-            setReadingHours(h => Number((h + (selectedBook.reading_hours || 1)).toFixed(1)));
-            alert(`🎉 Reading Duration Fulfilled!\nBook: "${selectedBook.title}"\nAuto-Awarded +100 Edu Coins & +150 XP!`);
-          }
-          return nextSec;
-        });
-      }, 1000);
-    }
+    if (!selectedBook || autoEarnedForBook || alreadyRead) return;
+    const timer = setInterval(() => setSessionSeconds(prev => prev + 1), 1000);
     return () => clearInterval(timer);
-  }, [selectedBook, autoEarnedForBook, setCoins, setXp, setReadingHours]);
+  }, [selectedBook, autoEarnedForBook, alreadyRead]);
+
+  // Award once the required reading time is reached
+  useEffect(() => {
+    if (!selectedBook || autoEarnedForBook || alreadyRead) return;
+    const requiredSecs = Math.max(15, Math.round((selectedBook.reading_hours || 1) * 15));
+    if (sessionSeconds < requiredSecs) return;
+
+    setAutoEarnedForBook(true);
+    setClaimedCodes([...claimedCodes, readKey]);
+    playSound('coin');
+    setCoins(c => c + 100);
+    setXp(x => x + 150);
+    setReadingHours(h => Number((h + (selectedBook.reading_hours || 1)).toFixed(1)));
+    showToast(`🎉 Reading goal reached for "${selectedBook.title}"! +100 Edu Coins & +150 XP`, 'success');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionSeconds]);
 
   const handlePhysicalCodeClaim = (e) => {
     e.preventDefault();
@@ -53,13 +56,13 @@ export default function LibraryTab({ role, books, setBooks, coins, setCoins, set
     if (!code) return;
 
     if (claimedCodes.includes(code)) {
-      alert("⚠️ You have already claimed Edu Points for this physical book code!");
+      showToast("⚠️ You have already claimed Edu Points for this physical book code!", "warning");
       return;
     }
 
     const matchedBook = books.find(b => (b.claim_code || '').toUpperCase() === code);
     if (!matchedBook) {
-      alert("❌ Invalid Voucher Code! Make sure the code matches the physical book code given by the Librarian.");
+      showToast("❌ Invalid Voucher Code! Make sure it matches the code given by the Librarian.", "error");
       return;
     }
 
@@ -70,12 +73,12 @@ export default function LibraryTab({ role, books, setBooks, coins, setCoins, set
     setReadingHours(h => Number((h + (matchedBook.reading_hours || 1)).toFixed(1)));
     setClaimedCodes([...claimedCodes, code]);
     setInputCode('');
-    alert(`🎉 Physical Book Code Verified!\nBook: "${matchedBook.title}"\n+${reward} Edu Points & Coins Credited!`);
+    showToast(`🎉 Code verified for "${matchedBook.title}"! +${reward} XP & +${Math.round(reward * 0.7)} Coins`, "success");
   };
 
   const handleCreateBook = (e) => {
     e.preventDefault();
-    if (!newTitle || !newSecretCode) return alert("Please fill in required book details.");
+    if (!newTitle || !newSecretCode) return showToast("Please fill in the book title and secret code.", "warning");
 
     const newBookObj = {
       id: `book_${Date.now()}`,
@@ -93,14 +96,14 @@ export default function LibraryTab({ role, books, setBooks, coins, setCoins, set
     setBooks([newBookObj, ...books]);
     setShowAddBookModal(false);
     setNewTitle(''); setNewSecretCode('');
-    alert("🎉 New Book added to E-Library with secret librarian code!");
+    showToast("🎉 New book added to the E-Library!", "success");
   };
 
   const handleDeleteBook = (id) => {
     if (!canEditLibrary) return;
-    if (window.confirm("Are you sure you want to remove this book from the library?")) {
+    askConfirm("Remove Book", "Are you sure you want to remove this book from the library?", () => {
       setBooks(books.filter(b => b.id !== id));
-    }
+    });
   };
 
   return (
@@ -238,9 +241,9 @@ export default function LibraryTab({ role, books, setBooks, coins, setCoins, set
                 <Clock className="w-4 h-4 text-emerald-600 animate-spin" />
                 <span>Recorded Time: {sessionSeconds}s</span>
               </div>
-              {autoEarnedForBook && (
+              {(autoEarnedForBook || alreadyRead) && (
                 <span className="bg-emerald-600 text-white px-3 py-1 rounded-lg text-[10px] font-black">
-                  Goal Fulfilled (+100 Coins) ✅
+                  {alreadyRead && !autoEarnedForBook ? 'Already Rewarded ✅' : 'Goal Fulfilled (+100 Coins) ✅'}
                 </span>
               )}
             </div>

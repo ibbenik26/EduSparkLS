@@ -1,20 +1,56 @@
 import React, { useState } from 'react';
-import { Image as ImageIcon, Code, Upload, Plus, FileText, CheckCircle2 } from 'lucide-react';
+import { Image as ImageIcon, Code, Upload, CheckCircle2 } from 'lucide-react';
 import { ALL_SUBJECTS } from '../utils/helpers';
+import { normalizeQuestions } from '../utils/quizValidation';
 
-export default function DiagramUploadModal({ quizzes, setQuizzes, onClose }) {
+const MAX_DIAGRAM_WIDTH = 1000;
+
+// Shrinks uploaded images so the base64 string stored in the quiz row stays small.
+function readAndShrinkImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read the image file.'));
+    reader.onload = () => {
+      const dataUrl = reader.result;
+
+      if (file.type === 'image/svg+xml') {
+        if (dataUrl.length > 300000) reject(new Error('SVG is too large (keep it under ~200 KB).'));
+        else resolve(dataUrl);
+        return;
+      }
+
+      const img = new Image();
+      img.onerror = () => reject(new Error('That file is not a valid image.'));
+      img.onload = () => {
+        const scale = Math.min(1, MAX_DIAGRAM_WIDTH / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+export default function DiagramUploadModal({ onAddQuiz, showToast, onClose, defaultSubject, lockSubject = false }) {
   const [quizScope, setQuizScope] = useState('olevel'); // 'olevel' or 'grade'
   const [gradeLevel, setGradeLevel] = useState(10);
-  const [subject, setSubject] = useState('Physics');
+  const [subject, setSubject] = useState(defaultSubject || 'Physics');
+  const [subjectCode, setSubjectCode] = useState('');
   const [examYear, setExamYear] = useState(2026);
   const [paperTopic, setPaperTopic] = useState('Paper 12 (Optics & Ray Diagrams)');
-  
-  // Diagram Upload / URL State
+  const [saving, setSaving] = useState(false);
+
   const [diagramMode, setDiagramMode] = useState('file'); // 'file' or 'url'
   const [diagramUrl, setDiagramUrl] = useState('');
   const [uploadedDiagramData, setUploadedDiagramData] = useState(null);
 
-  // Fast JSON State
   const [jsonQuestionsText, setJsonQuestionsText] = useState(`[
   {
     "topic": "Optics & Light Rays",
@@ -28,71 +64,61 @@ export default function DiagramUploadModal({ quizzes, setQuizzes, onClose }) {
   }
 ]`);
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert("❌ Please select a valid image file (PNG, JPG, SVG, WebP).");
+      showToast('❌ Please select a valid image file (PNG, JPG, SVG, WebP).', 'error');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (uploadEvent) => {
-      setUploadedDiagramData(uploadEvent.target.result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      setUploadedDiagramData(await readAndShrinkImage(file));
+    } catch (err) {
+      showToast(`❌ ${err.message}`, 'error');
+    }
   };
 
-  const handlePublishQuiz = (e) => {
+  const handlePublishQuiz = async (e) => {
     e.preventDefault();
+    if (saving) return;
 
-    let parsedQuestions = [];
+    let parsed;
     try {
-      parsedQuestions = JSON.parse(jsonQuestionsText);
-      if (!Array.isArray(parsedQuestions) || parsedQuestions.length === 0) {
-        throw new Error("JSON must be a non-empty array of question objects.");
-      }
+      parsed = JSON.parse(jsonQuestionsText);
     } catch (err) {
-      alert("❌ Invalid Questions JSON format:\n" + err.message);
+      showToast(`❌ Invalid JSON: ${err.message}`, 'error');
       return;
     }
 
     const activeDiagram = diagramMode === 'file' ? uploadedDiagramData : diagramUrl.trim();
-
-    // Attach master diagram to questions if question doesn't have an individual diagram_url
-    const finalQuestions = parsedQuestions.map((q, idx) => ({
-      id: `q_${Date.now()}_${idx}`,
-      topic: q.topic || paperTopic,
-      diagram_url: q.diagram_url || activeDiagram || null,
-      question_text: q.question_text || 'Question text missing',
-      option_a: q.option_a || 'Option A',
-      option_b: q.option_b || 'Option B',
-      option_c: q.option_c || 'Option C',
-      option_d: q.option_d || 'Option D',
-      correct_option: q.correct_option || 'A',
-      explanation: q.explanation || 'Verified against mark scheme.'
-    }));
+    const { questions, errors } = normalizeQuestions(parsed, { defaultTopic: paperTopic, diagram: activeDiagram || null });
+    if (errors.length) {
+      showToast(`❌ ${errors.slice(0, 3).join('\n')}${errors.length > 3 ? `\n...and ${errors.length - 3} more` : ''}`, 'error');
+      return;
+    }
 
     const isOLevel = quizScope === 'olevel';
     const newQuiz = {
       id: `quiz_${Date.now()}`,
-      title: isOLevel 
+      title: isOLevel
         ? `Cambridge O-Level ${subject} (${examYear}) - ${paperTopic}`
         : `Grade ${gradeLevel} ${subject} - ${paperTopic}`,
       subject,
-      grade: isOLevel ? parseInt(gradeLevel) : parseInt(gradeLevel),
-      subject_code: isOLevel ? '0625' : 'GEN-ED',
-      exam_year: parseInt(examYear),
+      grade: isOLevel ? 10 : parseInt(gradeLevel),
+      subject_code: subjectCode.trim(),
+      exam_year: isOLevel ? parseInt(examYear) : null,
       variant: paperTopic,
       is_past_paper: isOLevel,
-      has_diagrams: finalQuestions.some(q => !!q.diagram_url),
-      questions: finalQuestions
+      has_diagrams: questions.some(q => !!q.diagram_url),
+      questions
     };
 
-    setQuizzes([newQuiz, ...quizzes]);
-    alert(`🎉 Success! Published quiz with ${finalQuestions.length} questions.`);
-    onClose();
+    setSaving(true);
+    const ok = await onAddQuiz(newQuiz);
+    setSaving(false);
+    if (ok) onClose();
   };
 
   return (
@@ -112,7 +138,6 @@ export default function DiagramUploadModal({ quizzes, setQuizzes, onClose }) {
         </div>
 
         <form onSubmit={handlePublishQuiz} className="space-y-5">
-          {/* Quiz Type Selector */}
           <div className="grid grid-cols-2 gap-3 bg-slate-100 p-1.5 rounded-2xl text-xs font-bold">
             <button
               type="button"
@@ -130,8 +155,7 @@ export default function DiagramUploadModal({ quizzes, setQuizzes, onClose }) {
             </button>
           </div>
 
-          {/* Meta Data Inputs */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             {quizScope === 'grade' ? (
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">Class / Grade</label>
@@ -165,10 +189,22 @@ export default function DiagramUploadModal({ quizzes, setQuizzes, onClose }) {
               <select
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-indigo-700"
+                disabled={lockSubject}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-indigo-700 disabled:opacity-70"
               >
                 {ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">Syllabus Code (optional)</label>
+              <input
+                type="text"
+                value={subjectCode}
+                onChange={(e) => setSubjectCode(e.target.value)}
+                placeholder="e.g. 5054"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-mono text-slate-900"
+              />
             </div>
 
             <div>
@@ -184,14 +220,13 @@ export default function DiagramUploadModal({ quizzes, setQuizzes, onClose }) {
             </div>
           </div>
 
-          {/* Diagram Upload Section */}
           <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
                 <ImageIcon className="w-4 h-4 text-indigo-600" />
-                <span>Diagram Option (Optional)</span>
+                <span>Diagram Option (Optional, applied to every question without its own diagram_url)</span>
               </span>
-              <div className="flex space-x-1 text-[11px] font-bold">
+              <div className="flex space-x-1 text-[11px] font-bold shrink-0">
                 <button
                   type="button"
                   onClick={() => setDiagramMode('file')}
@@ -226,14 +261,14 @@ export default function DiagramUploadModal({ quizzes, setQuizzes, onClose }) {
                   <label className="cursor-pointer flex flex-col items-center justify-center space-y-1.5 py-2">
                     <Upload className="w-6 h-6 text-indigo-600" />
                     <span className="text-xs font-bold text-indigo-700">Click to Choose Diagram Image File</span>
-                    <span className="text-[10px] text-slate-400">PNG, JPG, SVG, WebP supported</span>
+                    <span className="text-[10px] text-slate-400">PNG, JPG, SVG, WebP supported (auto-resized)</span>
                     <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
                   </label>
                 )}
               </div>
             ) : (
               <input
-                type="text"
+                type="url"
                 value={diagramUrl}
                 onChange={(e) => setDiagramUrl(e.target.value)}
                 placeholder="Paste diagram image web URL (e.g., https://.../diagram.jpg)"
@@ -242,14 +277,13 @@ export default function DiagramUploadModal({ quizzes, setQuizzes, onClose }) {
             )}
           </div>
 
-          {/* JSON Questions Textarea */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700 block flex items-center justify-between">
+            <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
               <span className="flex items-center space-x-1.5">
                 <Code className="w-4 h-4 text-emerald-600" />
                 <span>Paste Questions JSON Array</span>
               </span>
-              <span className="text-[10px] text-slate-400">Easy Copy & Paste Format</span>
+              <span className="text-[10px] text-slate-400">correct_option: A, B, C or D</span>
             </label>
             <textarea
               value={jsonQuestionsText}
@@ -262,10 +296,11 @@ export default function DiagramUploadModal({ quizzes, setQuizzes, onClose }) {
 
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black py-3.5 rounded-2xl text-xs shadow-md transition flex items-center justify-center space-x-2"
+            disabled={saving}
+            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-60 text-white font-black py-3.5 rounded-2xl text-xs shadow-md transition flex items-center justify-center space-x-2"
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>Publish Paper ({quizScope === 'olevel' ? 'O-Level Arena' : `Grade ${gradeLevel}`})</span>
+            <span>{saving ? 'Saving...' : `Publish Paper (${quizScope === 'olevel' ? 'O-Level Arena' : `Grade ${gradeLevel}`})`}</span>
           </button>
         </form>
       </div>

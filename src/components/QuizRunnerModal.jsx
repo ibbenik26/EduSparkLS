@@ -14,6 +14,7 @@ export default function QuizRunnerModal({
   score,
   quizFinished,
   gameOver,
+  reward,
   handleAnswerSubmit,
   nextQuestion,
   startQuiz,
@@ -116,7 +117,7 @@ export default function QuizRunnerModal({
                 const optionText = currentQuestion?.[`option_${opt.toLowerCase()}`];
                 if (!optionText) return null;
 
-                const isCorrectOpt = opt === currentQuestion.correct_option;
+                const isCorrectOpt = opt === String(currentQuestion.correct_option || '').trim().toUpperCase();
                 const isSelectedOpt = selectedOption === opt;
 
                 let btnStyle = "bg-slate-50 border-slate-200 text-slate-800 hover:bg-indigo-50/50 hover:border-indigo-300";
@@ -182,9 +183,15 @@ export default function QuizRunnerModal({
             </div>
             <div className="space-y-1">
               <h3 className="text-2xl font-black text-slate-900">Hearts Depleted or Time Expired</h3>
-              <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
-                You ran out of lives or time! Challenge Mode for this quiz is now <strong className="text-rose-600 font-bold">LOCKED</strong> until you complete <strong className="text-indigo-600 font-bold">Practice Mode</strong>.
-              </p>
+              {quizMode === 'olevel' ? (
+                <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
+                  You ran out of lives or time! This timed simulation can only be attempted <strong className="text-rose-600 font-bold">ONCE</strong>, so it is now closed. You can still use <strong className="text-indigo-600 font-bold">Practice</strong> on this paper any time.
+                </p>
+              ) : (
+                <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
+                  You ran out of lives or time! Challenge Mode for this quiz is now <strong className="text-rose-600 font-bold">LOCKED</strong> until you complete <strong className="text-indigo-600 font-bold">Practice Mode</strong>.
+                </p>
+              )}
             </div>
 
             <div className="flex justify-center space-x-3 pt-2">
@@ -193,7 +200,7 @@ export default function QuizRunnerModal({
                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-2xl text-xs shadow-md transition flex items-center space-x-1.5"
               >
                 <RotateCcw className="w-4 h-4" />
-                <span>Play Practice Mode First 📖</span>
+                <span>{quizMode === 'olevel' ? 'Practice This Paper 📖' : 'Play Practice Mode First 📖'}</span>
               </button>
               <button onClick={onClose} className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-6 py-3 rounded-2xl text-xs transition">
                 Close
@@ -208,7 +215,7 @@ export default function QuizRunnerModal({
 
             <div className="space-y-1">
               <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-full">
-                {quizMode === 'practice' ? 'Practice Completed! Challenge Unlocked 🔓' : 'Challenge Passed!'}
+                {quizMode === 'practice' ? 'Practice Completed! Challenge Unlocked 🔓' : quizMode === 'olevel' ? 'Timed Simulation Completed!' : 'Challenge Completed!'}
               </span>
               <h3 className={`text-2xl font-black text-slate-900 pt-1 ${isDhivehi ? 'font-dhivehi' : ''}`}>{activeQuiz.title}</h3>
             </div>
@@ -220,16 +227,16 @@ export default function QuizRunnerModal({
               </div>
               <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-center">
                 <span className="text-[10px] font-bold text-amber-700 uppercase block">+Coins</span>
-                <span className="text-lg font-black text-amber-600">+{score * 15}</span>
+                <span className="text-lg font-black text-amber-600">+{reward?.coins ?? 0}</span>
               </div>
               <div className="bg-purple-50 border border-purple-200 p-3 rounded-2xl text-center">
                 <span className="text-[10px] font-bold text-purple-700 uppercase block">+XP Gained</span>
-                <span className="text-lg font-black text-purple-600">+{score * 30}</span>
+                <span className="text-lg font-black text-purple-600">+{reward?.xp ?? 0}</span>
               </div>
             </div>
 
             <button onClick={onClose} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3.5 rounded-2xl text-xs shadow-md transition">
-              Return to Dashboard
+              {quizMode === 'olevel' ? 'Back to Arena' : 'Return to Dashboard'}
             </button>
           </div>
         )}

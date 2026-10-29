@@ -16,6 +16,17 @@ export default function ProfileTab({
   const [editAddress, setEditAddress] = useState(studentAddress || 'M. Henveiru, Malé');
   const [editIndex, setEditIndex] = useState(indexNumber || 'STU-2026');
 
+  const toggleEditing = () => {
+    if (!isEditing) {
+      setEditName(authName || '');
+      setEditGrade(studentGrade || 7);
+      setEditSchool(schoolName || 'Majeedhiyya School');
+      setEditAddress(studentAddress || 'M. Henveiru, Malé');
+      setEditIndex(indexNumber || 'STU-2026');
+    }
+    setIsEditing(!isEditing);
+  };
+
   const handleSaveProfile = (e) => {
     e.preventDefault();
     if (!editName.trim()) return showToast("Name cannot be empty.", "warning");
@@ -54,7 +65,7 @@ export default function ProfileTab({
           </div>
 
           <button
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={toggleEditing}
             className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-2.5 rounded-2xl text-xs transition flex items-center space-x-1.5 shadow-xs shrink-0"
           >
             <Edit3 className="w-4 h-4 text-indigo-600" />

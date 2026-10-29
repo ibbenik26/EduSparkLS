@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { CheckCircle2, XCircle, AlertTriangle, Info, X, Trash2, ShieldAlert } from 'lucide-react';
 
 export function ToastContainer({ toasts, removeToast }) {
@@ -12,12 +12,15 @@ export function ToastContainer({ toasts, removeToast }) {
 }
 
 function ToastItem({ toast, removeToast }) {
+  // Keep the latest removeToast in a ref so re-renders of the app (e.g. the quiz countdown
+  // ticking every second) don't restart the 4s dismiss timer forever.
+  const removeRef = useRef(removeToast);
+  removeRef.current = removeToast;
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      removeToast(toast.id);
-    }, 4000);
+    const timer = setTimeout(() => removeRef.current(toast.id), 4000);
     return () => clearTimeout(timer);
-  }, [toast, removeToast]);
+  }, [toast.id]);
 
   const typeStyles = {
     success: 'bg-emerald-950/90 border-emerald-500/50 text-emerald-200',
@@ -46,13 +49,13 @@ function ToastItem({ toast, removeToast }) {
   );
 }
 
-export function ConfirmModal({ isOpen, title, message, onConfirm, onCancel }) {
+export function ConfirmModal({ isOpen, title, message, onConfirm, onCancel, confirmLabel = 'Confirm Delete', danger = true }) {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-5 shadow-2xl border border-slate-100 text-center">
-        <div className="w-14 h-14 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto border border-rose-200">
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto border ${danger ? 'bg-rose-100 text-rose-600 border-rose-200' : 'bg-amber-100 text-amber-600 border-amber-200'}`}>
           <ShieldAlert className="w-7 h-7" />
         </div>
 
@@ -70,10 +73,10 @@ export function ConfirmModal({ isOpen, title, message, onConfirm, onCancel }) {
           </button>
           <button
             onClick={onConfirm}
-            className="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition flex items-center justify-center space-x-1"
+            className={`${danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-amber-500 hover:bg-amber-600 text-slate-950'} text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition flex items-center justify-center space-x-1`}
           >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Confirm Delete</span>
+            {danger && <Trash2 className="w-3.5 h-3.5" />}
+            <span>{confirmLabel}</span>
           </button>
         </div>
       </div>

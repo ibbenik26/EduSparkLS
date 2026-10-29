@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from './lib/supabase';
 
-import { ALL_SUBJECTS, ROLE_TABS, INITIAL_BADGES, INITIAL_RANKS, getDefaultTabForRole, getQuizTimeLimit, playSound } from './utils/helpers';
+import { ROLE_TABS, INITIAL_BADGES, INITIAL_RANKS, getDefaultTabForRole, getQuizTimeLimit, playSound } from './utils/helpers';
 import { INITIAL_QUIZZES, INITIAL_BOOKS, INITIAL_SHOP_ITEMS } from './data/initialData';
 
 import Navbar from './components/Navbar';
@@ -18,6 +18,20 @@ import QuizRunnerModal from './components/QuizRunnerModal';
 import DiagramUploadModal from './components/DiagramUploadModal';
 import { ToastContainer, ConfirmModal } from './components/NotificationToast';
 
+const TIMED_MODES = ['challenge', 'olevel'];
+
+const lsGet = (key, fallback) => {
+  try {
+    const v = localStorage.getItem(key);
+    return v ? JSON.parse(v) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+const lsSet = (key, value) => {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* storage full / blocked */ }
+};
+
 export default function App() {
   const [authView, setAuthView] = useState('landing');
   const [user, setUser] = useState(null);
@@ -29,59 +43,55 @@ export default function App() {
   const [indexNumber, setIndexNumber] = useState('STU-2026');
   const [teacherSubject, setTeacherSubject] = useState('Physics');
 
-  const [coins, setCoins] = useState(350);
-  const [xp, setXp] = useState(420);
-  const [readingHours, setReadingHours] = useState(5.5);
+  // New accounts start at zero (the old 350 coins / 420 XP defaults were demo values)
+  const [coins, setCoins] = useState(0);
+  const [xp, setXp] = useState(0);
+  const [readingHours, setReadingHours] = useState(0);
   const [claimedCodes, setClaimedCodes] = useState([]);
+  const [attempts, setAttempts] = useState([]);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
-  // Ranks & Badges State
   const [ranks, setRanks] = useState(INITIAL_RANKS);
   const [badges, setBadges] = useState(INITIAL_BADGES);
 
-  // Persistent Sponsor Proposals State
-  const [sponsors, setSponsors] = useState(() => {
-    const saved = localStorage.getItem('edusparkls_sponsors');
-    return saved ? JSON.parse(saved) : [];
-  });
+  // Sponsor proposals contain personal details (email/phone), so they are only
+  // loaded for super admins and are NOT cached in localStorage any more.
+  const [sponsors, setSponsors] = useState([]);
 
-  useEffect(() => {
-    localStorage.setItem('edusparkls_sponsors', JSON.stringify(sponsors));
-  }, [sponsors]);
-
-  // Quizzes & Shop Items State
   const [quizzes, setQuizzes] = useState(INITIAL_QUIZZES);
   const [books, setBooks] = useState(INITIAL_BOOKS);
-  const [shopItems, setShopItems] = useState(INITIAL_SHOP_ITEMS);
-  const [orders, setOrders] = useState([
-    { id: 'ORD-9021', student_name: 'Hassan Ali', name: 'Grade 7 Geometry Kit', cost: 250, date: '2026-10-18', status: 'Pending Teacher Collection', code: 'GR7-8821' }
-  ]);
+  const [shopItems, setShopItems] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [allProfiles, setAllProfiles] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const [lockedChallengeQuizIds, setLockedChallengeQuizIds] = useState([]);
   const [completedQuizModes, setCompletedQuizModes] = useState([]);
 
-  // Toast State
+  // ---------- Toasts & confirm modal ----------
   const [toasts, setToasts] = useState([]);
-  const showToast = (message, type = 'info') => {
+  const showToast = useCallback((message, type = 'info') => {
     const id = `toast_${Date.now()}_${Math.random()}`;
     setToasts(prev => [...prev, { id, message, type }]);
-  };
-  const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+  const removeToast = useCallback((id) => setToasts(prev => prev.filter(t => t.id !== id)), []);
 
-  // Confirm Modal State
-  const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
-  const askConfirm = (title, message, onConfirm) => {
+  const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: null, confirmLabel: 'Confirm Delete', danger: true });
+  const askConfirm = (title, message, onConfirm, options = {}) => {
     setConfirmState({
-      isOpen: true, title, message,
+      isOpen: true,
+      title,
+      message,
+      confirmLabel: options.confirmLabel || 'Confirm Delete',
+      danger: options.danger !== false,
       onConfirm: () => {
-        onConfirm();
         setConfirmState(prev => ({ ...prev, isOpen: false }));
+        onConfirm();
       }
     });
   };
 
-  // Quiz Modal State
+  // ---------- Quiz runner state ----------
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [quizMode, setQuizMode] = useState('practice');
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
@@ -93,293 +103,457 @@ export default function App() {
   const [timeLeft, setTimeLeft] = useState(60);
   const [quizFinished, setQuizFinished] = useState(false);
   const [gameOver, setGameOver] = useState(false);
+  const [answerLog, setAnswerLog] = useState([]);
+  const [reward, setReward] = useState({ coins: 0, xp: 0 });
 
   const [showDiagramUploadModal, setShowDiagramUploadModal] = useState(false);
 
-  // Sync completion history for active student account
+  // Always-fresh snapshot for event handlers that outlive a render (popstate, confirm callbacks)
+  const quizRef = useRef({});
+  quizRef.current = { activeQuiz, quizMode, quizFinished, gameOver, score, answerLog };
+  const roleRef = useRef(role);
+  roleRef.current = role;
+  const attemptsRef = useRef(attempts);
+  attemptsRef.current = attempts;
+  const loadedUserRef = useRef(null);
+
+  // ---------- Per-user local persistence ----------
   useEffect(() => {
-    if (user?.id) {
-      const savedUserCompletions = localStorage.getItem(`edusparkls_completed_${user.id}`);
-      setCompletedQuizModes(savedUserCompletions ? JSON.parse(savedUserCompletions) : []);
-    } else {
-      setCompletedQuizModes([]);
-    }
-  }, [user]);
+    if (!user?.id) return;
+    setCompletedQuizModes(lsGet(`edusparkls_completed_${user.id}`, []));
+    setLockedChallengeQuizIds(lsGet(`edusparkls_locked_${user.id}`, []));
+    setClaimedCodes(lsGet(`edusparkls_claimed_${user.id}`, []));
+  }, [user?.id]);
 
   const recordUserCompletion = (completionKey) => {
     setCompletedQuizModes(prev => {
+      if (prev.includes(completionKey)) return prev;
       const updated = [...prev, completionKey];
-      if (user?.id) {
-        localStorage.setItem(`edusparkls_completed_${user.id}`, JSON.stringify(updated));
-      }
+      if (user?.id) lsSet(`edusparkls_completed_${user.id}`, updated);
       return updated;
     });
   };
 
-  // FETCH ALL DATA FROM SUPABASE ON LAUNCH
+  const updateLockedChallenges = (updater) => {
+    setLockedChallengeQuizIds(prev => {
+      const next = updater(prev);
+      if (user?.id) lsSet(`edusparkls_locked_${user.id}`, next);
+      return next;
+    });
+  };
+
+  // Accepts either a new array or an updater function (LibraryTab uses the array form)
+  const updateClaimedCodes = (valueOrFn) => {
+    setClaimedCodes(prev => {
+      const next = typeof valueOrFn === 'function' ? valueOrFn(prev) : valueOrFn;
+      if (user?.id) lsSet(`edusparkls_claimed_${user.id}`, next);
+      return next;
+    });
+  };
+
+  // ---------- Auth + data loading ----------
+  const resetSession = () => {
+    setUser(null);
+    setRole('student');
+    setCoins(0);
+    setXp(0);
+    setReadingHours(0);
+    setAttempts([]);
+    setProfileLoaded(false);
+    setActiveQuiz(null);
+    setCompletedQuizModes([]);
+    setLockedChallengeQuizIds([]);
+    setClaimedCodes([]);
+    setAllProfiles([]);
+    setSponsors([]);
+    setOrders([]);
+  };
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        fetchUserProfile(session.user);
-      }
-    });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        fetchUserProfile(session.user);
-      } else {
-        setUser(null);
+      if (!session?.user) {
+        loadedUserRef.current = null;
+        resetSession();
+        return;
+      }
+
+      // Token refreshes hand us a new object for the same user: keep the old one so nothing re-renders/reloads
+      setUser(prev => (prev?.id === session.user.id ? prev : session.user));
+
+      // Load the profile once per login (not on every token refresh / tab refocus)
+      if (loadedUserRef.current !== session.user.id) {
+        loadedUserRef.current = session.user.id;
+        setTimeout(() => fetchUserProfile(session.user), 0);
       }
     });
 
-    fetchQuizzesFromSupabase();
-    fetchShopItemsFromSupabase();
-    fetchBadgesFromSupabase();
-    fetchAllProfiles();
-    fetchSponsorsFromSupabase();
     return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Fetch Quizzes from Supabase
-  const fetchQuizzesFromSupabase = async () => {
-    try {
-      const { data, error } = await supabase.from('quizzes').select('*').order('created_at', { ascending: false });
-      if (!error && data && data.length > 0) {
-        const mapped = data.map(q => ({
-          ...q,
-          grade: parseInt(q.grade) || 7,
-          questions: typeof q.questions === 'string' ? JSON.parse(q.questions) : (q.questions || [])
-        }));
-        setQuizzes(mapped);
-      }
-    } catch (e) {
-      console.warn("Quizzes fetch info:", e);
-    }
-  };
-
-  // Fetch Shop Items from Supabase
-  const fetchShopItemsFromSupabase = async () => {
-    try {
-      const { data, error } = await supabase.from('shop_items').select('*').order('created_at', { ascending: false });
-      if (!error && data && data.length > 0) {
-        setShopItems(data);
-      }
-    } catch (e) {
-      console.warn("Shop items fetch info:", e);
-    }
-  };
-
-  // Fetch Badges from Supabase
-  const fetchBadgesFromSupabase = async () => {
-    try {
-      const { data, error } = await supabase.from('badges').select('*').order('created_at', { ascending: false });
-      if (!error && data && data.length > 0) {
-        const mapped = data.map(b => ({
-          id: b.id,
-          name: b.name,
-          icon: b.icon,
-          desc: b.desc,
-          reqXp: b.req_xp
-        }));
-        setBadges(mapped);
-      }
-    } catch (e) {
-      console.warn("Badges fetch info:", e);
-    }
-  };
-
-  // Add Shop Item (Supabase + State)
-  const handleAddShopItem = async (newItem) => {
-    setShopItems(prev => [newItem, ...prev]);
-    try {
-      await supabase.from('shop_items').insert([{
-        id: newItem.id,
-        name: newItem.name,
-        category: newItem.category,
-        cost: parseInt(newItem.cost),
-        stock: parseInt(newItem.stock || 10),
-        creator_name: newItem.creator_name || authName,
-        target_grade: newItem.target_grade || 'All',
-        image_url: newItem.image_url || '',
-        rating: newItem.rating || 4.9,
-        desc: newItem.desc || ''
-      }]);
-      showToast("🎉 Reward Item Saved to Supabase Database!", "success");
-    } catch (e) {
-      console.warn("Supabase shop item insert error:", e);
-    }
-  };
-
-  // Delete Shop Item (Supabase + State)
-  const handleDeleteShopItem = async (itemId) => {
-    setShopItems(prev => prev.filter(i => i.id !== itemId));
-    try {
-      await supabase.from('shop_items').delete().eq('id', itemId);
-    } catch (e) {
-      console.warn("Supabase shop item delete error:", e);
-    }
-  };
-
-  // Add Badge (Supabase + State)
-  const handleAddBadge = async (newBadge) => {
-    setBadges(prev => [...prev, newBadge]);
-    try {
-      await supabase.from('badges').insert([{
-        id: newBadge.id,
-        name: newBadge.name,
-        icon: newBadge.icon,
-        desc: newBadge.desc,
-        req_xp: parseInt(newBadge.reqXp)
-      }]);
-      showToast("🎉 Achievement Badge Saved to Supabase Database!", "success");
-    } catch (e) {
-      console.warn("Supabase badge insert error:", e);
-    }
-  };
-
-  // Delete Badge (Supabase + State)
-  const handleDeleteBadge = async (badgeId) => {
-    setBadges(prev => prev.filter(b => b.id !== badgeId));
-    try {
-      await supabase.from('badges').delete().eq('id', badgeId);
-    } catch (e) {
-      console.warn("Supabase badge delete error:", e);
-    }
-  };
-
-  const handleAddQuiz = async (newQuiz) => {
-    setQuizzes(prev => [newQuiz, ...prev]);
-    try {
-      await supabase.from('quizzes').insert([{
-        id: newQuiz.id,
-        title: newQuiz.title,
-        subject: newQuiz.subject,
-        grade: parseInt(newQuiz.grade),
-        subject_code: newQuiz.subject_code || '',
-        exam_year: newQuiz.exam_year ? parseInt(newQuiz.exam_year) : null,
-        variant: newQuiz.variant || '',
-        is_past_paper: !!newQuiz.is_past_paper,
-        has_diagrams: !!newQuiz.has_diagrams,
-        questions: newQuiz.questions
-      }]);
-      showToast("🎉 Quiz Saved to Supabase Database!", "success");
-    } catch (e) {
-      console.warn("Supabase quiz insert error:", e);
-    }
-  };
-
-  const handleDeleteQuiz = async (quizId) => {
-    setQuizzes(prev => prev.filter(q => q.id !== quizId));
-    try {
-      await supabase.from('quizzes').delete().eq('id', quizId);
-    } catch (e) {
-      console.warn("Supabase quiz delete error:", e);
-    }
-  };
-
-  const fetchSponsorsFromSupabase = async () => {
-    try {
-      const { data } = await supabase.from('sponsors').select('*').order('created_at', { ascending: false });
-      if (data && data.length > 0) {
-        const mapped = data.map(d => ({
-          id: d.id,
-          applicantName: d.applicant_name,
-          email: d.email,
-          phone: d.phone,
-          partnerType: d.partner_type,
-          contributionType: d.contribution_type,
-          message: d.message,
-          status: d.status || 'Pending Review ⏳',
-          date: d.created_at ? d.created_at.split('T')[0] : new Date().toISOString().split('T')[0]
-        }));
-        setSponsors(mapped);
-      }
-    } catch (e) {
-      console.warn("Supabase sponsors fetch info:", e);
-    }
-  };
-
-  const fetchAllProfiles = async () => {
-    try {
-      const { data } = await supabase.from('profiles').select('*');
-      if (data) setAllProfiles(data);
-    } catch (e) {
-      console.warn("Profiles fetch error:", e);
-    }
-  };
 
   const fetchUserProfile = async (authUser) => {
     const userId = authUser?.id;
     if (!userId) return;
 
     try {
-      const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-      const metaRole = authUser?.user_metadata?.role;
-      const effectiveRole = metaRole || data?.role || 'student';
+      const meta = authUser.user_metadata || {};
+      let { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+      if (error) throw error;
 
-      setAuthName(data?.full_name || authUser?.user_metadata?.full_name || 'User');
+      if (!data) {
+        // First login: create the profile row. Role is ALWAYS 'student' here;
+        // teachers/admins are promoted by editing profiles.role in Supabase.
+        const fresh = {
+          id: userId,
+          full_name: meta.full_name || 'Student',
+          role: 'student',
+          grade: parseInt(meta.grade) || 7,
+          coins: 0,
+          xp: 0
+        };
+        const { data: created, error: insertError } = await supabase.from('profiles').insert([fresh]).select().maybeSingle();
+        if (insertError) console.warn('Profile create error:', insertError.message);
+        data = created || fresh;
+      }
+
+      // Role comes from the database only. user_metadata can be edited by the user.
+      const effectiveRole = data.role || 'student';
+      const savedAttempts = Array.isArray(data.challenge_attempts) ? data.challenge_attempts : [];
+
+      setAuthName(data.full_name || meta.full_name || 'User');
       setRole(effectiveRole);
-      setStudentGrade(data?.grade || authUser?.user_metadata?.grade || 7);
-      setSchoolName(data?.school_name || authUser?.user_metadata?.school_name || 'Majeedhiyya School');
-      setStudentAddress(data?.student_address || authUser?.user_metadata?.student_address || 'M. Henveiru, Malé');
-      setIndexNumber(data?.index_number || authUser?.user_metadata?.index_number || 'STU-2026');
-      setTeacherSubject(data?.teacher_subject || authUser?.user_metadata?.teacher_subject || 'Physics');
-      setCoins(data?.coins ?? 350);
-      setXp(data?.xp ?? 420);
-      
+      setStudentGrade(data.grade || parseInt(meta.grade) || 7);
+      setSchoolName(data.school_name || 'Majeedhiyya School');
+      setStudentAddress(data.student_address || 'M. Henveiru, Malé');
+      setIndexNumber(data.index_number || 'STU-2026');
+      setTeacherSubject(data.teacher_subject || 'Physics');
+      setCoins(data.coins ?? 0);
+      setXp(data.xp ?? 0);
+      setAttempts(savedAttempts);
+
+      // Completed timed quizzes are also derived from the server-side attempt history,
+      // so clearing browser storage no longer resets the "once only" rule.
+      const serverKeys = savedAttempts.filter(a => a.completed).map(a => `${a.quiz_id}_${a.mode}`);
+      setCompletedQuizModes(prev => Array.from(new Set([...prev, ...serverKeys])));
+
+      setProfileLoaded(true);
+
       const initialTab = getDefaultTabForRole(effectiveRole);
       setActiveTab(initialTab);
       window.history.replaceState({ tab: initialTab }, '', `#${initialTab}`);
+
+      loadAppData(effectiveRole);
     } catch (e) {
-      console.warn("Profile fetch error:", e);
+      console.warn('Profile fetch error:', e);
+      showToast('⚠️ Could not load your profile. Please refresh the page.', 'error');
     }
   };
 
+  const loadAppData = (effectiveRole) => {
+    fetchQuizzesFromSupabase();
+    fetchShopItemsFromSupabase(effectiveRole);
+    fetchBadgesFromSupabase();
+    fetchLeaderboard();
+    if (effectiveRole === 'super_admin') fetchSponsorsFromSupabase();
+  };
+
+  const fetchQuizzesFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase.from('quizzes').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setQuizzes(data.map(q => ({
+          ...q,
+          grade: parseInt(q.grade) || 7,
+          questions: typeof q.questions === 'string' ? JSON.parse(q.questions) : (q.questions || [])
+        })));
+      }
+    } catch (e) {
+      console.warn('Quizzes fetch info:', e);
+    }
+  };
+
+  const fetchShopItemsFromSupabase = async (effectiveRole) => {
+    try {
+      const { data, error } = await supabase.from('shop_items').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setShopItems(data);
+      } else if (effectiveRole === 'super_admin') {
+        // Seed default inventory ONCE, in a single batch, and only from an admin session
+        const rows = INITIAL_SHOP_ITEMS.map(i => ({
+          id: i.id,
+          name: i.name,
+          category: i.category,
+          cost: i.cost,
+          stock: i.stock ?? 10,
+          creator_name: 'Admin',
+          target_grade: i.target_grade || 'All',
+          image_url: i.image_url || 'https://images.unsplash.com/photo-1585336261026-6757688719d3?auto=format&fit=crop&q=80&w=600',
+          rating: 4.9,
+          desc: i.desc || ''
+        }));
+        const { error: seedError } = await supabase.from('shop_items').insert(rows);
+        if (!seedError) setShopItems(rows);
+        else console.warn('Shop seed error:', seedError.message);
+      }
+    } catch (e) {
+      console.warn('Shop items fetch info:', e);
+    }
+  };
+
+  const fetchBadgesFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase.from('badges').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setBadges(data.map(b => ({ id: b.id, name: b.name, icon: b.icon, desc: b.desc, reqXp: b.req_xp })));
+      }
+    } catch (e) {
+      console.warn('Badges fetch info:', e);
+    }
+  };
+
+  // Leaderboard only needs a few public columns. Prefer a `leaderboard` view (see supabase_setup.sql)
+  // so students never download other students' attempts/addresses; fall back to profiles.
+  const fetchLeaderboard = async () => {
+    try {
+      let res = await supabase.from('leaderboard').select('id, full_name, grade, coins, xp');
+      if (res.error) {
+        res = await supabase.from('profiles').select('id, full_name, grade, coins, xp, role').eq('role', 'student');
+      }
+      if (!res.error && res.data) {
+        setAllProfiles(res.data.map(p => ({ ...p, role: 'student' })));
+      }
+    } catch (e) {
+      console.warn('Leaderboard fetch error:', e);
+    }
+  };
+
+  const fetchSponsorsFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase.from('sponsors').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      setSponsors((data || []).map(d => ({
+        id: d.id,
+        applicantName: d.applicant_name,
+        email: d.email,
+        phone: d.phone,
+        partnerType: d.partner_type,
+        contributionType: d.contribution_type,
+        message: d.message,
+        status: d.status || 'Pending Review ⏳',
+        date: d.created_at ? d.created_at.split('T')[0] : new Date().toISOString().split('T')[0]
+      })));
+    } catch (e) {
+      console.warn('Supabase sponsors fetch info:', e);
+    }
+  };
+
+  // Refresh the leaderboard whenever its tab is opened
+  useEffect(() => {
+    if (user?.id && activeTab === 'leaderboard') fetchLeaderboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, user?.id]);
+
+  // Save coins / XP whenever they change (debounced). Covers quizzes, library and shop in one place.
+  useEffect(() => {
+    if (!user?.id || !profileLoaded || role !== 'student') return;
+    const t = setTimeout(async () => {
+      const { error } = await supabase.from('profiles').update({ coins, xp }).eq('id', user.id);
+      if (error) console.warn('Progress save error:', error.message);
+    }, 800);
+    return () => clearTimeout(t);
+  }, [coins, xp, user?.id, profileLoaded, role]);
+
+  // ---------- Quiz / shop / badge / sponsor CRUD (each checks the Supabase result) ----------
+  const handleAddShopItem = async (newItem) => {
+    const { error } = await supabase.from('shop_items').insert([{
+      id: newItem.id,
+      name: newItem.name,
+      category: newItem.category,
+      cost: parseInt(newItem.cost),
+      stock: parseInt(newItem.stock ?? 10),
+      creator_name: newItem.creator_name || authName,
+      target_grade: newItem.target_grade || 'All',
+      image_url: newItem.image_url,
+      rating: newItem.rating || 4.9,
+      desc: newItem.desc || ''
+    }]);
+
+    if (error) {
+      showToast(`⚠️ Could not save item: ${error.message}`, 'error');
+      return false;
+    }
+    setShopItems(prev => [newItem, ...prev]);
+    showToast('🎉 Reward item saved!', 'success');
+    return true;
+  };
+
+  const handleDeleteShopItem = async (itemId) => {
+    const { error } = await supabase.from('shop_items').delete().eq('id', itemId);
+    if (error) {
+      showToast(`⚠️ Could not delete item: ${error.message}`, 'error');
+      return false;
+    }
+    setShopItems(prev => prev.filter(i => i.id !== itemId));
+    return true;
+  };
+
+  const handlePurchaseItem = (item) => {
+    const stock = Number(item.stock ?? 0);
+    if (stock <= 0) return showToast('❌ Sorry, this item is out of stock.', 'error');
+    if (coins < item.cost) return showToast('❌ Not enough coins! Complete Timed Challenge Quizzes to earn more.', 'error');
+
+    askConfirm('Confirm Store Purchase', `Spend ${item.cost} Coins on "${item.name}"?`, () => {
+      setCoins(c => c - item.cost);
+      setShopItems(prev => prev.map(i => (i.id === item.id ? { ...i, stock: stock - 1 } : i)));
+
+      const newOrder = {
+        id: `ORD-${Math.floor(10000 + Math.random() * 90000)}`,
+        student_id: user.id,
+        student_name: authName,
+        item_id: item.id,
+        name: item.name,
+        cost: item.cost,
+        date: new Date().toISOString().split('T')[0],
+        status: 'Pending Teacher Collection',
+        code: `GR${studentGrade}-${Math.floor(10000 + Math.random() * 90000)}`
+      };
+      setOrders(prev => [newOrder, ...prev]);
+      showToast(`🎉 Claimed ${item.name}! Show collection code '${newOrder.code}' to your teacher.`, 'success');
+
+      // Best-effort server sync (needs the policies / table from supabase_setup.sql)
+      supabase.from('shop_items').update({ stock: stock - 1 }).eq('id', item.id)
+        .then(({ error }) => { if (error) console.warn('Stock sync error:', error.message); });
+      supabase.from('orders').insert([{
+        id: newOrder.id, student_id: user.id, student_name: authName, item_id: item.id,
+        item_name: item.name, cost: item.cost, status: newOrder.status, code: newOrder.code
+      }]).then(({ error }) => { if (error) console.warn('Order sync error:', error.message); });
+    }, { confirmLabel: 'Buy Now', danger: false });
+  };
+
+  const handleAddBadge = async (newBadge) => {
+    const { error } = await supabase.from('badges').insert([{
+      id: newBadge.id,
+      name: newBadge.name,
+      icon: newBadge.icon,
+      desc: newBadge.desc,
+      req_xp: parseInt(newBadge.reqXp)
+    }]);
+    if (error) {
+      showToast(`⚠️ Could not save badge: ${error.message}`, 'error');
+      return false;
+    }
+    setBadges(prev => [...prev, newBadge]);
+    showToast('🎉 Achievement badge saved!', 'success');
+    return true;
+  };
+
+  const handleDeleteBadge = async (badgeId) => {
+    const { error } = await supabase.from('badges').delete().eq('id', badgeId);
+    if (error) {
+      showToast(`⚠️ Could not delete badge: ${error.message}`, 'error');
+      return false;
+    }
+    setBadges(prev => prev.filter(b => b.id !== badgeId));
+    return true;
+  };
+
+  const handleAddQuiz = async (newQuiz) => {
+    const { error } = await supabase.from('quizzes').insert([{
+      id: newQuiz.id,
+      title: newQuiz.title,
+      subject: newQuiz.subject,
+      grade: parseInt(newQuiz.grade),
+      subject_code: newQuiz.subject_code || '',
+      exam_year: newQuiz.exam_year ? parseInt(newQuiz.exam_year) : null,
+      variant: newQuiz.variant || '',
+      is_past_paper: !!newQuiz.is_past_paper,
+      has_diagrams: !!newQuiz.has_diagrams,
+      questions: newQuiz.questions
+    }]);
+    if (error) {
+      showToast(`⚠️ Could not save quiz: ${error.message}`, 'error');
+      return false;
+    }
+    setQuizzes(prev => [newQuiz, ...prev]);
+    showToast(`🎉 Quiz published with ${newQuiz.questions.length} questions!`, 'success');
+    return true;
+  };
+
+  const handleDeleteQuiz = async (quizId) => {
+    const { error } = await supabase.from('quizzes').delete().eq('id', quizId);
+    if (error) {
+      showToast(`⚠️ Could not delete quiz: ${error.message}`, 'error');
+      return false;
+    }
+    setQuizzes(prev => prev.filter(q => q.id !== quizId));
+    return true;
+  };
+
+  const handleUpdateSponsorStatus = async (sponsorId, newStatus) => {
+    const { error } = await supabase.from('sponsors').update({ status: newStatus }).eq('id', sponsorId);
+    if (error) return showToast(`⚠️ Could not update status: ${error.message}`, 'error');
+    setSponsors(prev => prev.map(s => (s.id === sponsorId ? { ...s, status: newStatus } : s)));
+    showToast(`Updated sponsor status to "${newStatus}"!`, 'success');
+  };
+
+  const handleDeleteSponsor = async (sponsorId) => {
+    const { error } = await supabase.from('sponsors').delete().eq('id', sponsorId);
+    if (error) return showToast(`⚠️ Could not delete proposal: ${error.message}`, 'error');
+    setSponsors(prev => prev.filter(s => s.id !== sponsorId));
+    showToast('Removed sponsor proposal.', 'info');
+  };
+
+  // ---------- Profile ----------
   const handleUpdateProfile = async (updatedFields) => {
+    if (!user?.id) return;
+    // .update() (not upsert) so the role column can never be touched from the client
+    const { error } = await supabase.from('profiles').update({
+      full_name: updatedFields.full_name,
+      grade: updatedFields.grade,
+      school_name: updatedFields.school_name,
+      student_address: updatedFields.student_address,
+      index_number: updatedFields.index_number
+    }).eq('id', user.id);
+
+    if (error) {
+      showToast(`⚠️ Profile not saved: ${error.message}`, 'error');
+      return;
+    }
     setAuthName(updatedFields.full_name);
     setStudentGrade(updatedFields.grade);
     setSchoolName(updatedFields.school_name);
     setStudentAddress(updatedFields.student_address);
     setIndexNumber(updatedFields.index_number);
-
-    if (user?.id) {
-      try {
-        await supabase.from('profiles').upsert({
-          id: user.id,
-          full_name: updatedFields.full_name,
-          grade: updatedFields.grade,
-          school_name: updatedFields.school_name,
-          student_address: updatedFields.student_address,
-          index_number: updatedFields.index_number,
-          role
-        });
-      } catch (err) {
-        console.warn("Supabase profile sync error:", err);
-      }
-    }
   };
 
   const handleLogout = async () => {
+    if (user?.id && profileLoaded && role === 'student') {
+      await supabase.from('profiles').update({ coins, xp }).eq('id', user.id);
+    }
     await supabase.auth.signOut();
-    setUser(null);
-    setActiveQuiz(null);
-    setCompletedQuizModes([]);
     setAuthView('landing');
-    showToast("Signed out successfully.", "info");
+    showToast('Signed out successfully.', 'info');
   };
 
+  // ---------- Quiz engine ----------
   const startQuiz = (quiz, mode) => {
+    if (!quiz?.questions?.length) {
+      showToast('This quiz has no questions yet.', 'warning');
+      return;
+    }
+
     const completionKey = `${quiz.id}_${mode}`;
 
-    if ((mode === 'challenge' || mode === 'olevel') && completedQuizModes.includes(completionKey)) {
-      showToast("🔒 Quiz Completed! Timed simulation quizzes can only be taken once.", "warning");
+    if (TIMED_MODES.includes(mode) && completedQuizModes.includes(completionKey)) {
+      showToast('🔒 Quiz Completed! Timed simulation quizzes can only be taken once.', 'warning');
       return;
     }
 
     if (mode === 'challenge' && lockedChallengeQuizIds.includes(quiz.id)) {
-      showToast("🔒 Challenge Locked! Hearts ran out earlier. Complete Practice Mode first to re-unlock!", "warning");
+      showToast('🔒 Challenge Locked! Complete Practice Mode first to re-unlock!', 'warning');
       return;
     }
 
@@ -393,38 +567,142 @@ export default function App() {
     setStreak(0);
     setQuizFinished(false);
     setGameOver(false);
+    setAnswerLog([]);
+    setReward({ coins: 0, xp: 0 });
     setTimeLeft(getQuizTimeLimit(quiz));
 
-    window.history.pushState({ modal: 'quiz' }, '', '#quiz');
+    if (window.location.hash !== '#quiz') window.history.pushState({ modal: 'quiz' }, '', '#quiz');
   };
 
+  // Saves a timed attempt to the student's profile so teachers can see it in the tracker
+  const saveAttempt = (quiz, mode, finalScore, finalLog, completed) => {
+    const byTopic = {};
+    finalLog.forEach(({ topic, correct }) => {
+      const key = topic || quiz.subject;
+      byTopic[key] = byTopic[key] || { topic: key, correct: 0, total: 0 };
+      byTopic[key].total += 1;
+      if (correct) byTopic[key].correct += 1;
+    });
+
+    const attempt = {
+      quiz_id: quiz.id,
+      quiz_title: quiz.title,
+      subject: quiz.subject,
+      mode,
+      score: finalScore,
+      total: quiz.questions.length,
+      completed,
+      date: new Date().toISOString(),
+      topics: Object.values(byTopic)
+    };
+
+    const next = [...attemptsRef.current, attempt].slice(-300);
+    attemptsRef.current = next;
+    setAttempts(next);
+
+    if (user?.id) {
+      supabase.from('profiles').update({ challenge_attempts: next }).eq('id', user.id)
+        .then(({ error }) => { if (error) console.warn('Attempt save error:', error.message); });
+    }
+  };
+
+  // Hearts ran out, time ran out, or the student quit a timed quiz
+  const failTimedQuiz = (reason, finalScore, finalLog, { silent = false } = {}) => {
+    const { activeQuiz: quiz, quizMode: mode } = quizRef.current;
+    if (!quiz) return;
+
+    if (mode === 'challenge') {
+      updateLockedChallenges(prev => (prev.includes(quiz.id) ? prev : [...prev, quiz.id]));
+    } else if (mode === 'olevel') {
+      recordUserCompletion(`${quiz.id}_olevel`);
+    }
+    saveAttempt(quiz, mode, finalScore, finalLog, false);
+
+    if (!silent) {
+      setGameOver(true);
+      showToast(
+        mode === 'olevel'
+          ? (reason === 'time' ? '⏰ Time is up! This timed simulation is now closed.' : '💔 Out of hearts! This timed simulation is now closed.')
+          : (reason === 'time' ? '⏰ Time is up! Complete Practice Mode again to unlock Challenge mode.' : '💔 Out of hearts! Complete Practice Mode again to unlock Challenge mode.'),
+        'error'
+      );
+    }
+  };
+
+  // Countdown for timed modes
+  const timedRunning = !!activeQuiz && TIMED_MODES.includes(quizMode) && !quizFinished && !gameOver;
+
+  useEffect(() => {
+    if (!timedRunning) return;
+    const id = setInterval(() => setTimeLeft(t => (t > 0 ? t - 1 : 0)), 1000);
+    return () => clearInterval(id);
+  }, [timedRunning]);
+
+  useEffect(() => {
+    if (timedRunning && timeLeft <= 0) {
+      failTimedQuiz('time', score, answerLog);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft, timedRunning]);
+
   const handleAnswerSubmit = (option) => {
+    if (!activeQuiz || showExplanation) return;
+
     const currentQ = activeQuiz.questions[currentQuestionIdx];
-    const isCorrect = option === currentQ.correct_option;
+    const isCorrect = option === String(currentQ.correct_option || '').trim().toUpperCase();
+    const newScore = isCorrect ? score + 1 : score;
+    const newLog = [...answerLog, { topic: currentQ.topic || activeQuiz.subject, correct: isCorrect }];
+
     setSelectedOption(option);
     setShowExplanation(true);
+    setAnswerLog(newLog);
 
     if (isCorrect) {
       playSound('correct');
-      setScore(s => s + 1);
+      setScore(newScore);
       setStreak(st => st + 1);
     } else {
       playSound('wrong');
       setStreak(0);
-      if (quizMode === 'challenge' || quizMode === 'olevel') {
-        setHearts((prevHearts) => {
-          const nextHearts = prevHearts - 1;
-          if (nextHearts <= 0) {
-            setGameOver(true);
-            if (!lockedChallengeQuizIds.includes(activeQuiz.id)) {
-              setLockedChallengeQuizIds(prevIds => [...prevIds, activeQuiz.id]);
-            }
-            showToast("💔 Out of hearts! Complete Practice Mode again to unlock Challenge mode.", "error");
-          }
-          return nextHearts;
-        });
+      if (TIMED_MODES.includes(quizMode)) {
+        const nextHearts = hearts - 1;
+        setHearts(nextHearts);
+        if (nextHearts <= 0) failTimedQuiz('hearts', newScore, newLog);
       }
     }
+  };
+
+  const finishQuiz = () => {
+    const completionKey = `${activeQuiz.id}_${quizMode}`;
+
+    if (quizMode === 'practice') {
+      updateLockedChallenges(prev => prev.filter(id => id !== activeQuiz.id));
+      recordUserCompletion(completionKey);
+      setReward({ coins: 0, xp: 0 });
+      showToast('📖 Practice Mode Completed! Challenge Mode UNLOCKED 🔓 (0 Coins & 0 XP awarded in Practice)', 'info');
+    } else {
+      const totalQuestions = activeQuiz.questions.length;
+      const isPerfect5Hearts = hearts === 5 && score === totalQuestions;
+      const totalCoins = isPerfect5Hearts ? 25 : score * 2;
+      const earnedXp = score * 10;
+      const isFirstTimeCompletion = !completedQuizModes.includes(completionKey);
+
+      saveAttempt(activeQuiz, quizMode, score, answerLog, true);
+
+      if (isFirstTimeCompletion) {
+        playSound('coin');
+        setCoins(c => c + totalCoins);
+        setXp(x => x + earnedXp);
+        recordUserCompletion(completionKey);
+        setReward({ coins: totalCoins, xp: earnedXp });
+
+        const detailMsg = isPerfect5Hearts
+          ? '⭐ PERFECT 5-HEART BONUS! 25 Coins Claimed!'
+          : `${score} correct × 2 coins = ${totalCoins} Coins Claimed!`;
+        showToast(`🏆 Timed Quiz Completed! +${totalCoins} Coins (${detailMsg}) & +${earnedXp} XP! Quiz locked.`, 'success');
+      }
+    }
+    setQuizFinished(true);
   };
 
   const nextQuestion = () => {
@@ -434,36 +712,58 @@ export default function App() {
     if (currentQuestionIdx + 1 < activeQuiz.questions.length) {
       setCurrentQuestionIdx(idx => idx + 1);
     } else {
-      setQuizFinished(true);
-
-      const completionKey = `${activeQuiz.id}_${quizMode}`;
-      const isFirstTimeCompletion = !completedQuizModes.includes(completionKey);
-
-      if (quizMode === 'practice') {
-        setLockedChallengeQuizIds(prev => prev.filter(id => id !== activeQuiz.id));
-        recordUserCompletion(completionKey);
-        showToast("📖 Practice Mode Completed! Challenge Mode UNLOCKED 🔓 (0 Coins & 0 XP awarded in Practice)", "info");
-      } else {
-        const totalQuestions = activeQuiz.questions.length;
-        const isPerfect5Hearts = (hearts === 5 && score === totalQuestions);
-        const totalCoins = isPerfect5Hearts ? 25 : (score * 2);
-        const earnedXp = score * 10;
-
-        if (isFirstTimeCompletion) {
-          playSound('coin');
-          setCoins(c => c + totalCoins);
-          setXp(x => x + earnedXp);
-          recordUserCompletion(completionKey);
-
-          const detailMsg = isPerfect5Hearts 
-            ? "⭐ PERFECT 5-HEART BONUS! 25 Coins Claimed!" 
-            : `${score} correct × 2 coins = ${totalCoins} Coins Claimed!`;
-
-          showToast(`🏆 Timed Quiz Completed! +${totalCoins} Coins (${detailMsg}) & +${earnedXp} XP! Quiz locked.`, "success");
-        }
-      }
+      finishQuiz();
     }
   };
+
+  // Closing a timed quiz half-way counts as giving up (otherwise you could peek and retry)
+  const closeQuizNow = (forfeit) => {
+    const q = quizRef.current;
+    if (forfeit && q.activeQuiz) failTimedQuiz('quit', q.score, q.answerLog, { silent: true });
+    quizRef.current = { ...q, activeQuiz: null };
+    setActiveQuiz(null);
+    if (window.location.hash === '#quiz') window.history.back();
+  };
+
+  const closeQuiz = () => {
+    const q = quizRef.current;
+    const inProgress = q.activeQuiz && TIMED_MODES.includes(q.quizMode) && !q.quizFinished && !q.gameOver;
+    if (inProgress) {
+      askConfirm(
+        'Quit this timed quiz?',
+        q.quizMode === 'olevel'
+          ? 'Quitting uses up your one attempt at this timed simulation.'
+          : 'Quitting locks Challenge mode until you complete Practice Mode again.',
+        () => closeQuizNow(true),
+        { confirmLabel: 'Quit Quiz' }
+      );
+    } else {
+      closeQuizNow(false);
+    }
+  };
+
+  // ---------- Navigation / browser back button ----------
+  useEffect(() => {
+    const onPop = (e) => {
+      const s = e.state || {};
+      if (s.modal) return;
+
+      const q = quizRef.current;
+      if (q.activeQuiz) {
+        const inProgress = TIMED_MODES.includes(q.quizMode) && !q.quizFinished && !q.gameOver;
+        if (inProgress) failTimedQuiz('quit', q.score, q.answerLog, { silent: true });
+        quizRef.current = { ...q, activeQuiz: null };
+        setActiveQuiz(null);
+      }
+      setShowDiagramUploadModal(false);
+
+      const allowed = ROLE_TABS[roleRef.current] || ROLE_TABS.student;
+      if (s.tab && allowed.includes(s.tab)) setActiveTab(s.tab);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const navigateToTab = (tabName) => {
     const allowed = ROLE_TABS[role] || ROLE_TABS.student;
@@ -474,6 +774,12 @@ export default function App() {
     window.history.pushState({ tab: tabName }, '', `#${tabName}`);
   };
 
+  const openDiagramUpload = () => {
+    setShowDiagramUploadModal(true);
+    window.history.pushState({ modal: 'diagram' }, '', '#diagram');
+  };
+
+  // ---------- Render ----------
   if (!user) {
     return (
       <>
@@ -496,11 +802,13 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
       <ToastContainer toasts={toasts} removeToast={removeToast} />
-      
+
       <ConfirmModal
         isOpen={confirmState.isOpen}
         title={confirmState.title}
         message={confirmState.message}
+        confirmLabel={confirmState.confirmLabel}
+        danger={confirmState.danger}
         onConfirm={confirmState.onConfirm}
         onCancel={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
       />
@@ -526,10 +834,7 @@ export default function App() {
             startQuiz={startQuiz}
             lockedChallengeQuizIds={lockedChallengeQuizIds}
             completedQuizModes={completedQuizModes}
-            onOpenDiagramUpload={() => {
-              setShowDiagramUploadModal(true);
-              window.history.pushState({ modal: 'diagram' }, '', '#diagram');
-            }}
+            onOpenDiagramUpload={openDiagramUpload}
             showToast={showToast}
             askConfirm={askConfirm}
           />
@@ -542,24 +847,21 @@ export default function App() {
             onDeleteQuiz={handleDeleteQuiz}
             startQuiz={startQuiz}
             completedQuizModes={completedQuizModes}
-            onOpenDiagramUpload={() => {
-              setShowDiagramUploadModal(true);
-              window.history.pushState({ modal: 'diagram' }, '', '#diagram');
-            }}
+            onOpenDiagramUpload={openDiagramUpload}
             showToast={showToast}
             askConfirm={askConfirm}
           />
         )}
 
         {activeTab === 'leaderboard' && (
-          <LeaderboardTab profiles={allProfiles} />
+          <LeaderboardTab profiles={allProfiles} currentUserId={user.id} />
         )}
 
         {activeTab === 'library' && (
           <LibraryTab
             role={role} books={books} setBooks={setBooks}
             setCoins={setCoins} setXp={setXp} setReadingHours={setReadingHours}
-            claimedCodes={claimedCodes} setClaimedCodes={setClaimedCodes}
+            claimedCodes={claimedCodes} setClaimedCodes={updateClaimedCodes}
             showToast={showToast} askConfirm={askConfirm}
           />
         )}
@@ -568,8 +870,7 @@ export default function App() {
           <ShopTab
             role={role} authName={authName} studentGrade={studentGrade}
             shopItems={shopItems} onAddShopItem={handleAddShopItem} onDeleteShopItem={handleDeleteShopItem}
-            coins={coins} setCoins={setCoins}
-            orders={orders} setOrders={setOrders}
+            onPurchase={handlePurchaseItem} coins={coins}
             showToast={showToast} askConfirm={askConfirm}
           />
         )}
@@ -587,9 +888,9 @@ export default function App() {
             ranks={ranks}
             setRanks={setRanks}
             sponsors={sponsors}
-            setSponsors={setSponsors}
-            showDiagramUploadModal={showDiagramUploadModal}
-            setShowDiagramUploadModal={setShowDiagramUploadModal}
+            onUpdateSponsorStatus={handleUpdateSponsorStatus}
+            onDeleteSponsor={handleDeleteSponsor}
+            onOpenDiagramUpload={openDiagramUpload}
             showToast={showToast}
             askConfirm={askConfirm}
           />
@@ -610,9 +911,11 @@ export default function App() {
         <DiagramUploadModal
           onAddQuiz={handleAddQuiz}
           showToast={showToast}
+          defaultSubject={role === 'teacher' ? teacherSubject : undefined}
+          lockSubject={role === 'teacher'}
           onClose={() => {
             setShowDiagramUploadModal(false);
-            if (window.location.hash.includes('diagram')) window.history.back();
+            if (window.location.hash === '#diagram') window.history.back();
           }}
         />
       )}
@@ -622,11 +925,9 @@ export default function App() {
           activeQuiz={activeQuiz} quizMode={quizMode} currentQuestionIdx={currentQuestionIdx}
           hearts={hearts} timeLeft={timeLeft} streak={streak} selectedOption={selectedOption}
           showExplanation={showExplanation} score={score} quizFinished={quizFinished} gameOver={gameOver}
+          reward={reward}
           handleAnswerSubmit={handleAnswerSubmit} nextQuestion={nextQuestion} startQuiz={startQuiz}
-          onClose={() => {
-            setActiveQuiz(null);
-            if (window.location.hash.includes('quiz')) window.history.back();
-          }}
+          onClose={closeQuiz}
         />
       )}
     </div>

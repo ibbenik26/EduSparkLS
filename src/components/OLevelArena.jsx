@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Clock, Image as ImageIcon, Play, Filter, BookOpen, Trash2, Search, Check, CheckCircle2 } from 'lucide-react';
-import { ALL_SUBJECTS, isRTLSubject, canUserCRUDOLevel, lenientMatch } from '../utils/helpers';
+import { ALL_SUBJECTS, isRTLSubject, canUserCRUDOLevel, lenientMatch, getQuizTimeLimit } from '../utils/helpers';
 
 export default function OLevelArena({
   role,
@@ -135,7 +135,7 @@ export default function OLevelArena({
                   <div className="flex items-center space-x-2">
                     <span className="text-xs font-mono font-bold text-slate-500 flex items-center space-x-1">
                       <Clock className="w-3.5 h-3.5 text-amber-600" />
-                      <span>{paper.time_limit || 120}s limit</span>
+                      <span>{Math.round(getQuizTimeLimit(paper) / 60)} min limit</span>
                     </span>
 
                     {canEditOLevel && (
