@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Image as ImageIcon } from 'lucide-react';
+import { ShoppingBag, Plus, Trash2, Image as ImageIcon, Upload, Tag, Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
 import { canUserCRUDShop } from '../utils/helpers';
 
 export default function ShopTab({
-  role, authName, studentGrade, shopItems, onAddShopItem, onDeleteShopItem,
-  onPurchase, coins, showToast, askConfirm
+  role, authName, studentGrade, shopItems, onAddShopItem, onDeleteShopItem, onPurchaseItem,
+  coins, setCoins, orders, setOrders, showToast, askConfirm
 }) {
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [itemName, setItemName] = useState('');
@@ -14,51 +14,85 @@ export default function ShopTab({
   const [desc, setDesc] = useState('');
   const [targetGrade, setTargetGrade] = useState('All');
   const [imageUrl, setImageUrl] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const canEditShop = canUserCRUDShop(role);
 
-  // Default sample images for quick selection
   const presetImages = [
     { label: 'Stationery Kit', url: 'https://images.unsplash.com/photo-1585336261026-6757688719d3?auto=format&fit=crop&q=80&w=600' },
-    { label: 'Maths & Geometry', url: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=600' },
-    { label: 'Books & Science', url: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=600' },
+    { label: 'Maths Tools', url: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=600' },
+    { label: 'Science Books', url: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=600' },
     { label: 'School Bag', url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600' }
   ];
 
-  // Students only see items meant for their grade (or for everyone)
-  const visibleItems = role === 'student'
-    ? shopItems.filter(i => !i.target_grade || i.target_grade === 'All' || String(i.target_grade) === String(studentGrade))
-    : shopItems;
+  // Convert File Input to Base64 String for Supabase storage
+  const handleImageFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const handleCreateShopItem = async (e) => {
+    if (file.size > 3 * 1024 * 1024) {
+      showToast("⚠️ Image file must be under 3MB", "warning");
+      return;
+    }
+
+    setUploadingImage(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImageUrl(reader.result);
+      setUploadingImage(false);
+      showToast("📷 Image attached successfully!", "info");
+    };
+    reader.onerror = () => {
+      setUploadingImage(false);
+      showToast("❌ Error reading image file", "error");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePurchase = (item) => {
+    if (item.stock <= 0) {
+      showToast("❌ Item is currently out of stock!", "error");
+      return;
+    }
+
+    if (coins < item.cost) {
+      showToast("❌ Not enough coins! Complete Timed Challenge Quizzes to earn more.", "error");
+      return;
+    }
+
+    askConfirm("Confirm Store Purchase", `Spend ${item.cost} Coins on "${item.name}"?`, () => {
+      onPurchaseItem(item);
+    });
+  };
+
+  const handleCreateShopItem = (e) => {
     e.preventDefault();
-    if (!itemName.trim()) return showToast("Enter item name", "warning");
-    if (!(parseInt(cost) > 0)) return showToast("Cost must be at least 1 coin.", "warning");
-    if (!(parseInt(stock) >= 0)) return showToast("Stock cannot be negative.", "warning");
+    if (!itemName) return showToast("Enter item name", "warning");
+
+    const finalImage = imageUrl || presetImages[0].url;
 
     const newItem = {
       id: `shop_${Date.now()}`,
-      name: itemName.trim(),
+      name: itemName,
       category,
       cost: parseInt(cost),
       stock: parseInt(stock),
       creator_name: authName,
       target_grade: targetGrade,
-      image_url: imageUrl || presetImages[0].url,
+      image_url: finalImage,
       rating: 5.0,
       desc
     };
 
-    const ok = await onAddShopItem(newItem);
-    if (!ok) return;
+    onAddShopItem(newItem);
     setShowAddItemModal(false);
-    setItemName(''); setDesc(''); setImageUrl('');
+    setItemName(''); setDesc(''); setImageUrl(''); setStock(10); setCost(150);
   };
 
   const handleDeleteItem = (itemId, name) => {
-    askConfirm("Delete Reward Item", `Remove "${name}" from the Reward Store permanently?`, async () => {
-      const ok = await onDeleteShopItem(itemId);
-      if (ok) showToast(`Removed "${name}" from store.`, "info");
+    askConfirm("Delete Reward Item", `Remove "${name}" permanently from Supabase database?`, () => {
+      onDeleteShopItem(itemId);
+      showToast(`Removed "${name}" from store.`, "info");
     });
   };
 
@@ -72,7 +106,7 @@ export default function ShopTab({
           </span>
           <h2 className="text-2xl sm:text-3xl font-black">Edusparkls Reward Store</h2>
           <p className="text-amber-100 text-xs max-w-lg">
-            Redeem your earned coins for physical stationery, geometry kits, and school supplies!
+            Redeem your earned coins for physical stationery, geometry kits, and school supplies synced to Supabase!
           </p>
         </div>
 
@@ -82,31 +116,35 @@ export default function ShopTab({
             className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-3 rounded-2xl text-xs transition shadow-md shrink-0 flex items-center space-x-1.5"
           >
             <Plus className="w-4 h-4" />
-            <span>+ Add Reward Item</span>
+            <span>+ Add Gift Item</span>
           </button>
         )}
       </div>
 
-      {/* Item Cards Grid with Display Images */}
-      {visibleItems.length === 0 && (
-        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-400 text-xs font-medium">
-          No reward items are available for your grade yet.
-        </div>
-      )}
-
+      {/* Item Cards Grid with Live Images and Stock Badges */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {visibleItems.map((item) => (
+        {shopItems.map((item) => (
           <div key={item.id} className="bg-white border border-slate-200 rounded-3xl p-5 space-y-3 shadow-xs hover:shadow-md transition flex flex-col justify-between group">
             <div className="space-y-3">
-              {/* Product Card Image Banner */}
-              <div className="w-full h-40 rounded-2xl overflow-hidden bg-slate-100 relative">
+              {/* Image Container */}
+              <div className="w-full h-44 rounded-2xl overflow-hidden bg-slate-100 relative">
                 <img
-                  src={item.image_url || 'https://images.unsplash.com/photo-1585336261026-6757688719d3?auto=format&fit=crop&q=80&w=600'}
+                  src={item.image_url || presetImages[0].url}
                   alt={item.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                 />
+                
                 <span className="absolute top-2.5 left-2.5 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg">
                   {item.category}
+                </span>
+
+                {/* Stock Indicator Badge */}
+                <span className={`absolute bottom-2.5 right-2.5 text-[10px] font-bold px-2.5 py-1 rounded-lg backdrop-blur-xs border ${
+                  item.stock > 0 
+                    ? 'bg-emerald-950/80 border-emerald-500/40 text-emerald-300' 
+                    : 'bg-rose-950/80 border-rose-500/40 text-rose-300'
+                }`}>
+                  {item.stock > 0 ? `Stock: ${item.stock}` : 'Out of Stock ❌'}
                 </span>
 
                 {canEditShop && (
@@ -134,29 +172,34 @@ export default function ShopTab({
                   <span>🪙</span>
                   <span>{item.cost} Coins</span>
                 </span>
-                <span className="text-[10px] text-slate-400 block font-bold">Stock Remaining: {item.stock ?? 0}</span>
               </div>
 
               {role === 'student' ? (
                 <button
-                  onClick={() => onPurchase(item)}
-                  disabled={(item.stock ?? 0) <= 0}
-                  className="bg-amber-500 hover:bg-amber-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs transition shadow-xs"
+                  onClick={() => handlePurchase(item)}
+                  disabled={item.stock <= 0}
+                  className={`font-black px-4 py-2.5 rounded-xl text-xs transition shadow-xs ${
+                    item.stock > 0 
+                      ? 'bg-amber-500 hover:bg-amber-600 text-slate-950' 
+                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  }`}
                 >
-                  {(item.stock ?? 0) <= 0 ? 'Out of Stock' : 'Claim Item'}
+                  {item.stock > 0 ? 'Claim Item' : 'Sold Out'}
                 </button>
               ) : (
-                <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-xl">In Inventory</span>
+                <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-xl">
+                  {item.stock} Available
+                </span>
               )}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Add Item Modal with Image Upload Options */}
+      {/* Add Item Modal with Local File Upload and URL Preview */}
       {showAddItemModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-black flex items-center space-x-2">
               <ImageIcon className="w-5 h-5 text-amber-600" />
               <span>Add Reward Store Item</span>
@@ -164,7 +207,7 @@ export default function ShopTab({
 
             <form onSubmit={handleCreateShopItem} className="space-y-3 text-xs">
               <div>
-                <label className="font-bold block mb-1">Item Name</label>
+                <label className="font-bold block mb-1">Item Title</label>
                 <input
                   type="text"
                   value={itemName}
@@ -188,7 +231,7 @@ export default function ShopTab({
                 </div>
 
                 <div>
-                  <label className="font-bold block mb-1">Stock Quantity</label>
+                  <label className="font-bold block mb-1">Inventory Stock</label>
                   <input
                     type="number"
                     value={stock}
@@ -209,34 +252,50 @@ export default function ShopTab({
                 </select>
               </div>
 
-              <div>
-                <label className="font-bold block mb-1">Target Grade</label>
-                <select value={targetGrade} onChange={(e) => setTargetGrade(e.target.value)} className="w-full border rounded-xl p-2.5 font-bold">
-                  <option value="All">All Grades</option>
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => <option key={g} value={String(g)}>Grade {g}</option>)}
-                </select>
-              </div>
+              {/* Direct File Upload & URL Field */}
+              <div className="space-y-2 bg-slate-50 border border-slate-200 p-3 rounded-2xl">
+                <label className="font-bold block text-slate-800">Item Product Image</label>
+                
+                <div className="flex items-center space-x-2">
+                  <label className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-2 rounded-xl cursor-pointer text-[11px] flex items-center space-x-1.5 transition">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload Image File</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-bold">OR paste URL below</span>
+                </div>
 
-              <div>
-                <label className="font-bold block mb-1">Item Image URL</label>
                 <input
-                  type="url"
+                  type="text"
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
                   placeholder="https://images.unsplash.com/photo-..."
-                  className="w-full border rounded-xl p-2.5 font-mono text-[11px]"
+                  className="w-full border rounded-xl p-2 font-mono text-[10px] bg-white"
                 />
 
-                <div className="mt-2 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 block">Or select a preset sample thumbnail:</span>
-                  <div className="flex flex-wrap gap-1.5">
+                {/* Image Live Preview */}
+                {imageUrl && (
+                  <div className="pt-2">
+                    <span className="text-[10px] font-bold text-slate-400 block mb-1">Image Preview:</span>
+                    <img src={imageUrl} alt="Preview" className="w-full h-28 object-cover rounded-xl border" />
+                  </div>
+                )}
+
+                <div className="mt-1 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 block">Preset Thumbnails:</span>
+                  <div className="flex flex-wrap gap-1">
                     {presetImages.map((p, idx) => (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => setImageUrl(p.url)}
-                        className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition ${
-                          imageUrl === p.url ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-100 text-slate-700 border-slate-200'
+                        className={`text-[9px] font-bold px-2 py-1 rounded-lg border transition ${
+                          imageUrl === p.url ? 'bg-amber-500 text-white border-amber-600' : 'bg-white text-slate-700 border-slate-200'
                         }`}
                       >
                         {p.label}
@@ -261,8 +320,12 @@ export default function ShopTab({
                 <button type="button" onClick={() => setShowAddItemModal(false)} className="w-full bg-slate-100 hover:bg-slate-200 font-bold py-2.5 rounded-xl transition">
                   Cancel
                 </button>
-                <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-2.5 rounded-xl transition shadow-sm">
-                  Save Item 🚀
+                <button
+                  type="submit"
+                  disabled={uploadingImage}
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-2.5 rounded-xl transition shadow-sm"
+                >
+                  {uploadingImage ? 'Uploading...' : 'Save to Supabase 🚀'}
                 </button>
               </div>
             </form>

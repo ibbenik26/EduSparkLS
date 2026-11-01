@@ -96,7 +96,7 @@ export default function App() {
 
   const [showDiagramUploadModal, setShowDiagramUploadModal] = useState(false);
 
-  // Sync user profile stats & completed quizzes live with Supabase
+  // Sync user progress to Supabase
   const syncUserProgressToSupabase = async (updatedCoins, updatedXp, updatedModes) => {
     if (!user?.id) return;
     try {
@@ -154,7 +154,6 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch Quizzes from Supabase
   const fetchQuizzesFromSupabase = async () => {
     try {
       const { data, error } = await supabase.from('quizzes').select('*').order('created_at', { ascending: false });
@@ -171,7 +170,7 @@ export default function App() {
     }
   };
 
-  // Fetch Shop Items from Supabase (With Automatic Seeding)
+  // Fetch Shop Items from Supabase (With Automatic Seeding if empty)
   const fetchShopItemsFromSupabase = async () => {
     try {
       const { data, error } = await supabase.from('shop_items').select('*').order('created_at', { ascending: false });
@@ -199,7 +198,6 @@ export default function App() {
     }
   };
 
-  // Fetch Badges from Supabase
   const fetchBadgesFromSupabase = async () => {
     try {
       const { data, error } = await supabase.from('badges').select('*').order('created_at', { ascending: false });
@@ -218,7 +216,7 @@ export default function App() {
     }
   };
 
-  // Add Shop Item (Supabase + State)
+  // Add Shop Item (Saves live to Supabase)
   const handleAddShopItem = async (newItem) => {
     setShopItems(prev => [newItem, ...prev]);
     const { error } = await supabase.from('shop_items').insert([{
@@ -235,13 +233,43 @@ export default function App() {
     }]);
 
     if (error) {
-      showToast(`⚠️ Supabase save alert: ${error.message}`, "error");
+      showToast(`⚠️ Supabase save error: ${error.message}`, "error");
+      fetchShopItemsFromSupabase();
     } else {
-      showToast("🎉 Reward Item Saved to Supabase Database!", "success");
+      showToast("🎉 Item saved permanently to Supabase!", "success");
     }
   };
 
-  // Delete Shop Item (Supabase + State)
+  // Purchase & Deduct Stock in Supabase
+  const handlePurchaseShopItem = async (item) => {
+    const newStock = Math.max(0, item.stock - 1);
+    const newCoins = coins - item.cost;
+
+    setCoins(newCoins);
+    setShopItems(prev => prev.map(i => i.id === item.id ? { ...i, stock: newStock } : i));
+
+    const newOrder = {
+      id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+      student_name: authName,
+      name: item.name,
+      cost: item.cost,
+      date: new Date().toISOString().split('T')[0],
+      status: 'Pending Teacher Collection',
+      code: `GR${studentGrade}-${Math.floor(1000 + Math.random() * 9000)}`
+    };
+    setOrders(prev => [newOrder, ...prev]);
+
+    // Sync item stock and student coins to Supabase
+    try {
+      await supabase.from('shop_items').update({ stock: newStock }).eq('id', item.id);
+      syncUserProgressToSupabase(newCoins, xp, completedQuizModes);
+      showToast(`🎉 Claimed ${item.name}! Collection code: '${newOrder.code}'.`, "success");
+    } catch (e) {
+      console.warn("Purchase sync error:", e);
+    }
+  };
+
+  // Delete Shop Item
   const handleDeleteShopItem = async (itemId) => {
     setShopItems(prev => prev.filter(i => i.id !== itemId));
     try {
@@ -251,7 +279,7 @@ export default function App() {
     }
   };
 
-  // Add Badge (Supabase + State)
+  // Add Badge
   const handleAddBadge = async (newBadge) => {
     setBadges(prev => [...prev, newBadge]);
     const { error } = await supabase.from('badges').insert([{
@@ -265,11 +293,11 @@ export default function App() {
     if (error) {
       showToast(`⚠️ Supabase badge save alert: ${error.message}`, "error");
     } else {
-      showToast("🎉 Achievement Badge Saved to Supabase Database!", "success");
+      showToast("🎉 Badge saved to Supabase!", "success");
     }
   };
 
-  // Delete Badge (Supabase + State)
+  // Delete Badge
   const handleDeleteBadge = async (badgeId) => {
     setBadges(prev => prev.filter(b => b.id !== badgeId));
     try {
@@ -359,7 +387,6 @@ export default function App() {
       setCoins(data?.coins ?? 350);
       setXp(data?.xp ?? 420);
 
-      // Restore user completions from Supabase / localStorage
       const userCompletions = data?.completed_quiz_modes || JSON.parse(localStorage.getItem(`edusparkls_completed_${userId}`) || '[]');
       setCompletedQuizModes(Array.isArray(userCompletions) ? userCompletions : []);
 
@@ -404,11 +431,9 @@ export default function App() {
     showToast("Signed out successfully.", "info");
   };
 
-  // STRICT SINGLE-ATTEMPT LOCK
   const startQuiz = (quiz, mode) => {
     const completionKey = `${quiz.id}_${mode}`;
 
-    // Strictly block completed timed quizzes (Practice Mode can be played anytime!)
     if ((mode === 'challenge' || mode === 'olevel') && completedQuizModes.includes(completionKey)) {
       showToast("🔒 Quiz Completed! Timed simulation quizzes can only be taken once.", "warning");
       return;
@@ -453,8 +478,6 @@ export default function App() {
           if (nextHearts <= 0) {
             setGameOver(true);
             const completionKey = `${activeQuiz.id}_${quizMode}`;
-            
-            // Record completion on game over so timed quiz locks
             recordUserCompletion(completionKey, score * 2, score * 10);
 
             if (!lockedChallengeQuizIds.includes(activeQuiz.id)) {
@@ -468,7 +491,6 @@ export default function App() {
     }
   };
 
-  // STRICT REWARD RULE EVALUATION
   const nextQuestion = () => {
     setSelectedOption(null);
     setShowExplanation(false);
@@ -499,7 +521,7 @@ export default function App() {
             ? "⭐ PERFECT 5-HEART BONUS! 25 Coins Claimed!" 
             : `${score} correct × 2 coins = ${totalCoins} Coins Claimed!`;
 
-          showToast(`🏆 Timed Quiz Completed! +${totalCoins} Coins (${detailMsg}) & +${earnedXp} XP! Quiz permanently locked.`, "success");
+          showToast(`🏆 Timed Quiz Completed! +${totalCoins} Coins (${detailMsg}) & +${earnedXp} XP! Quiz locked.`, "success");
         }
       }
     }
@@ -608,6 +630,7 @@ export default function App() {
           <ShopTab
             role={role} authName={authName} studentGrade={studentGrade}
             shopItems={shopItems} onAddShopItem={handleAddShopItem} onDeleteShopItem={handleDeleteShopItem}
+            onPurchaseItem={handlePurchaseShopItem}
             coins={coins} setCoins={setCoins}
             orders={orders} setOrders={setOrders}
             showToast={showToast} askConfirm={askConfirm}
