@@ -1,362 +1,693 @@
-import React, { useState, useRef } from 'react';
-import { ShoppingBag, Plus, Trash2, Image as ImageIcon, Upload, Tag, Sparkles, CheckCircle, Camera, X } from 'lucide-react';
-import { canUserCRUDShop } from '../utils/helpers';
-import { supabase } from '../lib/supabase';
+import React, { useState, useEffect } from 'react';
+import { supabase } from './lib/supabase';
 
-export default function ShopTab({
-  role, authName, studentGrade, shopItems, onAddShopItem, onDeleteShopItem, onPurchaseItem,
-  coins, setCoins, orders, setOrders, showToast, askConfirm
-}) {
-  const [showAddItemModal, setShowAddItemModal] = useState(false);
-  const [itemName, setItemName] = useState('');
-  const [category, setCategory] = useState('Stationery');
-  const [cost, setCost] = useState(150);
-  const [stock, setStock] = useState(10);
-  const [desc, setDesc] = useState('');
-  const [targetGrade, setTargetGrade] = useState('All');
-  const [imageUrl, setImageUrl] = useState('');
-  const [uploadingImage, setUploadingImage] = useState(false);
+import { ALL_SUBJECTS, ROLE_TABS, INITIAL_BADGES, INITIAL_RANKS, getDefaultTabForRole, getQuizTimeLimit, playSound } from './utils/helpers';
+import { INITIAL_QUIZZES, INITIAL_BOOKS, INITIAL_SHOP_ITEMS } from './data/initialData';
 
-  const fileInputRef = useRef(null);
-  const canEditShop = canUserCRUDShop(role);
+import Navbar from './components/Navbar';
+import { LandingPage, AuthForm } from './components/AuthViews';
+import StudentDashboard from './components/StudentDashboard';
+import OLevelArena from './components/OLevelArena';
+import LeaderboardTab from './components/LeaderboardTab';
+import LibraryTab from './components/LibraryTab';
+import ShopTab from './components/ShopTab';
+import TeacherStudio from './components/TeacherStudio';
+import ProfileTab from './components/ProfileTab';
 
-  // Automatic browser image compression handler (handles phone camera photos seamlessly)
-  const handleImageFileSelect = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+import QuizRunnerModal from './components/QuizRunnerModal';
+import DiagramUploadModal from './components/DiagramUploadModal';
+import { ToastContainer, ConfirmModal } from './components/NotificationToast';
 
-    setUploadingImage(true);
+export default function App() {
+  const [authView, setAuthView] = useState('landing');
+  const [user, setUser] = useState(null);
+  const [role, setRole] = useState('student');
+  const [authName, setAuthName] = useState('User');
+  const [studentGrade, setStudentGrade] = useState(7);
+  const [schoolName, setSchoolName] = useState('Majeedhiyya School');
+  const [studentAddress, setStudentAddress] = useState('M. Henveiru, Malé');
+  const [indexNumber, setIndexNumber] = useState('STU-2026');
+  const [teacherSubject, setTeacherSubject] = useState('Physics');
+
+  const [coins, setCoins] = useState(350);
+  const [xp, setXp] = useState(420);
+  const [readingHours, setReadingHours] = useState(5.5);
+  const [claimedCodes, setClaimedCodes] = useState([]);
+
+  // Badges & Ranks State
+  const [ranks, setRanks] = useState(INITIAL_RANKS);
+  const [badges, setBadges] = useState(INITIAL_BADGES);
+
+  // Persistent Sponsor Proposals State
+  const [sponsors, setSponsors] = useState(() => {
+    const saved = localStorage.getItem('edusparkls_sponsors');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('edusparkls_sponsors', JSON.stringify(sponsors));
+  }, [sponsors]);
+
+  // Quizzes & Shop Items State
+  const [quizzes, setQuizzes] = useState(INITIAL_QUIZZES);
+  const [books, setBooks] = useState(INITIAL_BOOKS);
+  const [shopItems, setShopItems] = useState(INITIAL_SHOP_ITEMS);
+  const [orders, setOrders] = useState([
+    { id: 'ORD-9021', student_name: 'Hassan Ali', name: 'Grade 7 Geometry Kit', cost: 250, date: '2026-10-18', status: 'Pending Teacher Collection', code: 'GR7-8821' }
+  ]);
+  const [allProfiles, setAllProfiles] = useState([]);
+  const [activeTab, setActiveTab] = useState('dashboard');
+
+  const [lockedChallengeQuizIds, setLockedChallengeQuizIds] = useState([]);
+  const [completedQuizModes, setCompletedQuizModes] = useState([]);
+
+  // Toast State
+  const [toasts, setToasts] = useState([]);
+  const showToast = (message, type = 'info') => {
+    const id = `toast_${Date.now()}_${Math.random()}`;
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+  const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
+
+  // Confirm Modal State
+  const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const askConfirm = (title, message, onConfirm) => {
+    setConfirmState({
+      isOpen: true, title, message,
+      onConfirm: () => {
+        onConfirm();
+        setConfirmState(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
+  // Quiz Modal State
+  const [activeQuiz, setActiveQuiz] = useState(null);
+  const [quizMode, setQuizMode] = useState('practice');
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [score, setScore] = useState(0);
+  const [hearts, setHearts] = useState(5);
+  const [streak, setStreak] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [quizFinished, setQuizFinished] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+
+  const [showDiagramUploadModal, setShowDiagramUploadModal] = useState(false);
+
+  // Sync profile data to Supabase
+  const syncUserProgressToSupabase = async (updatedCoins, updatedXp, updatedModes) => {
+    if (!user?.id) return;
+    try {
+      await supabase.from('profiles').upsert({
+        id: user.id,
+        coins: updatedCoins,
+        xp: updatedXp,
+        completed_quiz_modes: updatedModes
+      });
+    } catch (e) {
+      console.warn("Supabase progress sync info:", e);
+    }
+  };
+
+  const recordUserCompletion = (completionKey, bonusCoins = 0, bonusXp = 0) => {
+    const newCoins = coins + bonusCoins;
+    const newXp = xp + bonusXp;
+    const newModes = completedQuizModes.includes(completionKey)
+      ? completedQuizModes
+      : [...completedQuizModes, completionKey];
+
+    setCoins(newCoins);
+    setXp(newXp);
+    setCompletedQuizModes(newModes);
+
+    if (user?.id) {
+      localStorage.setItem(`edusparkls_completed_${user.id}`, JSON.stringify(newModes));
+      syncUserProgressToSupabase(newCoins, newXp, newModes);
+    }
+  };
+
+  // FETCH ALL DATA FROM SUPABASE ON LAUNCH
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+        fetchUserProfile(session.user);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        fetchUserProfile(session.user);
+      } else {
+        setUser(null);
+      }
+    });
+
+    fetchQuizzesFromSupabase();
+    fetchShopItemsFromSupabase();
+    fetchBadgesFromSupabase();
+    fetchAllProfiles();
+    fetchSponsorsFromSupabase();
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchQuizzesFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase.from('quizzes').select('*').order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        const mapped = data.map(q => ({
+          ...q,
+          grade: parseInt(q.grade) || 7,
+          questions: typeof q.questions === 'string' ? JSON.parse(q.questions) : (q.questions || [])
+        }));
+        setQuizzes(mapped);
+      }
+    } catch (e) {
+      console.warn("Quizzes fetch info:", e);
+    }
+  };
+
+  const fetchShopItemsFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase.from('shop_items').select('*').order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        setShopItems(data);
+      } else if (!error && data && data.length === 0) {
+        for (const i of INITIAL_SHOP_ITEMS) {
+          await supabase.from('shop_items').insert([{
+            id: i.id,
+            name: i.name,
+            category: i.category,
+            cost: i.cost,
+            stock: i.stock || 10,
+            creator_name: 'Admin',
+            target_grade: i.target_grade || 'All',
+            image_url: i.image_url || 'https://images.unsplash.com/photo-1585336261026-6757688719d3?auto=format&fit=crop&q=80&w=600',
+            rating: 4.9,
+            desc: i.desc || ''
+          }]);
+        }
+        setShopItems(INITIAL_SHOP_ITEMS);
+      }
+    } catch (e) {
+      console.warn("Shop items fetch info:", e);
+    }
+  };
+
+  const fetchBadgesFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase.from('badges').select('*').order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        const mapped = data.map(b => ({
+          id: b.id,
+          name: b.name,
+          icon: b.icon,
+          desc: b.desc,
+          reqXp: b.req_xp
+        }));
+        setBadges(mapped);
+      }
+    } catch (e) {
+      console.warn("Badges fetch info:", e);
+    }
+  };
+
+  const handleAddShopItem = async (newItem) => {
+    setShopItems(prev => [newItem, ...prev]);
+
+    const payload = {
+      id: newItem.id,
+      name: newItem.name,
+      category: newItem.category,
+      cost: parseInt(newItem.cost) || 0,
+      stock: parseInt(newItem.stock) || 10,
+      creator_name: newItem.creator_name || authName || 'Admin',
+      target_grade: newItem.target_grade || 'All',
+      image_url: newItem.image_url || 'https://images.unsplash.com/photo-1585336261026-6757688719d3?auto=format&fit=crop&q=80&w=600',
+      rating: newItem.rating || 4.9,
+      desc: newItem.desc || ''
+    };
+
+    const { error } = await supabase.from('shop_items').insert([payload]);
+
+    if (error) {
+      console.error("Supabase shop item error:", error);
+      showToast(`⚠️ Supabase Error: ${error.message}`, "error");
+    } else {
+      showToast("🎉 Store Item permanently saved to Supabase!", "success");
+    }
+  };
+
+  const handlePurchaseShopItem = async (item) => {
+    const newStock = Math.max(0, item.stock - 1);
+    const newCoins = coins - item.cost;
+
+    setCoins(newCoins);
+    setShopItems(prev => prev.map(i => i.id === item.id ? { ...i, stock: newStock } : i));
+
+    const newOrder = {
+      id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+      student_name: authName,
+      name: item.name,
+      cost: item.cost,
+      date: new Date().toISOString().split('T')[0],
+      status: 'Pending Teacher Collection',
+      code: `GR${studentGrade}-${Math.floor(1000 + Math.random() * 9000)}`
+    };
+    setOrders(prev => [newOrder, ...prev]);
 
     try {
-      // 1. Try uploading directly to Supabase Storage if bucket exists
-      const fileExt = file.name.split('.').pop();
-      const fileName = `item_${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `items/${fileName}`;
+      await supabase.from('shop_items').update({ stock: newStock }).eq('id', item.id);
+      syncUserProgressToSupabase(newCoins, xp, completedQuizModes);
+      showToast(`🎉 Claimed ${item.name}! Collection code: '${newOrder.code}'.`, "success");
+    } catch (e) {
+      console.warn("Purchase sync error:", e);
+    }
+  };
 
-      const { data, error } = await supabase.storage.from('shop_images').upload(filePath, file);
+  const handleDeleteShopItem = async (itemId) => {
+    setShopItems(prev => prev.filter(i => i.id !== itemId));
+    try {
+      await supabase.from('shop_items').delete().eq('id', itemId);
+    } catch (e) {
+      console.warn("Supabase shop item delete error:", e);
+    }
+  };
 
-      if (!error && data) {
-        const { data: { publicUrl } } = supabase.storage.from('shop_images').getPublicUrl(filePath);
-        setImageUrl(publicUrl);
-        setUploadingImage(false);
-        showToast("📸 Photo uploaded to Supabase Storage!", "success");
-        return;
+  const handleAddBadge = async (newBadge) => {
+    setBadges(prev => [...prev, newBadge]);
+    const { error } = await supabase.from('badges').insert([{
+      id: newBadge.id,
+      name: newBadge.name,
+      icon: newBadge.icon,
+      desc: newBadge.desc,
+      req_xp: parseInt(newBadge.reqXp)
+    }]);
+
+    if (error) {
+      showToast(`⚠️ Supabase badge save alert: ${error.message}`, "error");
+    } else {
+      showToast("🎉 Badge saved to Supabase!", "success");
+    }
+  };
+
+  const handleDeleteBadge = async (badgeId) => {
+    setBadges(prev => prev.filter(b => b.id !== badgeId));
+    try {
+      await supabase.from('badges').delete().eq('id', badgeId);
+    } catch (e) {
+      console.warn("Supabase badge delete error:", e);
+    }
+  };
+
+  const handleAddQuiz = async (newQuiz) => {
+    setQuizzes(prev => [newQuiz, ...prev]);
+    try {
+      await supabase.from('quizzes').insert([{
+        id: newQuiz.id,
+        title: newQuiz.title,
+        subject: newQuiz.subject,
+        grade: parseInt(newQuiz.grade),
+        subject_code: newQuiz.subject_code || '',
+        exam_year: newQuiz.exam_year ? parseInt(newQuiz.exam_year) : null,
+        variant: newQuiz.variant || '',
+        is_past_paper: !!newQuiz.is_past_paper,
+        has_diagrams: !!newQuiz.has_diagrams,
+        questions: newQuiz.questions
+      }]);
+      showToast("🎉 Quiz Saved to Supabase Database!", "success");
+    } catch (e) {
+      console.warn("Supabase quiz insert error:", e);
+    }
+  };
+
+  const handleDeleteQuiz = async (quizId) => {
+    setQuizzes(prev => prev.filter(q => q.id !== quizId));
+    try {
+      await supabase.from('quizzes').delete().eq('id', quizId);
+    } catch (e) {
+      console.warn("Supabase quiz delete error:", e);
+    }
+  };
+
+  const fetchSponsorsFromSupabase = async () => {
+    try {
+      const { data } = await supabase.from('sponsors').select('*').order('created_at', { ascending: false });
+      if (data && data.length > 0) {
+        const mapped = data.map(d => ({
+          id: d.id,
+          applicantName: d.applicant_name,
+          email: d.email,
+          phone: d.phone,
+          partnerType: d.partner_type,
+          contributionType: d.contribution_type,
+          message: d.message,
+          status: d.status || 'Pending Review ⏳',
+          date: d.created_at ? d.created_at.split('T')[0] : new Date().toISOString().split('T')[0]
+        }));
+        setSponsors(mapped);
       }
-    } catch (err) {
-      console.warn("Storage bucket upload fallback to local canvas compression:", err);
+    } catch (e) {
+      console.warn("Supabase sponsors fetch info:", e);
+    }
+  };
+
+  const fetchAllProfiles = async () => {
+    try {
+      const { data } = await supabase.from('profiles').select('*');
+      if (data) setAllProfiles(data);
+    } catch (e) {
+      console.warn("Profiles fetch error:", e);
+    }
+  };
+
+  const fetchUserProfile = async (authUser) => {
+    const userId = authUser?.id;
+    if (!userId) return;
+
+    try {
+      const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      const metaRole = authUser?.user_metadata?.role;
+      const effectiveRole = metaRole || data?.role || 'student';
+
+      setAuthName(data?.full_name || authUser?.user_metadata?.full_name || 'User');
+      setRole(effectiveRole);
+      setStudentGrade(data?.grade || authUser?.user_metadata?.grade || 7);
+      setSchoolName(data?.school_name || authUser?.user_metadata?.school_name || 'Majeedhiyya School');
+      setStudentAddress(data?.student_address || authUser?.user_metadata?.student_address || 'M. Henveiru, Malé');
+      setIndexNumber(data?.index_number || authUser?.user_metadata?.index_number || 'STU-2026');
+      setTeacherSubject(data?.teacher_subject || authUser?.user_metadata?.teacher_subject || 'Physics');
+      setCoins(data?.coins ?? 350);
+      setXp(data?.xp ?? 420);
+
+      const userCompletions = data?.completed_quiz_modes || JSON.parse(localStorage.getItem(`edusparkls_completed_${userId}`) || '[]');
+      setCompletedQuizModes(Array.isArray(userCompletions) ? userCompletions : []);
+
+      const initialTab = getDefaultTabForRole(effectiveRole);
+      setActiveTab(initialTab);
+      window.history.replaceState({ tab: initialTab }, '', `#${initialTab}`);
+    } catch (e) {
+      console.warn("Profile fetch error:", e);
+    }
+  };
+
+  const handleUpdateProfile = async (updatedFields) => {
+    setAuthName(updatedFields.full_name);
+    setStudentGrade(updatedFields.grade);
+    setSchoolName(updatedFields.school_name);
+    setStudentAddress(updatedFields.student_address);
+    setIndexNumber(updatedFields.index_number);
+
+    if (user?.id) {
+      try {
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          full_name: updatedFields.full_name,
+          grade: updatedFields.grade,
+          school_name: updatedFields.school_name,
+          student_address: updatedFields.student_address,
+          index_number: updatedFields.index_number,
+          role
+        });
+      } catch (err) {
+        console.warn("Supabase profile sync error:", err);
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setActiveQuiz(null);
+    setCompletedQuizModes([]);
+    setAuthView('landing');
+    showToast("Signed out successfully.", "info");
+  };
+
+  // STRICT SINGLE-ATTEMPT MODE LOCK
+  const startQuiz = (quiz, mode) => {
+    const completionKey = `${quiz.id}_${mode}`;
+
+    if ((mode === 'challenge' || mode === 'olevel') && completedQuizModes.includes(completionKey)) {
+      showToast("🔒 Quiz Completed! Timed simulation quizzes can only be taken once.", "warning");
+      return;
     }
 
-    // 2. Client-side canvas compression fallback (compresses high-res photo to lightweight JPEG)
-    const img = new Image();
-    const reader = new FileReader();
+    if (mode === 'challenge' && lockedChallengeQuizIds.includes(quiz.id)) {
+      showToast("🔒 Challenge Locked! Hearts ran out earlier. Complete Practice Mode first to re-unlock!", "warning");
+      return;
+    }
 
-    reader.onload = (event) => {
-      img.src = event.target.result;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        const MAX_HEIGHT = 800;
-        let width = img.width;
-        let height = img.height;
+    setActiveQuiz(quiz);
+    setQuizMode(mode);
+    setCurrentQuestionIdx(0);
+    setSelectedOption(null);
+    setShowExplanation(false);
+    setScore(0);
+    setHearts(5);
+    setStreak(0);
+    setQuizFinished(false);
+    setGameOver(false);
+    setTimeLeft(getQuizTimeLimit(quiz));
 
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
+    window.history.pushState({ modal: 'quiz' }, '', '#quiz');
+  };
+
+  const handleAnswerSubmit = (option) => {
+    const currentQ = activeQuiz.questions[currentQuestionIdx];
+    const isCorrect = option === currentQ.correct_option;
+    setSelectedOption(option);
+    setShowExplanation(true);
+
+    if (isCorrect) {
+      playSound('correct');
+      setScore(s => s + 1);
+      setStreak(st => st + 1);
+    } else {
+      playSound('wrong');
+      setStreak(0);
+      if (quizMode === 'challenge' || quizMode === 'olevel') {
+        setHearts((prevHearts) => {
+          const nextHearts = prevHearts - 1;
+          if (nextHearts <= 0) {
+            setGameOver(true);
+            const completionKey = `${activeQuiz.id}_${quizMode}`;
+            recordUserCompletion(completionKey, score * 2, score * 10);
+
+            if (!lockedChallengeQuizIds.includes(activeQuiz.id)) {
+              setLockedChallengeQuizIds(prevIds => [...prevIds, activeQuiz.id]);
+            }
+            showToast("💔 Out of hearts! Timed quiz finished and locked.", "error");
           }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
+          return nextHearts;
+        });
+      }
+    }
+  };
+
+  const nextQuestion = () => {
+    setSelectedOption(null);
+    setShowExplanation(false);
+
+    if (currentQuestionIdx + 1 < activeQuiz.questions.length) {
+      setCurrentQuestionIdx(idx => idx + 1);
+    } else {
+      setQuizFinished(true);
+
+      const completionKey = `${activeQuiz.id}_${quizMode}`;
+      const isFirstTimeCompletion = !completedQuizModes.includes(completionKey);
+
+      if (quizMode === 'practice') {
+        setLockedChallengeQuizIds(prev => prev.filter(id => id !== activeQuiz.id));
+        recordUserCompletion(completionKey, 0, 0);
+        showToast("📖 Practice Mode Completed! Challenge Mode UNLOCKED 🔓 (0 Coins & 0 XP awarded in Practice)", "info");
+      } else {
+        const totalQuestions = activeQuiz.questions.length;
+        const isPerfect5Hearts = (hearts === 5 && score === totalQuestions);
+        const totalCoins = isPerfect5Hearts ? 25 : (score * 2);
+        const earnedXp = score * 10;
+
+        if (isFirstTimeCompletion) {
+          playSound('coin');
+          recordUserCompletion(completionKey, totalCoins, earnedXp);
+
+          const detailMsg = isPerfect5Hearts 
+            ? "⭐ PERFECT 5-HEART BONUS! 25 Coins Claimed!" 
+            : `${score} correct × 2 coins = ${totalCoins} Coins Claimed!`;
+
+          showToast(`🏆 Timed Quiz Completed! +${totalCoins} Coins (${detailMsg}) & +${earnedXp} XP! Quiz locked.`, "success");
         }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        // Export compressed image string
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-        setImageUrl(dataUrl);
-        setUploadingImage(false);
-        showToast("📸 Photo processed & attached!", "success");
-      };
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handlePurchase = (item) => {
-    if (item.stock <= 0) {
-      showToast("❌ Item is currently out of stock!", "error");
-      return;
+      }
     }
-
-    if (coins < item.cost) {
-      showToast("❌ Not enough coins! Complete Timed Challenge Quizzes to earn more.", "error");
-      return;
-    }
-
-    askConfirm("Confirm Store Purchase", `Spend ${item.cost} Coins on "${item.name}"?`, () => {
-      onPurchaseItem(item);
-    });
   };
 
-  const handleCreateShopItem = (e) => {
-    e.preventDefault();
-    if (!itemName) return showToast("Enter item name", "warning");
+  const navigateToTab = (tabName) => {
+    const allowed = ROLE_TABS[role] || ROLE_TABS.student;
+    if (!allowed.includes(tabName)) return;
 
-    const fallbackDefault = 'https://images.unsplash.com/photo-1585336261026-6757688719d3?auto=format&fit=crop&q=80&w=600';
-
-    const newItem = {
-      id: `shop_${Date.now()}`,
-      name: itemName,
-      category,
-      cost: parseInt(cost),
-      stock: parseInt(stock),
-      creator_name: authName,
-      target_grade: targetGrade,
-      image_url: imageUrl || fallbackDefault,
-      rating: 5.0,
-      desc
-    };
-
-    onAddShopItem(newItem);
-    setShowAddItemModal(false);
-    setItemName(''); setDesc(''); setImageUrl(''); setStock(10); setCost(150);
+    setActiveQuiz(null);
+    setActiveTab(tabName);
+    window.history.pushState({ tab: tabName }, '', `#${tabName}`);
   };
 
-  const handleDeleteItem = (itemId, name) => {
-    askConfirm("Delete Reward Item", `Remove "${name}" permanently from database?`, () => {
-      onDeleteShopItem(itemId);
-      showToast(`Removed "${name}" from store.`, "info");
-    });
-  };
+  if (!user) {
+    return (
+      <>
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+        {authView === 'landing' ? (
+          <LandingPage
+            onGoLogin={() => setAuthView('login')}
+            onGoRegister={() => setAuthView('register')}
+            sponsors={sponsors}
+            setSponsors={setSponsors}
+            showToast={showToast}
+          />
+        ) : (
+          <AuthForm authView={authView} setAuthView={setAuthView} showToast={showToast} />
+        )}
+      </>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-amber-600 via-rose-600 to-slate-900 rounded-3xl p-6 sm:p-8 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg">
-        <div className="space-y-2">
-          <span className="bg-amber-400/20 border border-amber-300/30 text-amber-200 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider">
-            Student Reward & Gift Vault
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-black">Edusparkls Reward Store</h2>
-          <p className="text-amber-100 text-xs max-w-lg">
-            Redeem your earned coins for physical stationery, geometry kits, and school supplies synced to Supabase!
-          </p>
-        </div>
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+      />
 
-        {canEditShop && (
-          <button
-            onClick={() => setShowAddItemModal(true)}
-            className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-3 rounded-2xl text-xs transition shadow-md shrink-0 flex items-center space-x-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            <span>+ Add Gift Item</span>
-          </button>
+      <Navbar
+        authName={authName}
+        role={role}
+        studentGrade={studentGrade}
+        coins={coins}
+        xp={xp}
+        activeTab={activeTab}
+        navigateToTab={navigateToTab}
+        handleLogout={handleLogout}
+      />
+
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+        {activeTab === 'dashboard' && (
+          <StudentDashboard
+            role={role}
+            grade={studentGrade}
+            quizzes={quizzes}
+            onDeleteQuiz={handleDeleteQuiz}
+            startQuiz={startQuiz}
+            lockedChallengeQuizIds={lockedChallengeQuizIds}
+            completedQuizModes={completedQuizModes}
+            onOpenDiagramUpload={() => {
+              setShowDiagramUploadModal(true);
+              window.history.pushState({ modal: 'diagram' }, '', '#diagram');
+            }}
+            showToast={showToast}
+            askConfirm={askConfirm}
+          />
         )}
-      </div>
 
-      {/* Item Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {shopItems.map((item) => (
-          <div key={item.id} className="bg-white border border-slate-200 rounded-3xl p-5 space-y-3 shadow-xs hover:shadow-md transition flex flex-col justify-between group">
-            <div className="space-y-3">
-              {/* Product Image Display */}
-              <div className="w-full h-44 rounded-2xl overflow-hidden bg-slate-100 relative">
-                <img
-                  src={item.image_url || 'https://images.unsplash.com/photo-1585336261026-6757688719d3?auto=format&fit=crop&q=80&w=600'}
-                  alt={item.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                />
-                
-                <span className="absolute top-2.5 left-2.5 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg">
-                  {item.category}
-                </span>
+        {activeTab === 'olevel' && (
+          <OLevelArena
+            role={role}
+            quizzes={quizzes}
+            onDeleteQuiz={handleDeleteQuiz}
+            startQuiz={startQuiz}
+            completedQuizModes={completedQuizModes}
+            onOpenDiagramUpload={() => {
+              setShowDiagramUploadModal(true);
+              window.history.pushState({ modal: 'diagram' }, '', '#diagram');
+            }}
+            showToast={showToast}
+            askConfirm={askConfirm}
+          />
+        )}
 
-                <span className={`absolute bottom-2.5 right-2.5 text-[10px] font-bold px-2.5 py-1 rounded-lg backdrop-blur-xs border ${
-                  item.stock > 0 
-                    ? 'bg-emerald-950/80 border-emerald-500/40 text-emerald-300' 
-                    : 'bg-rose-950/80 border-rose-500/40 text-rose-300'
-                }`}>
-                  {item.stock > 0 ? `Stock: ${item.stock}` : 'Out of Stock ❌'}
-                </span>
+        {activeTab === 'leaderboard' && (
+          <LeaderboardTab profiles={allProfiles} />
+        )}
 
-                {canEditShop && (
-                  <button
-                    onClick={() => handleDeleteItem(item.id, item.name)}
-                    className="absolute top-2.5 right-2.5 bg-rose-600/90 hover:bg-rose-600 text-white p-1.5 rounded-xl transition shadow-sm"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+        {activeTab === 'library' && (
+          <LibraryTab
+            role={role} books={books} setBooks={setBooks}
+            setCoins={setCoins} setXp={setXp} setReadingHours={setReadingHours}
+            claimedCodes={claimedCodes} setClaimedCodes={setClaimedCodes}
+            showToast={showToast} askConfirm={askConfirm}
+          />
+        )}
 
-              <div>
-                <span className="text-[10px] font-bold text-amber-700 uppercase bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
-                  Target: Grade {item.target_grade || 'All'}
-                </span>
-                <h3 className="font-black text-slate-900 text-base mt-1.5 leading-snug">{item.name}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed mt-1">{item.desc || 'Curriculum reward item.'}</p>
-              </div>
-            </div>
+        {activeTab === 'shop' && (
+          <ShopTab
+            role={role} authName={authName} studentGrade={studentGrade}
+            shopItems={shopItems} onAddShopItem={handleAddShopItem} onDeleteShopItem={handleDeleteShopItem}
+            onPurchaseItem={handlePurchaseShopItem}
+            coins={coins} setCoins={setCoins}
+            orders={orders} setOrders={setOrders}
+            showToast={showToast} askConfirm={askConfirm}
+          />
+        )}
 
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-              <div>
-                <span className="text-amber-600 font-black text-base flex items-center space-x-1">
-                  <span>🪙</span>
-                  <span>{item.cost} Coins</span>
-                </span>
-              </div>
+        {activeTab === 'studio' && (
+          <TeacherStudio
+            role={role}
+            teacherSubject={teacherSubject}
+            quizzes={quizzes}
+            onAddQuiz={handleAddQuiz}
+            onDeleteQuiz={handleDeleteQuiz}
+            badges={badges}
+            onAddBadge={handleAddBadge}
+            onDeleteBadge={handleDeleteBadge}
+            ranks={ranks}
+            setRanks={setRanks}
+            sponsors={sponsors}
+            setSponsors={setSponsors}
+            showDiagramUploadModal={showDiagramUploadModal}
+            setShowDiagramUploadModal={setShowDiagramUploadModal}
+            showToast={showToast}
+            askConfirm={askConfirm}
+          />
+        )}
 
-              {role === 'student' ? (
-                <button
-                  onClick={() => handlePurchase(item)}
-                  disabled={item.stock <= 0}
-                  className={`font-black px-4 py-2.5 rounded-xl text-xs transition shadow-xs ${
-                    item.stock > 0 
-                      ? 'bg-amber-500 hover:bg-amber-600 text-slate-950' 
-                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  }`}
-                >
-                  {item.stock > 0 ? 'Claim Item' : 'Sold Out'}
-                </button>
-              ) : (
-                <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-xl">
-                  {item.stock} Available
-                </span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+        {activeTab === 'profile' && (
+          <ProfileTab
+            authName={authName} role={role} studentGrade={studentGrade}
+            schoolName={schoolName} studentAddress={studentAddress} indexNumber={indexNumber}
+            coins={coins} xp={xp} readingHours={readingHours} user={user}
+            badges={badges} ranks={ranks}
+            onUpdateProfile={handleUpdateProfile} showToast={showToast}
+          />
+        )}
+      </main>
 
-      {/* Add Item Modal with Direct File Upload */}
-      {showAddItemModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-black flex items-center space-x-2">
-              <Camera className="w-5 h-5 text-amber-600" />
-              <span>Add Reward Store Gift</span>
-            </h3>
+      {showDiagramUploadModal && (
+        <DiagramUploadModal
+          onAddQuiz={handleAddQuiz}
+          showToast={showToast}
+          onClose={() => {
+            setShowDiagramUploadModal(false);
+            if (window.location.hash.includes('diagram')) window.history.back();
+          }}
+        />
+      )}
 
-            <form onSubmit={handleCreateShopItem} className="space-y-3 text-xs">
-              <div>
-                <label className="font-bold block mb-1">Item Title</label>
-                <input
-                  type="text"
-                  value={itemName}
-                  onChange={(e) => setItemName(e.target.value)}
-                  placeholder="e.g. Cambridge Mathematical Set"
-                  className="w-full border rounded-xl p-2.5 font-bold"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="font-bold block mb-1">Cost (Coins)</label>
-                  <input
-                    type="number"
-                    value={cost}
-                    onChange={(e) => setCost(e.target.value)}
-                    className="w-full border rounded-xl p-2.5 font-bold text-amber-600"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold block mb-1">Stock Quantity</label>
-                  <input
-                    type="number"
-                    value={stock}
-                    onChange={(e) => setStock(e.target.value)}
-                    className="w-full border rounded-xl p-2.5 font-bold"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold block mb-1">Category</label>
-                <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full border rounded-xl p-2.5 font-bold">
-                  <option value="Stationery">Stationery</option>
-                  <option value="Maths & Physics Tools">Maths & Physics Tools</option>
-                  <option value="E-Books & Books">E-Books & Books</option>
-                  <option value="Merchandise">Merchandise</option>
-                </select>
-              </div>
-
-              {/* DIRECT IMAGE FILE UPLOADER */}
-              <div className="space-y-2 bg-amber-50/60 border border-amber-200/80 p-3.5 rounded-2xl">
-                <label className="font-black text-amber-950 block">Upload Product Image</label>
-                
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept="image/*"
-                  onChange={handleImageFileSelect}
-                  className="hidden"
-                />
-
-                {!imageUrl ? (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingImage}
-                    className="w-full bg-white border-2 border-dashed border-amber-300 hover:border-amber-500 p-6 rounded-2xl flex flex-col items-center justify-center space-y-2 transition text-amber-800"
-                  >
-                    <Upload className="w-6 h-6 text-amber-600" />
-                    <span className="font-black text-xs">
-                      {uploadingImage ? 'Processing Photo...' : 'Click to Upload Photo / Take Camera Picture'}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-bold">Supports PNG, JPG, WEBP</span>
-                  </button>
-                ) : (
-                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 group">
-                    <img src={imageUrl} alt="Uploaded item preview" className="w-full h-36 object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setImageUrl('')}
-                      className="absolute top-2 right-2 bg-slate-950/80 text-white p-1.5 rounded-xl hover:bg-rose-600 transition"
-                      title="Remove image"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                    <div className="absolute bottom-2 left-2 bg-emerald-950/80 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                      Ready to Save ✅
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="font-bold block mb-1">Description</label>
-                <textarea
-                  value={desc}
-                  onChange={(e) => setDesc(e.target.value)}
-                  rows={2}
-                  placeholder="Details about item collection..."
-                  className="w-full border rounded-xl p-2.5"
-                />
-              </div>
-
-              <div className="flex space-x-2 pt-2">
-                <button type="button" onClick={() => setShowAddItemModal(false)} className="w-full bg-slate-100 hover:bg-slate-200 font-bold py-2.5 rounded-xl transition">
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploadingImage}
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-2.5 rounded-xl transition shadow-sm"
-                >
-                  {uploadingImage ? 'Processing...' : 'Save Item to Supabase 🚀'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {activeQuiz && (
+        <QuizRunnerModal
+          activeQuiz={activeQuiz} quizMode={quizMode} currentQuestionIdx={currentQuestionIdx}
+          hearts={hearts} timeLeft={timeLeft} streak={streak} selectedOption={selectedOption}
+          showExplanation={showExplanation} score={score} quizFinished={quizFinished} gameOver={gameOver}
+          handleAnswerSubmit={handleAnswerSubmit} nextQuestion={nextQuestion} startQuiz={startQuiz}
+          onClose={() => {
+            setActiveQuiz(null);
+            if (window.location.hash.includes('quiz')) window.history.back();
+          }}
+        />
       )}
     </div>
   );
