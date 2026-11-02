@@ -38,6 +38,7 @@ export const getDefaultTabForRole = (userRole) => {
 export const canUserCRUDPracticeVault = (role) => ['teacher', 'super_admin'].includes(role);
 export const canUserCRUDOLevel = (role) => role === 'super_admin';
 export const canUserCRUDShop = (role) => ['teacher', 'shop_admin', 'super_admin'].includes(role);
+export const canUserCRUDLibrary = (role) => ['teacher', 'super_admin'].includes(role);
 
 export const isRTLSubject = (subject) => {
   return subject === 'Dhivehi' || subject === 'Islam' || subject === 'ދިވެހި' || subject === 'އިސްލާމް';
@@ -74,7 +75,6 @@ export const getStudentRank = (xp, customRanks = INITIAL_RANKS) => {
   return matched || { title: 'Novice', icon: '🌱' };
 };
 
-// Generates topic diagnostics and mastery breakdown for StudentTopicDiagnosticModal
 export const generateSubjectAnalytics = (quizzes = [], completedQuizModes = []) => {
   const subjectMap = {};
 
