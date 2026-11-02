@@ -141,6 +141,7 @@ function App() {
     fetchQuizzesFromSupabase();
     fetchShopItemsFromSupabase();
     fetchBadgesFromSupabase();
+    fetchOrdersFromSupabase();
     fetchAllProfiles();
     fetchSponsorsFromSupabase();
     return () => subscription.unsubscribe();
@@ -207,6 +208,17 @@ function App() {
     }
   };
 
+  const fetchOrdersFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        setOrders(data);
+      }
+    } catch (e) {
+      console.warn("Orders fetch info:", e);
+    }
+  };
+
   const handleAddShopItem = async (newItem) => {
     setShopItems(prev => [newItem, ...prev]);
 
@@ -242,6 +254,7 @@ function App() {
 
     const newOrder = {
       id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+      user_id: user?.id,
       student_name: authName,
       name: item.name,
       cost: item.cost,
@@ -249,14 +262,44 @@ function App() {
       status: 'Pending Teacher Collection',
       code: `GR${studentGrade}-${Math.floor(1000 + Math.random() * 9000)}`
     };
+
     setOrders(prev => [newOrder, ...prev]);
 
     try {
+      await supabase.from('orders').insert([newOrder]);
       await supabase.from('shop_items').update({ stock: newStock }).eq('id', item.id);
       syncUserProgressToSupabase(newCoins, xp, completedQuizModes);
       showToast(`🎉 Claimed ${item.name}! Collection code: '${newOrder.code}'.`, "success");
     } catch (e) {
       console.warn("Purchase sync error:", e);
+    }
+  };
+
+  const handleCancelOrder = async (order) => {
+    if (order.status !== 'Pending Teacher Collection') return;
+
+    const refundedCoins = coins + order.cost;
+    setCoins(refundedCoins);
+
+    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'Cancelled & Refunded' } : o));
+
+    try {
+      await supabase.from('orders').update({ status: 'Cancelled & Refunded' }).eq('id', order.id);
+      syncUserProgressToSupabase(refundedCoins, xp, completedQuizModes);
+      showToast(`↩️ Claim cancelled! ${order.cost} Coins refunded to wallet.`, "info");
+    } catch (e) {
+      console.warn("Cancel order sync error:", e);
+    }
+  };
+
+  const handleFulfillOrder = async (order) => {
+    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'Collected & Verified ✅' } : o));
+
+    try {
+      await supabase.from('orders').update({ status: 'Collected & Verified ✅' }).eq('id', order.id);
+      showToast(`✅ Order for ${order.student_name} marked as Collected & Verified!`, "success");
+    } catch (e) {
+      console.warn("Fulfill order sync error:", e);
     }
   };
 
@@ -621,6 +664,8 @@ function App() {
             onPurchaseItem={handlePurchaseShopItem}
             coins={coins} setCoins={setCoins}
             orders={orders} setOrders={setOrders}
+            onCancelOrder={handleCancelOrder}
+            onFulfillOrder={handleFulfillOrder}
             showToast={showToast} askConfirm={askConfirm}
           />
         )}
