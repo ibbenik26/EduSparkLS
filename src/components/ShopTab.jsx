@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { ShoppingBag, Plus, Trash2, Image as ImageIcon, Upload, Tag, Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { ShoppingBag, Plus, Trash2, Image as ImageIcon, Upload, Tag, Sparkles, CheckCircle, Camera, X } from 'lucide-react';
 import { canUserCRUDShop } from '../utils/helpers';
+import { supabase } from '../lib/supabase';
 
 export default function ShopTab({
   role, authName, studentGrade, shopItems, onAddShopItem, onDeleteShopItem, onPurchaseItem,
@@ -16,35 +17,71 @@ export default function ShopTab({
   const [imageUrl, setImageUrl] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  const fileInputRef = useRef(null);
   const canEditShop = canUserCRUDShop(role);
 
-  const presetImages = [
-    { label: 'Stationery Kit', url: 'https://images.unsplash.com/photo-1585336261026-6757688719d3?auto=format&fit=crop&q=80&w=600' },
-    { label: 'Maths Tools', url: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=600' },
-    { label: 'Science Books', url: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=600' },
-    { label: 'School Bag', url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600' }
-  ];
-
-  // Convert File Input to Base64 String for Supabase storage
-  const handleImageFileUpload = (e) => {
+  // Automatic browser image compression handler (handles phone camera photos seamlessly)
+  const handleImageFileSelect = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 3 * 1024 * 1024) {
-      showToast("⚠️ Image file must be under 3MB", "warning");
-      return;
+    setUploadingImage(true);
+
+    try {
+      // 1. Try uploading directly to Supabase Storage if bucket exists
+      const fileExt = file.name.split('.').pop();
+      const fileName = `item_${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `items/${fileName}`;
+
+      const { data, error } = await supabase.storage.from('shop_images').upload(filePath, file);
+
+      if (!error && data) {
+        const { data: { publicUrl } } = supabase.storage.from('shop_images').getPublicUrl(filePath);
+        setImageUrl(publicUrl);
+        setUploadingImage(false);
+        showToast("📸 Photo uploaded to Supabase Storage!", "success");
+        return;
+      }
+    } catch (err) {
+      console.warn("Storage bucket upload fallback to local canvas compression:", err);
     }
 
-    setUploadingImage(true);
+    // 2. Client-side canvas compression fallback (compresses high-res photo to lightweight JPEG)
+    const img = new Image();
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setImageUrl(reader.result);
-      setUploadingImage(false);
-      showToast("📷 Image attached successfully!", "info");
-    };
-    reader.onerror = () => {
-      setUploadingImage(false);
-      showToast("❌ Error reading image file", "error");
+
+    reader.onload = (event) => {
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Export compressed image string
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        setImageUrl(dataUrl);
+        setUploadingImage(false);
+        showToast("📸 Photo processed & attached!", "success");
+      };
     };
     reader.readAsDataURL(file);
   };
@@ -69,7 +106,7 @@ export default function ShopTab({
     e.preventDefault();
     if (!itemName) return showToast("Enter item name", "warning");
 
-    const finalImage = imageUrl || presetImages[0].url;
+    const fallbackDefault = 'https://images.unsplash.com/photo-1585336261026-6757688719d3?auto=format&fit=crop&q=80&w=600';
 
     const newItem = {
       id: `shop_${Date.now()}`,
@@ -79,7 +116,7 @@ export default function ShopTab({
       stock: parseInt(stock),
       creator_name: authName,
       target_grade: targetGrade,
-      image_url: finalImage,
+      image_url: imageUrl || fallbackDefault,
       rating: 5.0,
       desc
     };
@@ -90,7 +127,7 @@ export default function ShopTab({
   };
 
   const handleDeleteItem = (itemId, name) => {
-    askConfirm("Delete Reward Item", `Remove "${name}" permanently from Supabase database?`, () => {
+    askConfirm("Delete Reward Item", `Remove "${name}" permanently from database?`, () => {
       onDeleteShopItem(itemId);
       showToast(`Removed "${name}" from store.`, "info");
     });
@@ -121,15 +158,15 @@ export default function ShopTab({
         )}
       </div>
 
-      {/* Item Cards Grid with Live Images and Stock Badges */}
+      {/* Item Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {shopItems.map((item) => (
           <div key={item.id} className="bg-white border border-slate-200 rounded-3xl p-5 space-y-3 shadow-xs hover:shadow-md transition flex flex-col justify-between group">
             <div className="space-y-3">
-              {/* Image Container */}
+              {/* Product Image Display */}
               <div className="w-full h-44 rounded-2xl overflow-hidden bg-slate-100 relative">
                 <img
-                  src={item.image_url || presetImages[0].url}
+                  src={item.image_url || 'https://images.unsplash.com/photo-1585336261026-6757688719d3?auto=format&fit=crop&q=80&w=600'}
                   alt={item.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                 />
@@ -138,7 +175,6 @@ export default function ShopTab({
                   {item.category}
                 </span>
 
-                {/* Stock Indicator Badge */}
                 <span className={`absolute bottom-2.5 right-2.5 text-[10px] font-bold px-2.5 py-1 rounded-lg backdrop-blur-xs border ${
                   item.stock > 0 
                     ? 'bg-emerald-950/80 border-emerald-500/40 text-emerald-300' 
@@ -196,13 +232,13 @@ export default function ShopTab({
         ))}
       </div>
 
-      {/* Add Item Modal with Local File Upload and URL Preview */}
+      {/* Add Item Modal with Direct File Upload */}
       {showAddItemModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-black flex items-center space-x-2">
-              <ImageIcon className="w-5 h-5 text-amber-600" />
-              <span>Add Reward Store Item</span>
+              <Camera className="w-5 h-5 text-amber-600" />
+              <span>Add Reward Store Gift</span>
             </h3>
 
             <form onSubmit={handleCreateShopItem} className="space-y-3 text-xs">
@@ -231,7 +267,7 @@ export default function ShopTab({
                 </div>
 
                 <div>
-                  <label className="font-bold block mb-1">Inventory Stock</label>
+                  <label className="font-bold block mb-1">Stock Quantity</label>
                   <input
                     type="number"
                     value={stock}
@@ -252,57 +288,47 @@ export default function ShopTab({
                 </select>
               </div>
 
-              {/* Direct File Upload & URL Field */}
-              <div className="space-y-2 bg-slate-50 border border-slate-200 p-3 rounded-2xl">
-                <label className="font-bold block text-slate-800">Item Product Image</label>
+              {/* DIRECT IMAGE FILE UPLOADER */}
+              <div className="space-y-2 bg-amber-50/60 border border-amber-200/80 p-3.5 rounded-2xl">
+                <label className="font-black text-amber-950 block">Upload Product Image</label>
                 
-                <div className="flex items-center space-x-2">
-                  <label className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-2 rounded-xl cursor-pointer text-[11px] flex items-center space-x-1.5 transition">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Upload Image File</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageFileUpload}
-                      className="hidden"
-                    />
-                  </label>
-                  <span className="text-[10px] text-slate-400 font-bold">OR paste URL below</span>
-                </div>
-
                 <input
-                  type="text"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/photo-..."
-                  className="w-full border rounded-xl p-2 font-mono text-[10px] bg-white"
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handleImageFileSelect}
+                  className="hidden"
                 />
 
-                {/* Image Live Preview */}
-                {imageUrl && (
-                  <div className="pt-2">
-                    <span className="text-[10px] font-bold text-slate-400 block mb-1">Image Preview:</span>
-                    <img src={imageUrl} alt="Preview" className="w-full h-28 object-cover rounded-xl border" />
+                {!imageUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="w-full bg-white border-2 border-dashed border-amber-300 hover:border-amber-500 p-6 rounded-2xl flex flex-col items-center justify-center space-y-2 transition text-amber-800"
+                  >
+                    <Upload className="w-6 h-6 text-amber-600" />
+                    <span className="font-black text-xs">
+                      {uploadingImage ? 'Processing Photo...' : 'Click to Upload Photo / Take Camera Picture'}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-bold">Supports PNG, JPG, WEBP</span>
+                  </button>
+                ) : (
+                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 group">
+                    <img src={imageUrl} alt="Uploaded item preview" className="w-full h-36 object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl('')}
+                      className="absolute top-2 right-2 bg-slate-950/80 text-white p-1.5 rounded-xl hover:bg-rose-600 transition"
+                      title="Remove image"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    <div className="absolute bottom-2 left-2 bg-emerald-950/80 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                      Ready to Save ✅
+                    </div>
                   </div>
                 )}
-
-                <div className="mt-1 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 block">Preset Thumbnails:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {presetImages.map((p, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setImageUrl(p.url)}
-                        className={`text-[9px] font-bold px-2 py-1 rounded-lg border transition ${
-                          imageUrl === p.url ? 'bg-amber-500 text-white border-amber-600' : 'bg-white text-slate-700 border-slate-200'
-                        }`}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               <div>
@@ -325,7 +351,7 @@ export default function ShopTab({
                   disabled={uploadingImage}
                   className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-2.5 rounded-xl transition shadow-sm"
                 >
-                  {uploadingImage ? 'Uploading...' : 'Save to Supabase 🚀'}
+                  {uploadingImage ? 'Processing...' : 'Save Item to Supabase 🚀'}
                 </button>
               </div>
             </form>
