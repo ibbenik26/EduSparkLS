@@ -35,11 +35,9 @@ export const getDefaultTabForRole = (userRole) => {
   }
 };
 
-// PERMISSION HELPERS
 export const canUserCRUDPracticeVault = (role) => ['teacher', 'super_admin'].includes(role);
 export const canUserCRUDOLevel = (role) => role === 'super_admin';
 export const canUserCRUDShop = (role) => ['teacher', 'shop_admin', 'super_admin'].includes(role);
-export const canUserCRUDLibrary = (role) => ['teacher', 'super_admin'].includes(role);
 
 export const isRTLSubject = (subject) => {
   return subject === 'Dhivehi' || subject === 'Islam' || subject === 'ދިވެހި' || subject === 'އިސްލާމް';
@@ -52,7 +50,6 @@ export const getQuizTimeLimit = (quiz) => {
   return ['maths', 'physics', 'chemistry', 'accounting', 'economics'].includes(subj) ? 120 : 60;
 };
 
-// HYPER-LENIENT SEARCH HELPER
 export const lenientMatch = (targetContent, searchQuery) => {
   if (!searchQuery || searchQuery.trim() === '' || searchQuery === 'All') return true;
 
@@ -75,6 +72,60 @@ export const getStudentRank = (xp, customRanks = INITIAL_RANKS) => {
   const sorted = [...customRanks].sort((a, b) => b.minXp - a.minXp);
   const matched = sorted.find(r => xp >= r.minXp) || sorted[sorted.length - 1];
   return matched || { title: 'Novice', icon: '🌱' };
+};
+
+// Generates topic diagnostics and mastery breakdown for StudentTopicDiagnosticModal
+export const generateSubjectAnalytics = (quizzes = [], completedQuizModes = []) => {
+  const subjectMap = {};
+
+  quizzes.forEach((quiz) => {
+    const subject = quiz.subject || 'General';
+    if (!subjectMap[subject]) {
+      subjectMap[subject] = {
+        subject,
+        totalQuizzes: 0,
+        completedQuizzes: 0,
+        totalQuestions: 0,
+        topics: {}
+      };
+    }
+
+    subjectMap[subject].totalQuizzes += 1;
+    const isCompleted = completedQuizModes.some(modeKey => modeKey.startsWith(`${quiz.id}_`));
+    if (isCompleted) {
+      subjectMap[subject].completedQuizzes += 1;
+    }
+
+    (quiz.questions || []).forEach((q) => {
+      subjectMap[subject].totalQuestions += 1;
+      const topicName = q.topic || 'General Concepts';
+
+      if (!subjectMap[subject].topics[topicName]) {
+        subjectMap[subject].topics[topicName] = {
+          name: topicName,
+          total: 0,
+          mastered: 0
+        };
+      }
+
+      subjectMap[subject].topics[topicName].total += 1;
+      if (isCompleted) {
+        subjectMap[subject].topics[topicName].mastered += 1;
+      }
+    });
+  });
+
+  return Object.values(subjectMap).map(stat => {
+    const masteryPercentage = stat.totalQuizzes > 0 
+      ? Math.round((stat.completedQuizzes / stat.totalQuizzes) * 100) 
+      : 0;
+
+    return {
+      ...stat,
+      masteryPercentage,
+      topicsList: Object.values(stat.topics)
+    };
+  });
 };
 
 export const playSound = (type) => {
