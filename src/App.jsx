@@ -1,165 +1,687 @@
-export const ALL_SUBJECTS = [
-  'Dhivehi', 'Islam', 'English', 'Maths', 'Physics',
-  'Chemistry', 'Biology', 'Economics', 'Business Studies',
-  'Accounting', 'Computer Science', 'Social Studies', 'Science'
-];
+import React, { useState, useEffect } from 'react';
+import { supabase } from './lib/supabase';
 
-export const ROLE_TABS = {
-  student: ['dashboard', 'olevel', 'leaderboard', 'library', 'shop', 'profile'],
-  teacher: ['studio', 'dashboard', 'library', 'shop', 'leaderboard', 'profile'],
-  shop_admin: ['shop', 'profile'],
-  super_admin: ['studio', 'dashboard', 'olevel', 'leaderboard', 'library', 'shop', 'profile']
-};
+import { ALL_SUBJECTS, ROLE_TABS, INITIAL_BADGES, INITIAL_RANKS, getDefaultTabForRole, getQuizTimeLimit, playSound } from './utils/helpers';
+import { INITIAL_QUIZZES, INITIAL_BOOKS, INITIAL_SHOP_ITEMS } from './data/initialData';
 
-export const INITIAL_BADGES = [
-  { id: 'b1', name: 'Optics Master', icon: '🔍', desc: 'Scored 100% on a Physics Diagram Quiz', reqXp: 100 },
-  { id: 'b2', name: 'Thaana Scholar', icon: '🇲🇻', desc: 'Completed 5 Dhivehi reading sessions', reqXp: 250 },
-  { id: 'b3', name: 'Bookworm', icon: '📚', desc: 'Read over 5 hours in E-Library', reqXp: 500 },
-  { id: 'b4', name: 'Streak Champion', icon: '🔥', desc: 'Achieved a 5x question streak', reqXp: 300 }
-];
+import Navbar from './components/Navbar';
+import { LandingPage, AuthForm } from './components/AuthViews';
+import StudentDashboard from './components/StudentDashboard';
+import OLevelArena from './components/OLevelArena';
+import LeaderboardTab from './components/LeaderboardTab';
+import LibraryTab from './components/LibraryTab';
+import ShopTab from './components/ShopTab';
+import TeacherStudio from './components/TeacherStudio';
+import ProfileTab from './components/ProfileTab';
 
-export const INITIAL_RANKS = [
-  { id: 'r1', title: 'Novice', minXp: 0, text: 'text-slate-600', bg: 'bg-slate-100', icon: '🌱' },
-  { id: 'r2', title: 'Scholar', minXp: 300, text: 'text-emerald-600', bg: 'bg-emerald-100', icon: '🥉' },
-  { id: 'r3', title: 'Expert', minXp: 700, text: 'text-blue-600', bg: 'bg-blue-100', icon: '🥈' },
-  { id: 'r4', title: 'Master', minXp: 1200, text: 'text-purple-600', bg: 'bg-purple-100', icon: '🥇' },
-  { id: 'r5', title: 'Legend', minXp: 2000, text: 'text-amber-600', bg: 'bg-amber-100', icon: '👑' }
-];
+import QuizRunnerModal from './components/QuizRunnerModal';
+import DiagramUploadModal from './components/DiagramUploadModal';
+import { ToastContainer, ConfirmModal } from './components/NotificationToast';
 
-export const getDefaultTabForRole = (userRole) => {
-  switch (userRole) {
-    case 'teacher': return 'studio';
-    case 'shop_admin': return 'shop';
-    case 'super_admin': return 'studio';
-    default: return 'dashboard';
-  }
-};
+function App() {
+  const [authView, setAuthView] = useState('landing');
+  const [user, setUser] = useState(null);
+  const [role, setRole] = useState('student');
+  const [authName, setAuthName] = useState('User');
+  const [studentGrade, setStudentGrade] = useState(7);
+  const [schoolName, setSchoolName] = useState('Majeedhiyya School');
+  const [studentAddress, setStudentAddress] = useState('M. Henveiru, Malé');
+  const [indexNumber, setIndexNumber] = useState('STU-2026');
+  const [teacherSubject, setTeacherSubject] = useState('Physics');
 
-export const canUserCRUDPracticeVault = (role) => ['teacher', 'super_admin'].includes(role);
-export const canUserCRUDOLevel = (role) => role === 'super_admin';
-export const canUserCRUDShop = (role) => ['teacher', 'shop_admin', 'super_admin'].includes(role);
-export const canUserCRUDLibrary = (role) => ['teacher', 'super_admin'].includes(role);
+  const [coins, setCoins] = useState(350);
+  const [xp, setXp] = useState(420);
+  const [readingHours, setReadingHours] = useState(5.5);
+  const [claimedCodes, setClaimedCodes] = useState([]);
 
-export const isRTLSubject = (subject) => {
-  return subject === 'Dhivehi' || subject === 'Islam' || subject === 'ދިވެހި' || subject === 'އިސްލާމް';
-};
+  const [ranks, setRanks] = useState(INITIAL_RANKS);
+  const [badges, setBadges] = useState(INITIAL_BADGES);
 
-export const getQuizTimeLimit = (quiz) => {
-  if (!quiz) return 60;
-  if (quiz.time_limit) return quiz.time_limit;
-  const subj = (quiz.subject || '').toLowerCase();
-  return ['maths', 'physics', 'chemistry', 'accounting', 'economics'].includes(subj) ? 120 : 60;
-};
+  const [sponsors, setSponsors] = useState(() => {
+    const saved = localStorage.getItem('edusparkls_sponsors');
+    return saved ? JSON.parse(saved) : [];
+  });
 
-export const lenientMatch = (targetContent, searchQuery) => {
-  if (!searchQuery || searchQuery.trim() === '' || searchQuery === 'All') return true;
+  useEffect(() => {
+    localStorage.setItem('edusparkls_sponsors', JSON.stringify(sponsors));
+  }, [sponsors]);
 
-  const q = searchQuery.toLowerCase().trim();
-  const text = String(targetContent || '').toLowerCase();
+  const [quizzes, setQuizzes] = useState(INITIAL_QUIZZES);
+  const [books, setBooks] = useState(INITIAL_BOOKS);
+  const [shopItems, setShopItems] = useState(INITIAL_SHOP_ITEMS);
+  const [orders, setOrders] = useState([
+    { id: 'ORD-9021', student_name: 'Hassan Ali', name: 'Grade 7 Geometry Kit', cost: 250, date: '2026-10-18', status: 'Pending Teacher Collection', code: 'GR7-8821' }
+  ]);
+  const [allProfiles, setAllProfiles] = useState([]);
+  const [activeTab, setActiveTab] = useState('dashboard');
 
-  if (text.includes(q)) return true;
+  const [lockedChallengeQuizIds, setLockedChallengeQuizIds] = useState([]);
+  const [completedQuizModes, setCompletedQuizModes] = useState([]);
 
-  const numToWord = { '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine', '10': 'ten' };
-  const wordToNum = { 'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9', 'ten': '10' };
+  const [toasts, setToasts] = useState([]);
+  const showToast = (message, type = 'info') => {
+    const id = `toast_${Date.now()}_${Math.random()}`;
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+  const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
 
-  if (numToWord[q] && text.includes(numToWord[q])) return true;
-  if (wordToNum[q] && text.includes(wordToNum[q])) return true;
-
-  const tokens = q.split(/\s+/);
-  return tokens.some(token => text.includes(token));
-};
-
-export const getStudentRank = (xp, customRanks = INITIAL_RANKS) => {
-  const sorted = [...customRanks].sort((a, b) => b.minXp - a.minXp);
-  const matched = sorted.find(r => xp >= r.minXp) || sorted[sorted.length - 1];
-  return matched || { title: 'Novice', icon: '🌱' };
-};
-
-export const generateSubjectAnalytics = (quizzes = [], completedQuizModes = []) => {
-  const subjectMap = {};
-
-  quizzes.forEach((quiz) => {
-    const subject = quiz.subject || 'General';
-    if (!subjectMap[subject]) {
-      subjectMap[subject] = {
-        subject,
-        totalQuizzes: 0,
-        completedQuizzes: 0,
-        totalQuestions: 0,
-        topics: {}
-      };
-    }
-
-    subjectMap[subject].totalQuizzes += 1;
-    const isCompleted = completedQuizModes.some(modeKey => modeKey.startsWith(`${quiz.id}_`));
-    if (isCompleted) {
-      subjectMap[subject].completedQuizzes += 1;
-    }
-
-    (quiz.questions || []).forEach((q) => {
-      subjectMap[subject].totalQuestions += 1;
-      const topicName = q.topic || 'General Concepts';
-
-      if (!subjectMap[subject].topics[topicName]) {
-        subjectMap[subject].topics[topicName] = {
-          name: topicName,
-          total: 0,
-          mastered: 0
-        };
-      }
-
-      subjectMap[subject].topics[topicName].total += 1;
-      if (isCompleted) {
-        subjectMap[subject].topics[topicName].mastered += 1;
+  const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const askConfirm = (title, message, onConfirm) => {
+    setConfirmState({
+      isOpen: true, title, message,
+      onConfirm: () => {
+        onConfirm();
+        setConfirmState(prev => ({ ...prev, isOpen: false }));
       }
     });
-  });
+  };
 
-  return Object.values(subjectMap).map(stat => {
-    const masteryPercentage = stat.totalQuizzes > 0 
-      ? Math.round((stat.completedQuizzes / stat.totalQuizzes) * 100) 
-      : 0;
+  const [activeQuiz, setActiveQuiz] = useState(null);
+  const [quizMode, setQuizMode] = useState('practice');
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [score, setScore] = useState(0);
+  const [hearts, setHearts] = useState(5);
+  const [streak, setStreak] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [quizFinished, setQuizFinished] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
 
-    return {
-      ...stat,
-      masteryPercentage,
-      topicsList: Object.values(stat.topics)
-    };
-  });
-};
+  const [showDiagramUploadModal, setShowDiagramUploadModal] = useState(false);
 
-export const playSound = (type) => {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    if (type === 'correct') {
-      osc.frequency.setValueAtTime(523.25, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.2, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.25);
-    } else if (type === 'wrong') {
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(220, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.3);
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.3);
-    } else if (type === 'coin') {
-      osc.frequency.setValueAtTime(987.77, ctx.currentTime);
-      osc.frequency.setValueAtTime(1318.51, ctx.currentTime + 0.08);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.2);
+  const syncUserProgressToSupabase = async (updatedCoins, updatedXp, updatedModes) => {
+    if (!user?.id) return;
+    try {
+      await supabase.from('profiles').upsert({
+        id: user.id,
+        coins: updatedCoins,
+        xp: updatedXp,
+        completed_quiz_modes: updatedModes
+      });
+    } catch (e) {
+      console.warn("Supabase progress sync info:", e);
     }
-  } catch (e) {
-    console.warn("Audio Context error:", e);
+  };
+
+  const recordUserCompletion = (completionKey, bonusCoins = 0, bonusXp = 0) => {
+    const newCoins = coins + bonusCoins;
+    const newXp = xp + bonusXp;
+    const newModes = completedQuizModes.includes(completionKey)
+      ? completedQuizModes
+      : [...completedQuizModes, completionKey];
+
+    setCoins(newCoins);
+    setXp(newXp);
+    setCompletedQuizModes(newModes);
+
+    if (user?.id) {
+      localStorage.setItem(`edusparkls_completed_${user.id}`, JSON.stringify(newModes));
+      syncUserProgressToSupabase(newCoins, newXp, newModes);
+    }
+  };
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+        fetchUserProfile(session.user);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        fetchUserProfile(session.user);
+      } else {
+        setUser(null);
+      }
+    });
+
+    fetchQuizzesFromSupabase();
+    fetchShopItemsFromSupabase();
+    fetchBadgesFromSupabase();
+    fetchAllProfiles();
+    fetchSponsorsFromSupabase();
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchQuizzesFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase.from('quizzes').select('*').order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        const mapped = data.map(q => ({
+          ...q,
+          grade: parseInt(q.grade) || 7,
+          questions: typeof q.questions === 'string' ? JSON.parse(q.questions) : (q.questions || [])
+        }));
+        setQuizzes(mapped);
+      }
+    } catch (e) {
+      console.warn("Quizzes fetch info:", e);
+    }
+  };
+
+  const fetchShopItemsFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase.from('shop_items').select('*').order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        setShopItems(data);
+      } else if (!error && data && data.length === 0) {
+        for (const i of INITIAL_SHOP_ITEMS) {
+          await supabase.from('shop_items').insert([{
+            id: i.id,
+            name: i.name,
+            category: i.category,
+            cost: i.cost,
+            stock: i.stock || 10,
+            creator_name: 'Admin',
+            target_grade: i.target_grade || 'All',
+            image_url: i.image_url || 'https://images.unsplash.com/photo-1585336261026-6757688719d3?auto=format&fit=crop&q=80&w=600',
+            rating: 4.9,
+            desc: i.desc || ''
+          }]);
+        }
+        setShopItems(INITIAL_SHOP_ITEMS);
+      }
+    } catch (e) {
+      console.warn("Shop items fetch info:", e);
+    }
+  };
+
+  const fetchBadgesFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase.from('badges').select('*').order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        const mapped = data.map(b => ({
+          id: b.id,
+          name: b.name,
+          icon: b.icon,
+          desc: b.desc,
+          reqXp: b.req_xp
+        }));
+        setBadges(mapped);
+      }
+    } catch (e) {
+      console.warn("Badges fetch info:", e);
+    }
+  };
+
+  const handleAddShopItem = async (newItem) => {
+    setShopItems(prev => [newItem, ...prev]);
+
+    const payload = {
+      id: newItem.id,
+      name: newItem.name,
+      category: newItem.category,
+      cost: parseInt(newItem.cost) || 0,
+      stock: parseInt(newItem.stock) || 10,
+      creator_name: newItem.creator_name || authName || 'Admin',
+      target_grade: newItem.target_grade || 'All',
+      image_url: newItem.image_url || 'https://images.unsplash.com/photo-1585336261026-6757688719d3?auto=format&fit=crop&q=80&w=600',
+      rating: newItem.rating || 4.9,
+      desc: newItem.desc || ''
+    };
+
+    const { error } = await supabase.from('shop_items').insert([payload]);
+
+    if (error) {
+      console.error("Supabase shop item error:", error);
+      showToast(`⚠️ Supabase Error: ${error.message}`, "error");
+    } else {
+      showToast("🎉 Store Item permanently saved to Supabase!", "success");
+    }
+  };
+
+  const handlePurchaseShopItem = async (item) => {
+    const newStock = Math.max(0, item.stock - 1);
+    const newCoins = coins - item.cost;
+
+    setCoins(newCoins);
+    setShopItems(prev => prev.map(i => i.id === item.id ? { ...i, stock: newStock } : i));
+
+    const newOrder = {
+      id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+      student_name: authName,
+      name: item.name,
+      cost: item.cost,
+      date: new Date().toISOString().split('T')[0],
+      status: 'Pending Teacher Collection',
+      code: `GR${studentGrade}-${Math.floor(1000 + Math.random() * 9000)}`
+    };
+    setOrders(prev => [newOrder, ...prev]);
+
+    try {
+      await supabase.from('shop_items').update({ stock: newStock }).eq('id', item.id);
+      syncUserProgressToSupabase(newCoins, xp, completedQuizModes);
+      showToast(`🎉 Claimed ${item.name}! Collection code: '${newOrder.code}'.`, "success");
+    } catch (e) {
+      console.warn("Purchase sync error:", e);
+    }
+  };
+
+  const handleDeleteShopItem = async (itemId) => {
+    setShopItems(prev => prev.filter(i => i.id !== itemId));
+    try {
+      await supabase.from('shop_items').delete().eq('id', itemId);
+    } catch (e) {
+      console.warn("Supabase shop item delete error:", e);
+    }
+  };
+
+  const handleAddBadge = async (newBadge) => {
+    setBadges(prev => [...prev, newBadge]);
+    const { error } = await supabase.from('badges').insert([{
+      id: newBadge.id,
+      name: newBadge.name,
+      icon: newBadge.icon,
+      desc: newBadge.desc,
+      req_xp: parseInt(newBadge.reqXp)
+    }]);
+
+    if (error) {
+      showToast(`⚠️ Supabase badge save alert: ${error.message}`, "error");
+    } else {
+      showToast("🎉 Badge saved to Supabase!", "success");
+    }
+  };
+
+  const handleDeleteBadge = async (badgeId) => {
+    setBadges(prev => prev.filter(b => b.id !== badgeId));
+    try {
+      await supabase.from('badges').delete().eq('id', badgeId);
+    } catch (e) {
+      console.warn("Supabase badge delete error:", e);
+    }
+  };
+
+  const handleAddQuiz = async (newQuiz) => {
+    setQuizzes(prev => [newQuiz, ...prev]);
+    try {
+      await supabase.from('quizzes').insert([{
+        id: newQuiz.id,
+        title: newQuiz.title,
+        subject: newQuiz.subject,
+        grade: parseInt(newQuiz.grade),
+        subject_code: newQuiz.subject_code || '',
+        exam_year: newQuiz.exam_year ? parseInt(newQuiz.exam_year) : null,
+        variant: newQuiz.variant || '',
+        is_past_paper: !!newQuiz.is_past_paper,
+        has_diagrams: !!newQuiz.has_diagrams,
+        questions: newQuiz.questions
+      }]);
+      showToast("🎉 Quiz Saved to Supabase Database!", "success");
+    } catch (e) {
+      console.warn("Supabase quiz insert error:", e);
+    }
+  };
+
+  const handleDeleteQuiz = async (quizId) => {
+    setQuizzes(prev => prev.filter(q => q.id !== quizId));
+    try {
+      await supabase.from('quizzes').delete().eq('id', quizId);
+    } catch (e) {
+      console.warn("Supabase quiz delete error:", e);
+    }
+  };
+
+  const fetchSponsorsFromSupabase = async () => {
+    try {
+      const { data } = await supabase.from('sponsors').select('*').order('created_at', { ascending: false });
+      if (data && data.length > 0) {
+        const mapped = data.map(d => ({
+          id: d.id,
+          applicantName: d.applicant_name,
+          email: d.email,
+          phone: d.phone,
+          partnerType: d.partner_type,
+          contributionType: d.contribution_type,
+          message: d.message,
+          status: d.status || 'Pending Review ⏳',
+          date: d.created_at ? d.created_at.split('T')[0] : new Date().toISOString().split('T')[0]
+        }));
+        setSponsors(mapped);
+      }
+    } catch (e) {
+      console.warn("Supabase sponsors fetch info:", e);
+    }
+  };
+
+  const fetchAllProfiles = async () => {
+    try {
+      const { data } = await supabase.from('profiles').select('*');
+      if (data) setAllProfiles(data);
+    } catch (e) {
+      console.warn("Profiles fetch error:", e);
+    }
+  };
+
+  const fetchUserProfile = async (authUser) => {
+    const userId = authUser?.id;
+    if (!userId) return;
+
+    try {
+      const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      const metaRole = authUser?.user_metadata?.role;
+      const effectiveRole = metaRole || data?.role || 'student';
+
+      setAuthName(data?.full_name || authUser?.user_metadata?.full_name || 'User');
+      setRole(effectiveRole);
+      setStudentGrade(data?.grade || authUser?.user_metadata?.grade || 7);
+      setSchoolName(data?.school_name || authUser?.user_metadata?.school_name || 'Majeedhiyya School');
+      setStudentAddress(data?.student_address || authUser?.user_metadata?.student_address || 'M. Henveiru, Malé');
+      setIndexNumber(data?.index_number || authUser?.user_metadata?.index_number || 'STU-2026');
+      setTeacherSubject(data?.teacher_subject || authUser?.user_metadata?.teacher_subject || 'Physics');
+      setCoins(data?.coins ?? 350);
+      setXp(data?.xp ?? 420);
+
+      const userCompletions = data?.completed_quiz_modes || JSON.parse(localStorage.getItem(`edusparkls_completed_${userId}`) || '[]');
+      setCompletedQuizModes(Array.isArray(userCompletions) ? userCompletions : []);
+
+      const initialTab = getDefaultTabForRole(effectiveRole);
+      setActiveTab(initialTab);
+      window.history.replaceState({ tab: initialTab }, '', `#${initialTab}`);
+    } catch (e) {
+      console.warn("Profile fetch error:", e);
+    }
+  };
+
+  const handleUpdateProfile = async (updatedFields) => {
+    setAuthName(updatedFields.full_name);
+    setStudentGrade(updatedFields.grade);
+    setSchoolName(updatedFields.school_name);
+    setStudentAddress(updatedFields.student_address);
+    setIndexNumber(updatedFields.index_number);
+
+    if (user?.id) {
+      try {
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          full_name: updatedFields.full_name,
+          grade: updatedFields.grade,
+          school_name: updatedFields.school_name,
+          student_address: updatedFields.student_address,
+          index_number: updatedFields.index_number,
+          role
+        });
+      } catch (err) {
+        console.warn("Supabase profile sync error:", err);
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setActiveQuiz(null);
+    setCompletedQuizModes([]);
+    setAuthView('landing');
+    showToast("Signed out successfully.", "info");
+  };
+
+  const startQuiz = (quiz, mode) => {
+    const completionKey = `${quiz.id}_${mode}`;
+
+    if ((mode === 'challenge' || mode === 'olevel') && completedQuizModes.includes(completionKey)) {
+      showToast("🔒 Quiz Completed! Timed simulation quizzes can only be taken once.", "warning");
+      return;
+    }
+
+    if (mode === 'challenge' && lockedChallengeQuizIds.includes(quiz.id)) {
+      showToast("🔒 Challenge Locked! Hearts ran out earlier. Complete Practice Mode first to re-unlock!", "warning");
+      return;
+    }
+
+    setActiveQuiz(quiz);
+    setQuizMode(mode);
+    setCurrentQuestionIdx(0);
+    setSelectedOption(null);
+    setShowExplanation(false);
+    setScore(0);
+    setHearts(5);
+    setStreak(0);
+    setQuizFinished(false);
+    setGameOver(false);
+    setTimeLeft(getQuizTimeLimit(quiz));
+
+    window.history.pushState({ modal: 'quiz' }, '', '#quiz');
+  };
+
+  const handleAnswerSubmit = (option) => {
+    const currentQ = activeQuiz.questions[currentQuestionIdx];
+    const isCorrect = option === currentQ.correct_option;
+    setSelectedOption(option);
+    setShowExplanation(true);
+
+    if (isCorrect) {
+      playSound('correct');
+      setScore(s => s + 1);
+      setStreak(st => st + 1);
+    } else {
+      playSound('wrong');
+      setStreak(0);
+      if (quizMode === 'challenge' || quizMode === 'olevel') {
+        setHearts((prevHearts) => {
+          const nextHearts = prevHearts - 1;
+          if (nextHearts <= 0) {
+            setGameOver(true);
+            const completionKey = `${activeQuiz.id}_${quizMode}`;
+            recordUserCompletion(completionKey, score * 2, score * 10);
+
+            if (!lockedChallengeQuizIds.includes(activeQuiz.id)) {
+              setLockedChallengeQuizIds(prevIds => [...prevIds, activeQuiz.id]);
+            }
+            showToast("💔 Out of hearts! Timed quiz finished and locked.", "error");
+          }
+          return nextHearts;
+        });
+      }
+    }
+  };
+
+  const nextQuestion = () => {
+    setSelectedOption(null);
+    setShowExplanation(false);
+
+    if (currentQuestionIdx + 1 < activeQuiz.questions.length) {
+      setCurrentQuestionIdx(idx => idx + 1);
+    } else {
+      setQuizFinished(true);
+
+      const completionKey = `${activeQuiz.id}_${quizMode}`;
+      const isFirstTimeCompletion = !completedQuizModes.includes(completionKey);
+
+      if (quizMode === 'practice') {
+        setLockedChallengeQuizIds(prev => prev.filter(id => id !== activeQuiz.id));
+        recordUserCompletion(completionKey, 0, 0);
+        showToast("📖 Practice Mode Completed! Challenge Mode UNLOCKED 🔓 (0 Coins & 0 XP awarded in Practice)", "info");
+      } else {
+        const totalQuestions = activeQuiz.questions.length;
+        const isPerfect5Hearts = (hearts === 5 && score === totalQuestions);
+        const totalCoins = isPerfect5Hearts ? 25 : (score * 2);
+        const earnedXp = score * 10;
+
+        if (isFirstTimeCompletion) {
+          playSound('coin');
+          recordUserCompletion(completionKey, totalCoins, earnedXp);
+
+          const detailMsg = isPerfect5Hearts 
+            ? "⭐ PERFECT 5-HEART BONUS! 25 Coins Claimed!" 
+            : `${score} correct × 2 coins = ${totalCoins} Coins Claimed!`;
+
+          showToast(`🏆 Timed Quiz Completed! +${totalCoins} Coins (${detailMsg}) & +${earnedXp} XP! Quiz locked.`, "success");
+        }
+      }
+    }
+  };
+
+  const navigateToTab = (tabName) => {
+    const allowed = ROLE_TABS[role] || ROLE_TABS.student;
+    if (!allowed.includes(tabName)) return;
+
+    setActiveQuiz(null);
+    setActiveTab(tabName);
+    window.history.pushState({ tab: tabName }, '', `#${tabName}`);
+  };
+
+  if (!user) {
+    return (
+      <>
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+        {authView === 'landing' ? (
+          <LandingPage
+            onGoLogin={() => setAuthView('login')}
+            onGoRegister={() => setAuthView('register')}
+            sponsors={sponsors}
+            setSponsors={setSponsors}
+            showToast={showToast}
+          />
+        ) : (
+          <AuthForm authView={authView} setAuthView={setAuthView} showToast={showToast} />
+        )}
+      </>
+    );
   }
-};
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      <Navbar
+        authName={authName}
+        role={role}
+        studentGrade={studentGrade}
+        coins={coins}
+        xp={xp}
+        activeTab={activeTab}
+        navigateToTab={navigateToTab}
+        handleLogout={handleLogout}
+      />
+
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+        {activeTab === 'dashboard' && (
+          <StudentDashboard
+            role={role}
+            grade={studentGrade}
+            quizzes={quizzes}
+            onDeleteQuiz={handleDeleteQuiz}
+            startQuiz={startQuiz}
+            lockedChallengeQuizIds={lockedChallengeQuizIds}
+            completedQuizModes={completedQuizModes}
+            onOpenDiagramUpload={() => {
+              setShowDiagramUploadModal(true);
+              window.history.pushState({ modal: 'diagram' }, '', '#diagram');
+            }}
+            showToast={showToast}
+            askConfirm={askConfirm}
+          />
+        )}
+
+        {activeTab === 'olevel' && (
+          <OLevelArena
+            role={role}
+            quizzes={quizzes}
+            onDeleteQuiz={handleDeleteQuiz}
+            startQuiz={startQuiz}
+            completedQuizModes={completedQuizModes}
+            onOpenDiagramUpload={() => {
+              setShowDiagramUploadModal(true);
+              window.history.pushState({ modal: 'diagram' }, '', '#diagram');
+            }}
+            showToast={showToast}
+            askConfirm={askConfirm}
+          />
+        )}
+
+        {activeTab === 'leaderboard' && (
+          <LeaderboardTab profiles={allProfiles} />
+        )}
+
+        {activeTab === 'library' && (
+          <LibraryTab
+            role={role} books={books} setBooks={setBooks}
+            setCoins={setCoins} setXp={setXp} setReadingHours={setReadingHours}
+            claimedCodes={claimedCodes} setClaimedCodes={setClaimedCodes}
+            showToast={showToast} askConfirm={askConfirm}
+          />
+        )}
+
+        {activeTab === 'shop' && (
+          <ShopTab
+            role={role} authName={authName} studentGrade={studentGrade}
+            shopItems={shopItems} onAddShopItem={handleAddShopItem} onDeleteShopItem={handleDeleteShopItem}
+            onPurchaseItem={handlePurchaseShopItem}
+            coins={coins} setCoins={setCoins}
+            orders={orders} setOrders={setOrders}
+            showToast={showToast} askConfirm={askConfirm}
+          />
+        )}
+
+        {activeTab === 'studio' && (
+          <TeacherStudio
+            role={role}
+            teacherSubject={teacherSubject}
+            quizzes={quizzes}
+            onAddQuiz={handleAddQuiz}
+            onDeleteQuiz={handleDeleteQuiz}
+            badges={badges}
+            onAddBadge={handleAddBadge}
+            onDeleteBadge={handleDeleteBadge}
+            ranks={ranks}
+            setRanks={setRanks}
+            sponsors={sponsors}
+            setSponsors={setSponsors}
+            showDiagramUploadModal={showDiagramUploadModal}
+            setShowDiagramUploadModal={setShowDiagramUploadModal}
+            showToast={showToast}
+            askConfirm={askConfirm}
+          />
+        )}
+
+        {activeTab === 'profile' && (
+          <ProfileTab
+            authName={authName} role={role} studentGrade={studentGrade}
+            schoolName={schoolName} studentAddress={studentAddress} indexNumber={indexNumber}
+            coins={coins} xp={xp} readingHours={readingHours} user={user}
+            badges={badges} ranks={ranks}
+            onUpdateProfile={handleUpdateProfile} showToast={showToast}
+          />
+        )}
+      </main>
+
+      {showDiagramUploadModal && (
+        <DiagramUploadModal
+          onAddQuiz={handleAddQuiz}
+          showToast={showToast}
+          onClose={() => {
+            setShowDiagramUploadModal(false);
+            if (window.location.hash.includes('diagram')) window.history.back();
+          }}
+        />
+      )}
+
+      {activeQuiz && (
+        <QuizRunnerModal
+          activeQuiz={activeQuiz} quizMode={quizMode} currentQuestionIdx={currentQuestionIdx}
+          hearts={hearts} timeLeft={timeLeft} streak={streak} selectedOption={selectedOption}
+          showExplanation={showExplanation} score={score} quizFinished={quizFinished} gameOver={gameOver}
+          handleAnswerSubmit={handleAnswerSubmit} nextQuestion={nextQuestion} startQuiz={startQuiz}
+          onClose={() => {
+            setActiveQuiz(null);
+            if (window.location.hash.includes('quiz')) window.history.back();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+export default App;
