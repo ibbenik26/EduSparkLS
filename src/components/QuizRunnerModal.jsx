@@ -2,19 +2,17 @@ import React from 'react';
 import { X, Heart, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import { getDhivehiFormat } from '../utils/helpers';
 
-// Enterprise Normalizer for Questions, Options, & Diagrams
 export const normalizeQuestions = (quiz) => {
   if (!quiz || !quiz.questions) return [];
   let raw = quiz.questions;
 
-  // 1. Unpack stringified JSON (up to 3 levels deep)
+  // Unpack stringified JSON (up to 3 levels deep)
   for (let i = 0; i < 3; i++) {
     if (typeof raw === 'string') {
       try { raw = JSON.parse(raw); } catch (e) { break; }
     }
   }
 
-  // 2. Extract array from object structures
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
     if (Array.isArray(raw.questions)) raw = raw.questions;
     else if (Array.isArray(raw.data)) raw = raw.data;
@@ -23,7 +21,6 @@ export const normalizeQuestions = (quiz) => {
 
   if (!Array.isArray(raw)) return [];
 
-  // 3. Map question properties across key aliases
   return raw.map((item, idx) => {
     let qObj = item;
     for (let i = 0; i < 3; i++) {
@@ -36,10 +33,8 @@ export const normalizeQuestions = (quiz) => {
       qObj = { question: String(item) };
     }
 
-    // Resolve question text
-    const questionText = qObj.question || qObj.question_text || qObj.text || qObj.prompt || 'Question';
+    const questionText = qObj.question || qObj.question_text || qObj.text || qObj.prompt || `Question ${idx + 1}`;
 
-    // Resolve options array
     let opts = qObj.options || qObj.choices || qObj.answers || qObj.opts || [];
     if (typeof opts === 'string') {
       try { opts = JSON.parse(opts); } catch (e) {
@@ -52,24 +47,19 @@ export const normalizeQuestions = (quiz) => {
     if (!Array.isArray(opts)) opts = [];
     opts = opts.map(o => String(o).trim()).filter(Boolean);
 
-    // Resolve correct option
     const correctOption = String(
       qObj.correct_option || qObj.correctOption || qObj.answer || qObj.correct_answer || opts[0] || ''
     ).trim();
 
-    // Resolve diagram image URL
     const diagramUrl = qObj.image_url || qObj.imageUrl || qObj.diagram_url || qObj.diagram || qObj.image || qObj.img || '';
-
-    // Resolve explanation
-    const explanation = qObj.explanation || qObj.desc || '';
 
     return {
       id: qObj.id || `q_${idx}_${Date.now()}`,
       question: questionText,
-      options: opts,
-      correct_option: correctOption,
+      options: opts.length > 0 ? opts : ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
+      correct_option: correctOption || opts[0] || 'Option 1',
       image_url: diagramUrl,
-      explanation,
+      explanation: qObj.explanation || qObj.desc || '',
       topic: qObj.topic || 'General Concepts'
     };
   });
@@ -91,14 +81,13 @@ export default function QuizRunnerModal({
   const diagramUrl = currentQuestion.image_url || '';
   const isLastQuestion = currentQuestionIdx === totalQuestions - 1;
 
-  // Detect Dhivehi RTL formatting requirement
   const questionFormat = getDhivehiFormat(activeQuiz.subject || '', questionText);
 
   return (
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
       <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
         
-        {/* Header Bar */}
+        {/* Header Bar with 5-Heart Indicator */}
         <div className="flex justify-between items-center border-b border-slate-100 pb-4">
           <div>
             <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-2.5 py-1 rounded-lg">
@@ -111,9 +100,18 @@ export default function QuizRunnerModal({
 
           <div className="flex items-center space-x-3">
             {(quizMode === 'challenge' || quizMode === 'olevel') && (
-              <div className="flex items-center space-x-1 text-rose-600 font-black text-sm bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-200">
-                <Heart className="w-4 h-4 fill-rose-600" />
-                <span>{hearts}</span>
+              <div className="flex items-center space-x-1.5 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-2xl">
+                <div className="flex space-x-1">
+                  {[1, 2, 3, 4, 5].map((h) => (
+                    <Heart
+                      key={h}
+                      className={`w-4 h-4 transition ${
+                        h <= hearts ? 'fill-rose-500 text-rose-500' : 'text-slate-300 fill-slate-200'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs font-black text-rose-700 ml-1">{hearts}/5</span>
               </div>
             )}
 
@@ -123,7 +121,7 @@ export default function QuizRunnerModal({
           </div>
         </div>
 
-        {/* Empty Questions Guard */}
+        {/* Empty Questions Fallback */}
         {totalQuestions === 0 ? (
           <div className="text-center py-8 space-y-4">
             <p className="text-sm font-bold text-slate-500">No questions found in this quiz.</p>
@@ -156,7 +154,7 @@ export default function QuizRunnerModal({
             </div>
           </div>
         ) : (
-          /* Active Question Runner */
+          /* Active Question View */
           <div className="space-y-6">
             <div className="flex justify-between items-center text-xs font-bold text-slate-400">
               <span>Question {currentQuestionIdx + 1} of {totalQuestions}</span>
@@ -172,7 +170,7 @@ export default function QuizRunnerModal({
                 {questionText}
               </h3>
 
-              {/* Optics / Science Diagram Card */}
+              {/* Science Diagram Card */}
               {diagramUrl && (
                 <div className="mt-4 bg-white p-3 rounded-2xl border border-slate-200 text-center shadow-xs">
                   <img
@@ -185,43 +183,37 @@ export default function QuizRunnerModal({
               )}
             </div>
 
-            {/* Options Choices Grid */}
-            {options.length === 0 ? (
-              <div className="p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs font-bold">
-                ⚠️ No choices available for this question.
-              </div>
-            ) : (
-              <div className="space-y-3" dir={questionFormat.dir}>
-                {options.map((opt, idx) => {
-                  const optTrimmed = String(opt).trim();
-                  const isSelected = selectedOption === optTrimmed || selectedOption === opt;
-                  const isCorrect = optTrimmed === correctOption || optTrimmed.toLowerCase() === correctOption.toLowerCase();
+            {/* Options List */}
+            <div className="space-y-3" dir={questionFormat.dir}>
+              {options.map((opt, idx) => {
+                const optTrimmed = String(opt).trim();
+                const isSelected = selectedOption === optTrimmed || selectedOption === opt;
+                const isCorrect = optTrimmed === correctOption || optTrimmed.toLowerCase() === correctOption.toLowerCase();
 
-                  let btnStyle = "bg-white border-slate-200 hover:border-amber-400 text-slate-800";
-                  if (showExplanation) {
-                    if (isCorrect) btnStyle = "bg-emerald-50 border-emerald-500 text-emerald-950 font-bold";
-                    else if (isSelected) btnStyle = "bg-rose-50 border-rose-500 text-rose-950 font-bold";
-                  } else if (isSelected) {
-                    btnStyle = "bg-amber-500 text-slate-950 font-bold border-amber-600";
-                  }
+                let btnStyle = "bg-white border-slate-200 hover:border-amber-400 text-slate-800";
+                if (showExplanation) {
+                  if (isCorrect) btnStyle = "bg-emerald-50 border-emerald-500 text-emerald-950 font-bold";
+                  else if (isSelected) btnStyle = "bg-rose-50 border-rose-500 text-rose-950 font-bold";
+                } else if (isSelected) {
+                  btnStyle = "bg-amber-500 text-slate-950 font-bold border-amber-600";
+                }
 
-                  return (
-                    <button
-                      key={idx}
-                      disabled={showExplanation}
-                      onClick={() => handleAnswerSubmit(optTrimmed)}
-                      className={`w-full p-4 rounded-2xl border-2 transition flex items-center justify-between font-bold text-sm ${btnStyle} ${questionFormat.className}`}
-                    >
-                      <span className="leading-relaxed">{optTrimmed}</span>
-                      {showExplanation && isCorrect && <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 ml-2" />}
-                      {showExplanation && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-rose-600 shrink-0 ml-2" />}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+                return (
+                  <button
+                    key={idx}
+                    disabled={showExplanation}
+                    onClick={() => handleAnswerSubmit(optTrimmed)}
+                    className={`w-full p-4 rounded-2xl border-2 transition flex items-center justify-between font-bold text-sm ${btnStyle} ${questionFormat.className}`}
+                  >
+                    <span className="leading-relaxed">{optTrimmed}</span>
+                    {showExplanation && isCorrect && <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 ml-2" />}
+                    {showExplanation && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-rose-600 shrink-0 ml-2" />}
+                  </button>
+                );
+              })}
+            </div>
 
-            {/* Answer Explanation Box */}
+            {/* Explanation Box */}
             {showExplanation && (
               <div
                 dir={questionFormat.dir}

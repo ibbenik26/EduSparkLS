@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, HelpCircle, Award, Layers } from 'lucide-react';
+import { Plus, Trash2, HelpCircle, Award, Layers, Code, Check, FileText } from 'lucide-react';
 import { ALL_SUBJECTS, canUserCRUDPracticeVault, getDhivehiFormat } from '../utils/helpers';
 import { normalizeQuestions } from './QuizRunnerModal';
 
@@ -12,7 +12,7 @@ export default function TeacherStudio({
   const [showCreateQuizModal, setShowCreateQuizModal] = useState(false);
   const [expandedQuizId, setExpandedQuizId] = useState(null);
 
-  // New Quiz Form State
+  // New Quiz Metadata State
   const [quizTitle, setQuizTitle] = useState('');
   const [quizSubject, setQuizSubject] = useState(teacherSubject || 'Physics');
   const [quizGrade, setQuizGrade] = useState(7);
@@ -21,7 +21,10 @@ export default function TeacherStudio({
   const [variant, setVariant] = useState('');
   const [isPastPaper, setIsPastPaper] = useState(false);
 
-  // Questions Builder State
+  // Question Creation Mode Toggle ('form' | 'json')
+  const [creationMode, setCreationMode] = useState('form');
+
+  // Mode 1: Form Questions Builder State
   const [questions, setQuestions] = useState([
     {
       id: `q_${Date.now()}`,
@@ -34,6 +37,20 @@ export default function TeacherStudio({
       image_url: ''
     }
   ]);
+
+  // Mode 2: Raw JSON String State
+  const [jsonInput, setJsonInput] = useState('');
+
+  const sampleJsonTemplate = `[
+  {
+    "question": "A lens refracts light to form a real image at 2f. What is the magnification ratio?",
+    "options": ["1:1 (Same size)", "2:1 (Magnified)", "1:2 (Diminished)", "Virtual"],
+    "correct_option": "1:1 (Same size)",
+    "image_url": "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=600",
+    "explanation": "At 2f distance, magnification is exactly 1.",
+    "topic": "Lens Optics"
+  }
+]`;
 
   const canEditStudio = canUserCRUDPracticeVault(role);
 
@@ -85,16 +102,47 @@ export default function TeacherStudio({
     setQuestions(prev => prev.filter((_, idx) => idx !== index));
   };
 
+  const parseAndInsertJson = () => {
+    if (!jsonInput.trim()) return showToast("Paste JSON code first", "warning");
+
+    try {
+      const parsed = JSON.parse(jsonInput.trim());
+      const normalized = normalizeQuestions({ questions: parsed });
+
+      if (normalized.length === 0) {
+        return showToast("❌ Invalid JSON schema. Ensure it is an array of question objects!", "error");
+      }
+
+      setQuestions(normalized);
+      setCreationMode('form');
+      showToast(`✅ Successfully parsed ${normalized.length} questions from JSON!`, "success");
+    } catch (err) {
+      showToast(`❌ JSON Syntax Error: ${err.message}`, "error");
+    }
+  };
+
   const handleCreateQuizSubmit = (e) => {
     e.preventDefault();
     if (!quizTitle.trim()) return showToast("Enter quiz title", "warning");
 
-    for (let i = 0; i < questions.length; i++) {
-      const q = questions[i];
+    let finalQuestions = questions;
+
+    // Handle JSON mode submission directly
+    if (creationMode === 'json') {
+      try {
+        const parsed = JSON.parse(jsonInput.trim());
+        finalQuestions = normalizeQuestions({ questions: parsed });
+      } catch (err) {
+        return showToast(`❌ Fix JSON Syntax Error before submitting: ${err.message}`, "error");
+      }
+    }
+
+    for (let i = 0; i < finalQuestions.length; i++) {
+      const q = finalQuestions[i];
       if (!q.question.trim()) {
         return showToast(`Question #${i + 1} text is empty!`, "warning");
       }
-      const validOptions = q.options.filter(opt => opt.trim() !== '');
+      const validOptions = (q.options || []).filter(opt => String(opt).trim() !== '');
       if (validOptions.length < 2) {
         return showToast(`Question #${i + 1} must have at least 2 options!`, "warning");
       }
@@ -112,8 +160,8 @@ export default function TeacherStudio({
       exam_year: examYear ? parseInt(examYear) : null,
       variant,
       is_past_paper: isPastPaper,
-      has_diagrams: questions.some(q => !!q.image_url),
-      questions
+      has_diagrams: finalQuestions.some(q => !!q.image_url),
+      questions: finalQuestions
     };
 
     onAddQuiz(newQuiz);
@@ -124,6 +172,7 @@ export default function TeacherStudio({
     setExamYear('');
     setVariant('');
     setIsPastPaper(false);
+    setJsonInput('');
     setQuestions([
       {
         id: `q_${Date.now()}`,
@@ -186,7 +235,7 @@ export default function TeacherStudio({
         </button>
       </div>
 
-      {/* Quiz & Questions Sub-Tab */}
+      {/* Quiz & Questions Vault Sub-Tab */}
       {studioSubTab === 'quiz_builder' && (
         <div className="space-y-4">
           {quizzes.length === 0 ? (
@@ -311,21 +360,47 @@ export default function TeacherStudio({
         </div>
       )}
 
-      {/* CREATE QUIZ MODAL */}
+      {/* CREATE QUIZ & QUESTIONS MODAL */}
       {showCreateQuizModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <h3 className="text-lg font-black text-slate-900 flex items-center space-x-2">
                 <Plus className="w-5 h-5 text-purple-600" />
-                <span>Create New Quiz & Add Questions</span>
+                <span>Create New Quiz & Questions</span>
               </h3>
               <button onClick={() => setShowCreateQuizModal(false)} className="text-slate-400 hover:text-slate-700 font-bold">
                 ✕
               </button>
             </div>
 
+            {/* Mode Switcher Buttons */}
+            <div className="flex bg-slate-100 p-1 rounded-2xl text-xs font-bold space-x-1">
+              <button
+                type="button"
+                onClick={() => setCreationMode('form')}
+                className={`flex-1 py-2 rounded-xl transition flex items-center justify-center space-x-1.5 ${
+                  creationMode === 'form' ? 'bg-white text-purple-700 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                <span>📝 Visual Form Builder</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCreationMode('json')}
+                className={`flex-1 py-2 rounded-xl transition flex items-center justify-center space-x-1.5 ${
+                  creationMode === 'json' ? 'bg-white text-purple-700 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Code className="w-4 h-4" />
+                <span>💻 Bulk JSON Code Import</span>
+              </button>
+            </div>
+
             <form onSubmit={handleCreateQuizSubmit} className="space-y-5 text-xs">
+              {/* Quiz Metadata */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="sm:col-span-2">
                   <label className="font-bold block mb-1">Quiz Title (Dhivehi or English)</label>
@@ -362,110 +437,144 @@ export default function TeacherStudio({
                 </div>
               </div>
 
-              {/* QUESTIONS BUILDER */}
-              <div className="space-y-4 border-t border-slate-200 pt-4">
-                <div className="flex justify-between items-center">
-                  <h4 className="font-black text-slate-900 text-sm flex items-center space-x-1.5">
-                    <HelpCircle className="w-4 h-4 text-purple-600" />
-                    <span>Questions ({questions.length})</span>
-                  </h4>
+              {/* MODE 1: FORM-BASED BUILDER */}
+              {creationMode === 'form' && (
+                <div className="space-y-4 border-t border-slate-200 pt-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-black text-slate-900 text-sm flex items-center space-x-1.5">
+                      <HelpCircle className="w-4 h-4 text-purple-600" />
+                      <span>Questions ({questions.length})</span>
+                    </h4>
+
+                    <button
+                      type="button"
+                      onClick={addQuestionField}
+                      className="bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold px-3 py-1.5 rounded-xl text-xs transition"
+                    >
+                      + Add Another Question
+                    </button>
+                  </div>
+
+                  {questions.map((q, qIndex) => {
+                    const qFormat = getDhivehiFormat(quizSubject, q.question);
+
+                    return (
+                      <div key={q.id || qIndex} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3 relative">
+                        <div className="flex justify-between items-center">
+                          <span className="font-black text-slate-700 text-xs">
+                            Question #{qIndex + 1}
+                          </span>
+                          {questions.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeQuestionField(qIndex)}
+                              className="text-rose-600 hover:text-rose-700 p-1"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="font-bold block mb-1">Question Text</label>
+                          <textarea
+                            value={q.question}
+                            onChange={(e) => handleQuestionChange(qIndex, 'question', e.target.value)}
+                            placeholder="Type question here..."
+                            rows={2}
+                            dir={qFormat.dir}
+                            className={`w-full border rounded-xl p-2.5 bg-white font-medium ${qFormat.className}`}
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="font-bold block mb-1">Diagram Image URL (Optional)</label>
+                          <input
+                            type="url"
+                            value={q.image_url}
+                            onChange={(e) => handleQuestionChange(qIndex, 'image_url', e.target.value)}
+                            placeholder="https://images.unsplash.com/photo-..."
+                            className="w-full border rounded-xl p-2 bg-white"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="font-bold block">Answer Options & Correct Answer Radio Selection</label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" dir={qFormat.dir}>
+                            {q.options.map((opt, optIndex) => (
+                              <div key={optIndex} className="flex items-center space-x-2 bg-white border border-slate-200 p-2 rounded-xl">
+                                <input
+                                  type="radio"
+                                  name={`correct_opt_${qIndex}`}
+                                  checked={q.correct_option_index === optIndex || (q.correct_option === opt && opt !== '')}
+                                  onChange={() => handleSelectCorrectOption(qIndex, optIndex)}
+                                  className="w-4 h-4 text-purple-600 focus:ring-purple-500 shrink-0"
+                                />
+                                <input
+                                  type="text"
+                                  value={opt}
+                                  onChange={(e) => handleOptionChange(qIndex, optIndex, e.target.value)}
+                                  placeholder={`Option ${optIndex + 1}`}
+                                  className={`w-full border-none p-1 text-xs font-medium focus:outline-none ${qFormat.className}`}
+                                  required
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="font-bold block mb-1">Explanation (Optional)</label>
+                          <input
+                            type="text"
+                            value={q.explanation}
+                            onChange={(e) => handleQuestionChange(qIndex, 'explanation', e.target.value)}
+                            placeholder="Why this option is correct..."
+                            dir={qFormat.dir}
+                            className={`w-full border rounded-xl p-2 bg-white ${qFormat.className}`}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* MODE 2: RAW JSON CODE IMPORT */}
+              {creationMode === 'json' && (
+                <div className="space-y-3 border-t border-slate-200 pt-4">
+                  <div className="flex justify-between items-center">
+                    <label className="font-black text-slate-900 block">Paste Raw JSON Questions Array</label>
+                    <button
+                      type="button"
+                      onClick={() => setJsonInput(sampleJsonTemplate)}
+                      className="text-purple-600 hover:text-purple-700 font-bold text-[11px]"
+                    >
+                      Load Sample Template
+                    </button>
+                  </div>
+
+                  <textarea
+                    value={jsonInput}
+                    onChange={(e) => setJsonInput(e.target.value)}
+                    rows={8}
+                    placeholder="Paste JSON array here..."
+                    className="w-full font-mono text-xs border rounded-2xl p-3 bg-slate-900 text-emerald-400 focus:outline-none focus:border-purple-500 leading-relaxed"
+                  />
 
                   <button
                     type="button"
-                    onClick={addQuestionField}
-                    className="bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold px-3 py-1.5 rounded-xl text-xs transition"
+                    onClick={parseAndInsertJson}
+                    className="bg-slate-900 hover:bg-slate-800 text-white font-black px-4 py-2.5 rounded-xl text-xs transition shadow-sm flex items-center space-x-1.5"
                   >
-                    + Add Another Question
+                    <Check className="w-4 h-4 text-emerald-400" />
+                    <span>Parse & Convert to Form Questions</span>
                   </button>
                 </div>
+              )}
 
-                {questions.map((q, qIndex) => {
-                  const qFormat = getDhivehiFormat(quizSubject, q.question);
-
-                  return (
-                    <div key={q.id || qIndex} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3 relative">
-                      <div className="flex justify-between items-center">
-                        <span className="font-black text-slate-700 text-xs">
-                          Question #{qIndex + 1}
-                        </span>
-                        {questions.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeQuestionField(qIndex)}
-                            className="text-rose-600 hover:text-rose-700 p-1"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="font-bold block mb-1">Question Text</label>
-                        <textarea
-                          value={q.question}
-                          onChange={(e) => handleQuestionChange(qIndex, 'question', e.target.value)}
-                          placeholder="Type question here..."
-                          rows={2}
-                          dir={qFormat.dir}
-                          className={`w-full border rounded-xl p-2.5 bg-white font-medium ${qFormat.className}`}
-                          required
-                        />
-                      </div>
-
-                      {/* Diagram Image URL Input */}
-                      <div>
-                        <label className="font-bold block mb-1">Diagram Image URL (Optional)</label>
-                        <input
-                          type="url"
-                          value={q.image_url}
-                          onChange={(e) => handleQuestionChange(qIndex, 'image_url', e.target.value)}
-                          placeholder="https://images.unsplash.com/photo-..."
-                          className="w-full border rounded-xl p-2 bg-white"
-                        />
-                      </div>
-
-                      {/* Options Input */}
-                      <div className="space-y-2">
-                        <label className="font-bold block">Answer Options & Correct Answer Selection</label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" dir={qFormat.dir}>
-                          {q.options.map((opt, optIndex) => (
-                            <div key={optIndex} className="flex items-center space-x-2 bg-white border border-slate-200 p-2 rounded-xl">
-                              <input
-                                type="radio"
-                                name={`correct_opt_${qIndex}`}
-                                checked={q.correct_option_index === optIndex || (q.correct_option === opt && opt !== '')}
-                                onChange={() => handleSelectCorrectOption(qIndex, optIndex)}
-                                className="w-4 h-4 text-purple-600 focus:ring-purple-500 shrink-0"
-                              />
-                              <input
-                                type="text"
-                                value={opt}
-                                onChange={(e) => handleOptionChange(qIndex, optIndex, e.target.value)}
-                                placeholder={`Option ${optIndex + 1}`}
-                                className={`w-full border-none p-1 text-xs font-medium focus:outline-none ${qFormat.className}`}
-                                required
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="font-bold block mb-1">Explanation (Optional)</label>
-                        <input
-                          type="text"
-                          value={q.explanation}
-                          onChange={(e) => handleQuestionChange(qIndex, 'explanation', e.target.value)}
-                          placeholder="Why this option is correct..."
-                          dir={qFormat.dir}
-                          className={`w-full border rounded-xl p-2 bg-white ${qFormat.className}`}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
+              {/* Submit Action Bar */}
               <div className="flex space-x-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"

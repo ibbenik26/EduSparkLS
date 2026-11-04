@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, Search, Plus, Trash2, Eye, Download } from 'lucide-react';
+import { BookOpen, Search, Eye, Key, Sparkles, CheckCircle2 } from 'lucide-react';
 import { canUserCRUDLibrary, getDhivehiFormat } from '../utils/helpers';
 
 export default function LibraryTab({
@@ -8,8 +8,38 @@ export default function LibraryTab({
   const [selectedSubject, setSelectedSubject] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [previewBook, setPreviewBook] = useState(null);
+  const [promoCodeInput, setPromoCodeInput] = useState('');
 
   const canEditLibrary = canUserCRUDLibrary(role);
+
+  // Promo Code Redemption System
+  const handleRedeemCode = (e) => {
+    e.preventDefault();
+    const cleanCode = promoCodeInput.trim().toUpperCase();
+    if (!cleanCode) return showToast("Please enter an access code", "warning");
+
+    if (claimedCodes.includes(cleanCode)) {
+      return showToast("⚠️ Code already claimed!", "warning");
+    }
+
+    const validCodes = {
+      'PHYSICS2026': { coins: 150, xp: 200, label: 'Physics Excellence Pass' },
+      'THAANA100': { coins: 100, xp: 150, label: 'Dhivehi Thaana Reader Pass' },
+      'MATHS50': { coins: 50, xp: 100, label: 'Mathematics Booster Code' },
+      'EDUSPARKLS': { coins: 250, xp: 300, label: 'Edusparkls VIP Founder Pass' }
+    };
+
+    if (validCodes[cleanCode]) {
+      const reward = validCodes[cleanCode];
+      setCoins(c => c + reward.coins);
+      setXp(x => x + reward.xp);
+      setClaimedCodes(prev => [...prev, cleanCode]);
+      setPromoCodeInput('');
+      showToast(`🎉 Claimed '${reward.label}'! +${reward.coins} Coins & +${reward.xp} XP!`, "success");
+    } else {
+      showToast("❌ Invalid access code. Check spelling!", "error");
+    }
+  };
 
   const filteredBooks = books.filter(b => {
     const matchesSubject = selectedSubject === 'All' || b.subject === selectedSubject;
@@ -22,14 +52,44 @@ export default function LibraryTab({
       {/* Banner */}
       <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 rounded-3xl p-6 sm:p-8 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg">
         <div className="space-y-2">
-          <span className="bg-blue-400/20 border border-blue-300/30 text-blue-200 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider">
-            Curriculum E-Library & Reference Vault
+          <span className="bg-blue-400/20 border border-blue-300/30 text-blue-200 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider flex items-center space-x-1.5 w-fit">
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Curriculum E-Library & Reference Vault</span>
           </span>
           <h2 className="text-2xl sm:text-3xl font-black">Edusparkls Digital Library</h2>
           <p className="text-blue-100 text-xs max-w-lg">
             Access Ministry-approved textbooks for Dhivehi, Islam, Quran, and Cambridge Science subjects.
           </p>
         </div>
+      </div>
+
+      {/* Code Redemption Box */}
+      <div className="bg-gradient-to-r from-amber-500 to-rose-600 rounded-3xl p-5 text-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="space-y-1">
+          <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-md flex items-center space-x-1 w-fit">
+            <Key className="w-3 h-3" />
+            <span>Redeem Pass & Access Codes</span>
+          </span>
+          <h3 className="font-black text-base">Have a Promo or Teacher Access Code?</h3>
+          <p className="text-xs text-amber-100">Redeem codes like <span className="font-mono font-bold bg-black/20 px-1.5 py-0.5 rounded">PHYSICS2026</span> or <span className="font-mono font-bold bg-black/20 px-1.5 py-0.5 rounded">EDUSPARKLS</span> for bonus coins!</p>
+        </div>
+
+        <form onSubmit={handleRedeemCode} className="flex space-x-2 w-full sm:w-auto shrink-0">
+          <input
+            type="text"
+            value={promoCodeInput}
+            onChange={(e) => setPromoCodeInput(e.target.value)}
+            placeholder="ENTER CODE..."
+            className="bg-white/10 border border-white/30 text-white placeholder-amber-200 text-xs font-mono font-bold px-3 py-2.5 rounded-xl uppercase focus:outline-none focus:bg-white/20 w-full sm:w-44"
+          />
+          <button
+            type="submit"
+            className="bg-slate-900 hover:bg-slate-950 text-amber-400 font-black px-4 py-2.5 rounded-xl text-xs transition shadow-sm flex items-center space-x-1 shrink-0"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Redeem</span>
+          </button>
+        </form>
       </div>
 
       {/* Search & Subject Filters */}
@@ -95,7 +155,7 @@ export default function LibraryTab({
         })}
       </div>
 
-      {/* Book Reading Modal */}
+      {/* Book Reader Modal */}
       {previewBook && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-4 shadow-2xl relative max-h-[90vh] overflow-y-auto">
@@ -125,7 +185,7 @@ export default function LibraryTab({
 
                   <div className="pt-2 flex justify-end">
                     <button onClick={() => setPreviewBook(null)} className="bg-slate-900 text-white font-bold px-5 py-2.5 rounded-xl text-xs">
-                      Close Preview
+                      Close Reader
                     </button>
                   </div>
                 </div>
