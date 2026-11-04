@@ -5,7 +5,7 @@ export const ALL_SUBJECTS = [
 ];
 
 export const DHIVEHI_SUBJECTS = [
-  'dhivehi', 'islam', 'quran', 'dhivehi language',
+  'dhivehi', 'islam', 'quran', 'dhivehi language', 'dhi',
   'ދިވެހި', 'އިސްލާމް', 'ޤުރުއާން', 'arabic'
 ];
 
@@ -97,60 +97,6 @@ export const getStudentRank = (xp, customRanks = INITIAL_RANKS) => {
   const sorted = [...customRanks].sort((a, b) => b.minXp - a.minXp);
   const matched = sorted.find(r => xp >= r.minXp) || sorted[sorted.length - 1];
   return matched || { title: 'Novice', icon: '🌱' };
-};
-
-export const generateSubjectAnalytics = (quizzes = [], completedQuizModes = []) => {
-  const subjectMap = {};
-
-  quizzes.forEach((quiz) => {
-    const subject = quiz.subject || 'General';
-    if (!subjectMap[subject]) {
-      subjectMap[subject] = {
-        subject,
-        totalQuizzes: 0,
-        completedQuizzes: 0,
-        totalQuestions: 0,
-        topics: {}
-      };
-    }
-
-    subjectMap[subject].totalQuizzes += 1;
-    const isCompleted = completedQuizModes.some(modeKey => modeKey.startsWith(`${quiz.id}_`));
-    if (isCompleted) {
-      subjectMap[subject].completedQuizzes += 1;
-    }
-
-    const rawQuestions = typeof quiz.questions === 'string' ? JSON.parse(quiz.questions || '[]') : (quiz.questions || []);
-    (Array.isArray(rawQuestions) ? rawQuestions : []).forEach((q) => {
-      subjectMap[subject].totalQuestions += 1;
-      const topicName = q.topic || 'General Concepts';
-
-      if (!subjectMap[subject].topics[topicName]) {
-        subjectMap[subject].topics[topicName] = {
-          name: topicName,
-          total: 0,
-          mastered: 0
-        };
-      }
-
-      subjectMap[subject].topics[topicName].total += 1;
-      if (isCompleted) {
-        subjectMap[subject].topics[topicName].mastered += 1;
-      }
-    });
-  });
-
-  return Object.values(subjectMap).map(stat => {
-    const masteryPercentage = stat.totalQuizzes > 0 
-      ? Math.round((stat.completedQuizzes / stat.totalQuizzes) * 100) 
-      : 0;
-
-    return {
-      ...stat,
-      masteryPercentage,
-      topicsList: Object.values(stat.topics)
-    };
-  });
 };
 
 export const playSound = (type) => {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, HelpCircle, Award, Layers } from 'lucide-react';
 import { ALL_SUBJECTS, canUserCRUDPracticeVault, getDhivehiFormat } from '../utils/helpers';
+import { normalizeQuestions } from './QuizRunnerModal';
 
 export default function TeacherStudio({
   role, teacherSubject, quizzes, onAddQuiz, onDeleteQuiz,
@@ -44,9 +45,10 @@ export default function TeacherStudio({
 
   const handleOptionChange = (qIndex, optIndex, value) => {
     const updated = [...questions];
+    const previousValue = updated[qIndex].options[optIndex];
     updated[qIndex].options[optIndex] = value;
     
-    if (updated[qIndex].correct_option_index === optIndex || !updated[qIndex].correct_option) {
+    if (updated[qIndex].correct_option_index === optIndex || updated[qIndex].correct_option === previousValue || !updated[qIndex].correct_option) {
       updated[qIndex].correct_option = value;
       updated[qIndex].correct_option_index = optIndex;
     }
@@ -194,13 +196,7 @@ export default function TeacherStudio({
           ) : (
             <div className="space-y-4">
               {quizzes.map((quiz) => {
-                let quizQuestions = [];
-                if (typeof quiz.questions === 'string') {
-                  try { quizQuestions = JSON.parse(quiz.questions); } catch (e) { quizQuestions = []; }
-                } else {
-                  quizQuestions = quiz.questions || [];
-                }
-
+                const quizQuestions = normalizeQuestions(quiz);
                 const isExpanded = expandedQuizId === quiz.id;
                 const dhivehiFmt = getDhivehiFormat(quiz.subject, quiz.title);
 
@@ -256,8 +252,8 @@ export default function TeacherStudio({
                         <div className="space-y-3">
                           {quizQuestions.map((q, qIdx) => {
                             const qFmt = getDhivehiFormat(quiz.subject, q.question);
-                            const opts = Array.isArray(q.options) ? q.options : [];
-                            const diag = q.image_url || q.imageUrl || q.diagram_url || '';
+                            const opts = q.options || [];
+                            const diag = q.image_url || '';
 
                             return (
                               <div key={q.id || qIdx} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-2" dir={qFmt.dir}>
@@ -268,7 +264,7 @@ export default function TeacherStudio({
                                 </div>
 
                                 <p className={`text-sm font-black text-slate-900 ${qFmt.className}`}>
-                                  {q.question || q.text}
+                                  {q.question}
                                 </p>
 
                                 {diag && (
@@ -315,7 +311,7 @@ export default function TeacherStudio({
         </div>
       )}
 
-      {/* CREATE QUIZ & QUESTIONS MODAL */}
+      {/* CREATE QUIZ MODAL */}
       {showCreateQuizModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -430,14 +426,14 @@ export default function TeacherStudio({
 
                       {/* Options Input */}
                       <div className="space-y-2">
-                        <label className="font-bold block">Answer Options & Select Correct Answer Radio</label>
+                        <label className="font-bold block">Answer Options & Correct Answer Selection</label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" dir={qFormat.dir}>
                           {q.options.map((opt, optIndex) => (
                             <div key={optIndex} className="flex items-center space-x-2 bg-white border border-slate-200 p-2 rounded-xl">
                               <input
                                 type="radio"
                                 name={`correct_opt_${qIndex}`}
-                                checked={q.correct_option === opt && opt !== ''}
+                                checked={q.correct_option_index === optIndex || (q.correct_option === opt && opt !== '')}
                                 onChange={() => handleSelectCorrectOption(qIndex, optIndex)}
                                 className="w-4 h-4 text-purple-600 focus:ring-purple-500 shrink-0"
                               />
