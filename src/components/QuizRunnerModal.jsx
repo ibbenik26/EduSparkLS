@@ -8,7 +8,7 @@ export default function QuizRunnerModal({
 }) {
   if (!activeQuiz) return null;
 
-  // Safely parse questions array (handles single & double-stringified JSON)
+  // Safely parse questions array (handles string, double-stringified JSON, or raw arrays)
   let rawQuestions = activeQuiz.questions;
   if (typeof rawQuestions === 'string') {
     try {
@@ -25,18 +25,85 @@ export default function QuizRunnerModal({
   const totalQuestions = questions.length;
   const currentQuestion = questions[currentQuestionIdx] || {};
 
-  // Resolve question text across multiple key name conventions
+  // Extract Question Text across key aliases
   const questionText = currentQuestion.question || 
                        currentQuestion.question_text || 
                        currentQuestion.text || 
                        currentQuestion.prompt || 
                        'No question text available.';
 
-  // Resolve options array safely
-  const options = Array.isArray(currentQuestion.options) ? currentQuestion.options : [];
+  // Universal Options Extractor
+  const extractOptions = (q) => {
+    if (!q) return [];
+    let raw = q.options || q.choices || q.answers || q.opts || q.option_list;
+
+    if (typeof raw === 'string') {
+      try {
+        raw = JSON.parse(raw);
+      } catch (e) {
+        if (raw.includes(',')) {
+          raw = raw.split(',').map(s => s.trim());
+        }
+      }
+    }
+
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      raw = Object.values(raw);
+    }
+
+    if (!Array.isArray(raw) || raw.length === 0) {
+      const keys = ['option1', 'option2', 'option3', 'option4', 
+                    'option_a', 'option_b', 'option_c', 'option_d',
+                    'opt1', 'opt2', 'opt3', 'opt4',
+                    'a', 'b', 'c', 'd', 'A', 'B', 'C', 'D'];
+      const collected = [];
+      for (const k of keys) {
+        if (q[k] !== undefined && q[k] !== null && String(q[k]).trim() !== '') {
+          collected.push(String(q[k]).trim());
+        }
+      }
+      if (collected.length >= 2) raw = collected;
+    }
+
+    if (!Array.isArray(raw)) return [];
+
+    return raw
+      .map(opt => {
+        if (opt === null || opt === undefined) return '';
+        if (typeof opt === 'object') {
+          return opt.text || opt.option || opt.label || opt.value || Object.values(opt)[0] || '';
+        }
+        return String(opt);
+      })
+      .map(s => String(s).trim())
+      .filter(s => s.length > 0);
+  };
+
+  const options = extractOptions(currentQuestion);
+
+  // Correct Option Matcher
+  const correctOption = String(
+    currentQuestion.correct_option || 
+    currentQuestion.correctOption || 
+    currentQuestion.answer || 
+    currentQuestion.correct_answer || 
+    currentQuestion.correct || 
+    currentQuestion.right_option || 
+    ''
+  ).trim();
+
+  // Extract Diagram Image URL across all key aliases
+  const diagramUrl = currentQuestion.image_url || 
+                     currentQuestion.imageUrl || 
+                     currentQuestion.diagram_url || 
+                     currentQuestion.diagram || 
+                     currentQuestion.image || 
+                     currentQuestion.img_url || 
+                     currentQuestion.img || '';
+
   const isLastQuestion = currentQuestionIdx === totalQuestions - 1;
 
-  // Detect Dhivehi / Islam / Quran formatting
+  // Detect Dhivehi / Islam / Quran formatting & Faruma font
   const questionFormat = getDhivehiFormat(activeQuiz.subject || '', questionText);
 
   return (
@@ -108,7 +175,7 @@ export default function QuizRunnerModal({
               {streak > 1 && <span className="text-amber-600 font-black">🔥 {streak}x Streak!</span>}
             </div>
 
-            {/* Question Text */}
+            {/* Question Text Box */}
             <div
               dir={questionFormat.dir}
               className={`bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-3 ${questionFormat.className}`}
@@ -117,43 +184,59 @@ export default function QuizRunnerModal({
                 {questionText}
               </h3>
 
-              {currentQuestion.image_url && (
-                <img
-                  src={currentQuestion.image_url}
-                  alt="Question Diagram"
-                  className="max-h-64 rounded-xl border border-slate-200 mx-auto object-contain"
-                />
+              {/* Diagram Image Container */}
+              {diagramUrl && (
+                <div className="mt-4 bg-white p-3 rounded-2xl border border-slate-200 text-center shadow-xs">
+                  <img
+                    src={diagramUrl}
+                    alt="Optics / Question Diagram"
+                    className="max-h-72 w-full object-contain rounded-xl mx-auto"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                </div>
               )}
             </div>
 
             {/* Options List */}
-            <div className="space-y-3" dir={questionFormat.dir}>
-              {options.map((opt, idx) => {
-                const isSelected = selectedOption === opt;
-                const isCorrect = opt === currentQuestion.correct_option;
+            {options.length === 0 ? (
+              <div className="p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs font-bold">
+                ⚠️ No options available for this question.
+              </div>
+            ) : (
+              <div className="space-y-3" dir={questionFormat.dir}>
+                {options.map((opt, idx) => {
+                  const optTrimmed = String(opt).trim();
+                  const isSelected = selectedOption === optTrimmed || selectedOption === opt;
+                  
+                  const isCorrect = (optTrimmed === correctOption) ||
+                                    (optTrimmed.toLowerCase() === correctOption.toLowerCase()) ||
+                                    (correctOption.length === 1 && ['a','b','c','d'].includes(correctOption.toLowerCase()) && idx === ['a','b','c','d'].indexOf(correctOption.toLowerCase()));
 
-                let btnStyle = "bg-white border-slate-200 hover:border-amber-400 text-slate-800";
-                if (showExplanation) {
-                  if (isCorrect) btnStyle = "bg-emerald-50 border-emerald-500 text-emerald-950 font-bold";
-                  else if (isSelected) btnStyle = "bg-rose-50 border-rose-500 text-rose-950 font-bold";
-                } else if (isSelected) {
-                  btnStyle = "bg-amber-500 text-slate-950 font-bold border-amber-600";
-                }
+                  let btnStyle = "bg-white border-slate-200 hover:border-amber-400 text-slate-800";
+                  if (showExplanation) {
+                    if (isCorrect) btnStyle = "bg-emerald-50 border-emerald-500 text-emerald-950 font-bold";
+                    else if (isSelected) btnStyle = "bg-rose-50 border-rose-500 text-rose-950 font-bold";
+                  } else if (isSelected) {
+                    btnStyle = "bg-amber-500 text-slate-950 font-bold border-amber-600";
+                  }
 
-                return (
-                  <button
-                    key={idx}
-                    disabled={showExplanation}
-                    onClick={() => handleAnswerSubmit(opt)}
-                    className={`w-full p-4 rounded-2xl border-2 transition text-left sm:text-right flex items-center justify-between font-bold text-sm ${btnStyle} ${questionFormat.className}`}
-                  >
-                    <span className="leading-relaxed">{opt}</span>
-                    {showExplanation && isCorrect && <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />}
-                    {showExplanation && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-rose-600 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
+                  return (
+                    <button
+                      key={idx}
+                      disabled={showExplanation}
+                      onClick={() => handleAnswerSubmit(optTrimmed)}
+                      className={`w-full p-4 rounded-2xl border-2 transition flex items-center justify-between font-bold text-sm ${btnStyle} ${questionFormat.className}`}
+                    >
+                      <span className="leading-relaxed">{optTrimmed}</span>
+                      {showExplanation && isCorrect && <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 ml-2" />}
+                      {showExplanation && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-rose-600 shrink-0 ml-2" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Explanation Box */}
             {showExplanation && (

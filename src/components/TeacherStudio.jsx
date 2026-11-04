@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, HelpCircle, BookOpen, Award, Image as ImageIcon, CheckCircle, Sparkles, FileText, Layers } from 'lucide-react';
+import { Plus, Trash2, HelpCircle, Award, Layers } from 'lucide-react';
 import { ALL_SUBJECTS, canUserCRUDPracticeVault, getDhivehiFormat } from '../utils/helpers';
 
 export default function TeacherStudio({
@@ -27,6 +27,7 @@ export default function TeacherStudio({
       question: '',
       options: ['', '', '', ''],
       correct_option: '',
+      correct_option_index: 0,
       explanation: '',
       topic: 'General Concepts',
       image_url: ''
@@ -43,13 +44,19 @@ export default function TeacherStudio({
 
   const handleOptionChange = (qIndex, optIndex, value) => {
     const updated = [...questions];
-    const previousOptionValue = updated[qIndex].options[optIndex];
     updated[qIndex].options[optIndex] = value;
     
-    // Automatically update correct_option if option text is edited
-    if (updated[qIndex].correct_option === previousOptionValue || !updated[qIndex].correct_option) {
+    if (updated[qIndex].correct_option_index === optIndex || !updated[qIndex].correct_option) {
       updated[qIndex].correct_option = value;
+      updated[qIndex].correct_option_index = optIndex;
     }
+    setQuestions(updated);
+  };
+
+  const handleSelectCorrectOption = (qIndex, optIndex) => {
+    const updated = [...questions];
+    updated[qIndex].correct_option_index = optIndex;
+    updated[qIndex].correct_option = updated[qIndex].options[optIndex] || '';
     setQuestions(updated);
   };
 
@@ -61,6 +68,7 @@ export default function TeacherStudio({
         question: '',
         options: ['', '', '', ''],
         correct_option: '',
+        correct_option_index: 0,
         explanation: '',
         topic: 'General Concepts',
         image_url: ''
@@ -120,6 +128,7 @@ export default function TeacherStudio({
         question: '',
         options: ['', '', '', ''],
         correct_option: '',
+        correct_option_index: 0,
         explanation: '',
         topic: 'General Concepts',
         image_url: ''
@@ -185,7 +194,13 @@ export default function TeacherStudio({
           ) : (
             <div className="space-y-4">
               {quizzes.map((quiz) => {
-                const quizQuestions = typeof quiz.questions === 'string' ? JSON.parse(quiz.questions || '[]') : (quiz.questions || []);
+                let quizQuestions = [];
+                if (typeof quiz.questions === 'string') {
+                  try { quizQuestions = JSON.parse(quiz.questions); } catch (e) { quizQuestions = []; }
+                } else {
+                  quizQuestions = quiz.questions || [];
+                }
+
                 const isExpanded = expandedQuizId === quiz.id;
                 const dhivehiFmt = getDhivehiFormat(quiz.subject, quiz.title);
 
@@ -242,6 +257,7 @@ export default function TeacherStudio({
                           {quizQuestions.map((q, qIdx) => {
                             const qFmt = getDhivehiFormat(quiz.subject, q.question);
                             const opts = Array.isArray(q.options) ? q.options : [];
+                            const diag = q.image_url || q.imageUrl || q.diagram_url || '';
 
                             return (
                               <div key={q.id || qIdx} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-2" dir={qFmt.dir}>
@@ -252,8 +268,14 @@ export default function TeacherStudio({
                                 </div>
 
                                 <p className={`text-sm font-black text-slate-900 ${qFmt.className}`}>
-                                  {q.question}
+                                  {q.question || q.text}
                                 </p>
+
+                                {diag && (
+                                  <div className="my-2 text-center bg-white p-2 rounded-xl border border-slate-200">
+                                    <img src={diag} alt="Diagram Preview" className="max-h-40 mx-auto object-contain rounded-lg" />
+                                  </div>
+                                )}
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                                   {opts.map((opt, optIdx) => {
@@ -394,8 +416,21 @@ export default function TeacherStudio({
                         />
                       </div>
 
+                      {/* Diagram Image URL Input */}
+                      <div>
+                        <label className="font-bold block mb-1">Diagram Image URL (Optional)</label>
+                        <input
+                          type="url"
+                          value={q.image_url}
+                          onChange={(e) => handleQuestionChange(qIndex, 'image_url', e.target.value)}
+                          placeholder="https://images.unsplash.com/photo-..."
+                          className="w-full border rounded-xl p-2 bg-white"
+                        />
+                      </div>
+
+                      {/* Options Input */}
                       <div className="space-y-2">
-                        <label className="font-bold block">Answer Options & Correct Answer Selection</label>
+                        <label className="font-bold block">Answer Options & Select Correct Answer Radio</label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" dir={qFormat.dir}>
                           {q.options.map((opt, optIndex) => (
                             <div key={optIndex} className="flex items-center space-x-2 bg-white border border-slate-200 p-2 rounded-xl">
@@ -403,7 +438,7 @@ export default function TeacherStudio({
                                 type="radio"
                                 name={`correct_opt_${qIndex}`}
                                 checked={q.correct_option === opt && opt !== ''}
-                                onChange={() => handleQuestionChange(qIndex, 'correct_option', opt)}
+                                onChange={() => handleSelectCorrectOption(qIndex, optIndex)}
                                 className="w-4 h-4 text-purple-600 focus:ring-purple-500 shrink-0"
                               />
                               <input
