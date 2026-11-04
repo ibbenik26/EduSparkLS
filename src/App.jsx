@@ -14,7 +14,7 @@ import ShopTab from './components/ShopTab';
 import TeacherStudio from './components/TeacherStudio';
 import ProfileTab from './components/ProfileTab';
 
-import QuizRunnerModal from './components/QuizRunnerModal';
+import QuizRunnerModal, { normalizeQuestions } from './components/QuizRunnerModal';
 import DiagramUploadModal from './components/DiagramUploadModal';
 import { ToastContainer, ConfirmModal } from './components/NotificationToast';
 
@@ -204,17 +204,7 @@ function App() {
   };
 
   const handleAddQuiz = async (newQuiz) => {
-    const formattedQuestions = (newQuiz.questions || []).map((q, idx) => ({
-      id: q.id || `q_${Date.now()}_${idx}`,
-      question: (q.question || q.question_text || q.text || '').trim(),
-      options: Array.isArray(q.options) 
-        ? q.options.map(opt => String(opt).trim()).filter(opt => opt !== '') 
-        : [],
-      correct_option: (q.correct_option || '').trim(),
-      explanation: (q.explanation || '').trim(),
-      topic: q.topic || 'General Concepts',
-      image_url: q.image_url || ''
-    }));
+    const formattedQuestions = normalizeQuestions(newQuiz);
 
     const payload = {
       id: newQuiz.id || `quiz_${Date.now()}`,
@@ -493,11 +483,10 @@ function App() {
   };
 
   const handleAnswerSubmit = (option) => {
-    const rawQuestions = typeof activeQuiz.questions === 'string' ? JSON.parse(activeQuiz.questions) : activeQuiz.questions;
-    const questions = Array.isArray(rawQuestions) ? rawQuestions : [];
+    const questions = normalizeQuestions(activeQuiz);
     const currentQ = questions[currentQuestionIdx] || {};
 
-    const isCorrect = option === currentQ.correct_option;
+    const isCorrect = option === currentQ.correct_option || option.toLowerCase() === (currentQ.correct_option || '').toLowerCase();
     setSelectedOption(option);
     setShowExplanation(true);
 
@@ -531,8 +520,7 @@ function App() {
     setSelectedOption(null);
     setShowExplanation(false);
 
-    const rawQuestions = typeof activeQuiz.questions === 'string' ? JSON.parse(activeQuiz.questions) : activeQuiz.questions;
-    const questions = Array.isArray(rawQuestions) ? rawQuestions : [];
+    const questions = normalizeQuestions(activeQuiz);
 
     if (currentQuestionIdx + 1 < questions.length) {
       setCurrentQuestionIdx(idx => idx + 1);
