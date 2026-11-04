@@ -1,416 +1,465 @@
 import React, { useState } from 'react';
-import { Upload, Code, Image as ImageIcon, Trash2, Award, Plus, Sparkles, HeartHandshake, Mail, Phone, Users } from 'lucide-react';
-import { canUserCRUDPracticeVault } from '../utils/helpers';
-import { normalizeQuestions } from '../utils/quizValidation';
-import TeacherStudentTracker from './TeacherStudentTracker';
+import { Plus, Trash2, HelpCircle, BookOpen, Award, Image as ImageIcon, CheckCircle, Sparkles, FileText, Layers } from 'lucide-react';
+import { ALL_SUBJECTS, canUserCRUDPracticeVault, getDhivehiFormat } from '../utils/helpers';
 
 export default function TeacherStudio({
-  role, teacherSubject = 'Physics', quizzes, onAddQuiz, onDeleteQuiz,
+  role, teacherSubject, quizzes, onAddQuiz, onDeleteQuiz,
   badges, onAddBadge, onDeleteBadge, ranks, setRanks,
-  sponsors = [], onUpdateSponsorStatus, onDeleteSponsor,
-  onOpenDiagramUpload, showToast, askConfirm
+  sponsors, setSponsors, onOpenDiagramUpload, showToast, askConfirm
 }) {
-  const [studioTab, setStudioTab] = useState('manage_quizzes');
-  const [jsonInput, setJsonInput] = useState(`[
-  {
-    "topic": "Light Rays & Lenses",
-    "question_text": "Which lens converges parallel light rays to a real focal point?",
-    "option_a": "Convex Lens", "option_b": "Concave Lens", "option_c": "Flat Glass", "option_d": "Prism",
-    "correct_option": "A", "explanation": "A convex lens is thicker in the middle and converges incoming parallel light rays."
-  }
-]`);
+  const [studioSubTab, setStudioSubTab] = useState('quiz_builder'); // 'quiz_builder' | 'badge_manager' | 'sponsors'
+  const [showCreateQuizModal, setShowCreateQuizModal] = useState(false);
+  const [expandedQuizId, setExpandedQuizId] = useState(null);
 
-  const [importGrade, setImportGrade] = useState(10);
-  const [badgeName, setBadgeName] = useState('');
-  const [badgeIcon, setBadgeIcon] = useState('🏆');
-  const [badgeDesc, setBadgeDesc] = useState('');
-  const [badgeReqXp, setBadgeReqXp] = useState(250);
+  // New Quiz Form State
+  const [quizTitle, setQuizTitle] = useState('');
+  const [quizSubject, setQuizSubject] = useState(teacherSubject || 'Physics');
+  const [quizGrade, setQuizGrade] = useState(7);
+  const [subjectCode, setSubjectCode] = useState('');
+  const [examYear, setExamYear] = useState('');
+  const [variant, setVariant] = useState('');
+  const [isPastPaper, setIsPastPaper] = useState(false);
 
-  const canEditVault = canUserCRUDPracticeVault(role);
-  const isAdmin = role === 'super_admin';
-
-  const myClassQuizzes = isAdmin
-    ? quizzes
-    : quizzes.filter(q => (q.subject || '').toLowerCase() === (teacherSubject || '').toLowerCase());
-
-  const handleImportJson = async () => {
-    if (!canEditVault) return showToast("❌ Permission Denied!", "error");
-
-    let parsed;
-    try {
-      parsed = JSON.parse(jsonInput);
-    } catch (e) {
-      return showToast("❌ Invalid JSON format: " + e.message, "error");
+  // Questions Builder State inside New Quiz Form
+  const [questions, setQuestions] = useState([
+    {
+      id: `q_${Date.now()}`,
+      question: '',
+      options: ['', '', '', ''],
+      correct_option: '',
+      explanation: '',
+      topic: 'General Concepts',
+      image_url: ''
     }
+  ]);
 
-    const { questions, errors } = normalizeQuestions(parsed, { defaultTopic: teacherSubject });
-    if (errors.length) {
-      return showToast(`❌ ${errors.slice(0, 3).join('\n')}${errors.length > 3 ? `\n...and ${errors.length - 3} more` : ''}`, "error");
+  const canEditStudio = canUserCRUDPracticeVault(role);
+
+  // Question manipulation handlers
+  const handleQuestionChange = (index, field, value) => {
+    const updated = [...questions];
+    updated[index][field] = value;
+    setQuestions(updated);
+  };
+
+  const handleOptionChange = (qIndex, optIndex, value) => {
+    const updated = [...questions];
+    updated[qIndex].options[optIndex] = value;
+    
+    // Auto-set first option as default correct answer if unset
+    if (!updated[qIndex].correct_option) {
+      updated[qIndex].correct_option = value;
+    }
+    setQuestions(updated);
+  };
+
+  const addQuestionField = () => {
+    setQuestions(prev => [
+      ...prev,
+      {
+        id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        question: '',
+        options: ['', '', '', ''],
+        correct_option: '',
+        explanation: '',
+        topic: 'General Concepts',
+        image_url: ''
+      }
+    ]);
+  };
+
+  const removeQuestionField = (index) => {
+    if (questions.length <= 1) {
+      return showToast("A quiz must have at least 1 question!", "warning");
+    }
+    setQuestions(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleCreateQuizSubmit = (e) => {
+    e.preventDefault();
+    if (!quizTitle) return showToast("Enter quiz title", "warning");
+
+    // Validate that questions are filled out
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      if (!q.question.trim()) {
+        return showToast(`Question #${i + 1} text is empty!`, "warning");
+      }
+      const validOptions = q.options.filter(opt => opt.trim() !== '');
+      if (validOptions.length < 2) {
+        return showToast(`Question #${i + 1} must have at least 2 options!`, "warning");
+      }
+      if (!q.correct_option) {
+        return showToast(`Select a correct answer for Question #${i + 1}!`, "warning");
+      }
     }
 
     const newQuiz = {
-      id: `quiz_json_${Date.now()}`,
-      title: `${teacherSubject} Grade ${importGrade} Practice Paper`,
-      subject: teacherSubject,
-      grade: parseInt(importGrade),
-      subject_code: '',
-      exam_year: null,
-      variant: 'Teacher Custom',
-      is_past_paper: false,
-      has_diagrams: questions.some(q => !!q.diagram_url),
+      id: `quiz_${Date.now()}`,
+      title: quizTitle,
+      subject: quizSubject,
+      grade: parseInt(quizGrade),
+      subject_code: subjectCode,
+      exam_year: examYear ? parseInt(examYear) : null,
+      variant,
+      is_past_paper: isPastPaper,
+      has_diagrams: questions.some(q => !!q.image_url),
       questions
     };
 
-    // handleAddQuiz in App shows its own success / error toast
-    await onAddQuiz(newQuiz);
-  };
-
-  const handleDeleteQuizAction = (quiz) => {
-    if (!canEditVault) return;
-    askConfirm("Delete Exam Paper", `Remove "${quiz.title}" from the database?`, async () => {
-      const ok = await onDeleteQuiz(quiz.id);
-      if (ok) showToast(`Deleted paper "${quiz.title}".`, "info");
-    });
-  };
-
-  const handleAddBadge = async (e) => {
-    e.preventDefault();
-    if (!badgeName.trim()) return showToast("Enter badge name.", "warning");
-
-    const newBadge = {
-      id: `badge_${Date.now()}`,
-      name: badgeName,
-      icon: badgeIcon || '🎓',
-      desc: badgeDesc || 'Academic achievement milestone.',
-      reqXp: parseInt(badgeReqXp)
-    };
-
-    const ok = await onAddBadge(newBadge);
-    if (ok) { setBadgeName(''); setBadgeDesc(''); }
-  };
-
-  const handleDeleteBadge = (badgeId) => {
-    askConfirm("Delete Badge", "Delete this achievement badge?", async () => {
-      const ok = await onDeleteBadge(badgeId);
-      if (ok) showToast("Deleted badge.", "info");
-    });
-  };
-
-  const handleUpdateRankMinXp = (rankId, newMinXp) => {
-    setRanks(ranks.map(r => r.id === rankId ? { ...r, minXp: parseInt(newMinXp) || 0 } : r));
-  };
-
-  const handleUpdateSponsorStatus = (sponsorId, newStatus) => onUpdateSponsorStatus(sponsorId, newStatus);
-
-  const handleDeleteSponsor = (sponsorId) => {
-    askConfirm("Delete Sponsor Application", "Remove this application entry?", () => onDeleteSponsor(sponsorId));
+    onAddQuiz(newQuiz);
+    setShowCreateQuizModal(false);
+    
+    // Reset Form
+    setQuizTitle('');
+    setSubjectCode('');
+    setExamYear('');
+    setVariant('');
+    setIsPastPaper(false);
+    setQuestions([
+      {
+        id: `q_${Date.now()}`,
+        question: '',
+        options: ['', '', '', ''],
+        correct_option: '',
+        explanation: '',
+        topic: 'General Concepts',
+        image_url: ''
+      }
+    ]);
   };
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-cyan-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-purple-700 via-indigo-700 to-slate-900 rounded-3xl p-6 sm:p-8 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg">
         <div className="space-y-2">
-          <span className="bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider">
-            {isAdmin ? 'Super Admin Command Dashboard' : `Teacher Practice Studio (${teacherSubject} Class)`}
+          <span className="bg-purple-400/20 border border-purple-300/30 text-purple-200 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider">
+            Teacher & Admin Curriculum Control
           </span>
-          <h2 className="text-2xl sm:text-3xl font-black">
-            {isAdmin ? 'Super Admin Command Center' : 'Teacher Practice Vault Studio'}
-          </h2>
-          <p className="text-cyan-200 text-xs max-w-lg">
-            {isAdmin 
-              ? 'Manage system-wide practice papers, Cambridge arena, student badges, and sponsor proposals.' 
-              : `Create and publish practice vault quizzes for your registered ${teacherSubject} class across all grades.`}
+          <h2 className="text-2xl sm:text-3xl font-black">Question & Quiz Studio</h2>
+          <p className="text-purple-100 text-xs max-w-lg">
+            Create quizzes, insert multiple-choice questions with Dhivehi RTL support, upload diagrams, and manage badges.
           </p>
         </div>
 
-        {canEditVault && (
-          <button
-            onClick={onOpenDiagramUpload}
-            className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-3 rounded-2xl text-xs shadow-md transition shrink-0 flex items-center space-x-1.5"
-          >
-            <ImageIcon className="w-4 h-4" />
-            <span>+ Add {teacherSubject} Practice Quiz</span>
-          </button>
-        )}
-      </div>
-
-      <div className="flex space-x-2 border-b border-slate-200 pb-2 overflow-x-auto">
-        <button
-          onClick={() => setStudioTab('manage_quizzes')}
-          className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 ${
-            studioTab === 'manage_quizzes' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-700'
-          }`}
-        >
-          Practice Vault Quizzes ({myClassQuizzes.length})
-        </button>
-
-        {isAdmin && (
-          <>
+        {canEditStudio && (
+          <div className="flex flex-wrap gap-2 shrink-0">
             <button
-              onClick={() => setStudioTab('sponsors')}
-              className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 flex items-center space-x-1 font-bold ${
-                studioTab === 'sponsors' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-700'
-              }`}
+              onClick={() => setShowCreateQuizModal(true)}
+              className="bg-purple-400 hover:bg-purple-300 text-slate-950 font-black px-4 py-2.5 rounded-2xl text-xs transition shadow-md flex items-center space-x-1.5"
             >
-              <HeartHandshake className="w-3.5 h-3.5 text-rose-400" />
-              <span>Sponsor Proposals ({sponsors.length})</span>
+              <Plus className="w-4 h-4" />
+              <span>+ Create Quiz & Questions</span>
             </button>
-
-            <button
-              onClick={() => setStudioTab('badges_ranks')}
-              className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 flex items-center space-x-1 ${
-                studioTab === 'badges_ranks' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-700'
-              }`}
-            >
-              <Award className="w-3.5 h-3.5" />
-              <span>Manage Badges & Ranks</span>
-            </button>
-          </>
-        )}
-
-        <button
-          onClick={() => setStudioTab('tracker')}
-          className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 flex items-center space-x-1.5 ${
-            studioTab === 'tracker' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-700'
-          }`}
-        >
-          <Users className="w-3.5 h-3.5" />
-          <span>Student Tracker</span>
-        </button>
-
-        <button
-          onClick={() => setStudioTab('json_upload')}
-          className={`px-4 py-2 font-bold rounded-xl text-xs transition shrink-0 flex items-center space-x-1.5 ${
-            studioTab === 'json_upload' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-700'
-          }`}
-        >
-          <Code className="w-3.5 h-3.5" />
-          <span>JSON Importer</span>
-        </button>
-      </div>
-
-      {studioTab === 'manage_quizzes' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {myClassQuizzes.map(q => (
-            <div key={q.id} className="bg-white border border-slate-200 rounded-3xl p-5 flex justify-between items-center shadow-xs">
-              <div>
-                <span className="text-[10px] font-bold text-cyan-700 uppercase bg-cyan-50 px-2 py-0.5 rounded">
-                  {q.subject} • Grade {q.grade}
-                </span>
-                <h4 className="font-bold text-slate-900 text-sm mt-1">{q.title}</h4>
-                <span className="text-[10px] text-slate-400 font-mono block mt-0.5">{q.questions.length} Questions</span>
-              </div>
-              {canEditVault && (
-                <button onClick={() => handleDeleteQuizAction(q)} className="p-2.5 text-rose-600 hover:bg-rose-50 rounded-xl transition">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      ) : studioTab === 'sponsors' && isAdmin ? (
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-xs">
-          <div className="flex justify-between items-center border-b pb-4">
-            <div>
-              <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
-                <HeartHandshake className="w-5 h-5 text-rose-600" />
-                <span>Partner & Sponsor Proposals Dashboard</span>
-              </h3>
-              <p className="text-xs text-slate-500">Review applications submitted from the landing page by parents, businesses, and alumni.</p>
-            </div>
           </div>
+        )}
+      </div>
 
-          {sponsors.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 text-xs">No sponsor proposals submitted yet.</div>
+      {/* Sub-Tabs */}
+      <div className="flex border-b border-slate-200 space-x-6 text-sm font-bold text-slate-500">
+        <button
+          onClick={() => setStudioSubTab('quiz_builder')}
+          className={`pb-3 transition flex items-center space-x-2 border-b-2 ${
+            studioSubTab === 'quiz_builder' ? 'border-purple-600 text-purple-700 font-black' : 'border-transparent hover:text-slate-800'
+          }`}
+        >
+          <HelpCircle className="w-4 h-4" />
+          <span>Quiz & Questions Vault ({quizzes.length})</span>
+        </button>
+
+        <button
+          onClick={() => setStudioSubTab('badge_manager')}
+          className={`pb-3 transition flex items-center space-x-2 border-b-2 ${
+            studioSubTab === 'badge_manager' ? 'border-purple-600 text-purple-700 font-black' : 'border-transparent hover:text-slate-800'
+          }`}
+        >
+          <Award className="w-4 h-4" />
+          <span>Badges & Ranks ({badges.length})</span>
+        </button>
+      </div>
+
+      {/* SUB-TAB 1: QUIZ & QUESTIONS MANAGEMENT */}
+      {studioSubTab === 'quiz_builder' && (
+        <div className="space-y-4">
+          {quizzes.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-400 text-xs font-medium">
+              No quizzes created yet. Click "+ Create Quiz & Questions" to add your first quiz!
+            </div>
           ) : (
             <div className="space-y-4">
-              {sponsors.map((sp) => (
-                <div key={sp.id} className="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-3 relative">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-200/80 pb-3">
-                    <div>
-                      <span className="text-[10px] font-black uppercase text-cyan-800 bg-cyan-50 border border-cyan-200 px-2.5 py-0.5 rounded-md">
-                        {sp.partnerType} • {sp.contributionType}
-                      </span>
-                      <h4 className="font-black text-slate-900 text-base mt-1">{sp.applicantName}</h4>
+              {quizzes.map((quiz) => {
+                const quizQuestions = typeof quiz.questions === 'string' ? JSON.parse(quiz.questions || '[]') : (quiz.questions || []);
+                const isExpanded = expandedQuizId === quiz.id;
+                const dhivehiFmt = getDhivehiFormat(quiz.subject, quiz.title);
+
+                return (
+                  <div key={quiz.id} className="bg-white border border-slate-200 rounded-3xl p-5 space-y-4 shadow-xs">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <div dir={dhivehiFmt.dir}>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-0.5 rounded-md">
+                            {quiz.subject} • Grade {quiz.grade}
+                          </span>
+                          {quiz.is_past_paper && (
+                            <span className="text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md">
+                              Past Paper {quiz.exam_year}
+                            </span>
+                          )}
+                        </div>
+                        <h3 className={`text-base font-black text-slate-900 mt-1 ${dhivehiFmt.className}`}>
+                          {quiz.title}
+                        </h3>
+                        <span className="text-xs text-slate-400 font-bold">
+                          Contains {quizQuestions.length} Questions
+                        </span>
+                      </div>
+
+                      <div className="flex items-center space-x-2 shrink-0">
+                        <button
+                          onClick={() => setExpandedQuizId(isExpanded ? null : quiz.id)}
+                          className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center space-x-1"
+                        >
+                          <Layers className="w-3.5 h-3.5" />
+                          <span>{isExpanded ? 'Hide Questions' : 'View Questions'}</span>
+                        </button>
+
+                        {canEditStudio && (
+                          <button
+                            onClick={() => askConfirm("Delete Quiz", `Delete "${quiz.title}" and all its questions permanently?`, () => onDeleteQuiz(quiz.id))}
+                            className="bg-rose-50 hover:bg-rose-100 text-rose-600 p-2 rounded-xl transition"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
-                      <select
-                        value={sp.status || 'Pending Review ⏳'}
-                        onChange={(e) => handleUpdateSponsorStatus(sp.id, e.target.value)}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-xl border focus:outline-none ${
-                          sp.status === 'Approved Partner ✅' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
-                          sp.status === 'Contacted 📞' ? 'bg-indigo-100 text-indigo-800 border-indigo-300' :
-                          'bg-amber-100 text-amber-800 border-amber-300'
-                        }`}
-                      >
-                        <option value="Pending Review ⏳">Pending Review ⏳</option>
-                        <option value="Contacted 📞">Contacted 📞</option>
-                        <option value="Approved Partner ✅">Approved Partner ✅</option>
-                      </select>
+                    {/* Questions Accordion Details */}
+                    {isExpanded && (
+                      <div className="pt-3 border-t border-slate-100 space-y-3">
+                        <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider">
+                          Questions List ({quizQuestions.length})
+                        </h4>
 
-                      <button
-                        onClick={() => handleDeleteSponsor(sp.id)}
-                        className="p-1.5 text-rose-600 hover:bg-rose-100 rounded-xl transition"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                        <div className="space-y-3">
+                          {quizQuestions.map((q, qIdx) => {
+                            const qFmt = getDhivehiFormat(quiz.subject, q.question);
+                            const opts = Array.isArray(q.options) ? q.options : [];
+
+                            return (
+                              <div key={q.id || qIdx} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-2" dir={qFmt.dir}>
+                                <div className="flex justify-between items-start">
+                                  <span className="text-[10px] font-bold text-slate-400">
+                                    Q{qIdx + 1}. Topic: {q.topic || 'General'}
+                                  </span>
+                                </div>
+
+                                <p className={`text-sm font-black text-slate-900 ${qFmt.className}`}>
+                                  {q.question}
+                                </p>
+
+                                {/* Options grid */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                                  {opts.map((opt, optIdx) => {
+                                    const isCorrect = opt === q.correct_option;
+                                    return (
+                                      <div
+                                        key={optIdx}
+                                        className={`p-2.5 rounded-xl text-xs font-bold border ${
+                                          isCorrect 
+                                            ? 'bg-emerald-50 border-emerald-300 text-emerald-900' 
+                                            : 'bg-white border-slate-200 text-slate-700'
+                                        } ${qFmt.className}`}
+                                      >
+                                        <span>{opt}</span>
+                                        {isCorrect && <span className="ml-2 text-emerald-600">✓ Correct</span>}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+
+                                {q.explanation && (
+                                  <p className={`text-[11px] text-slate-500 pt-1 italic ${qFmt.className}`}>
+                                    Explanation: {q.explanation}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
-
-                  <p className="text-xs text-slate-700 leading-relaxed bg-white border border-slate-100 p-3 rounded-xl">
-                    "{sp.message}"
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500 pt-1">
-                    <span className="flex items-center space-x-1">
-                      <Mail className="w-3.5 h-3.5 text-cyan-600" />
-                      <a href={`mailto:${sp.email}`} className="text-cyan-600 font-bold hover:underline">{sp.email}</a>
-                    </span>
-                    <span className="flex items-center space-x-1">
-                      <Phone className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{sp.phone}</span>
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono ml-auto">Submitted: {sp.date}</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
-      ) : studioTab === 'badges_ranks' && isAdmin ? (
-        <div className="space-y-6">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-xs">
-            <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
-              <Sparkles className="w-5 h-5 text-cyan-600" />
-              <span>Student Rank Level XP Requirements</span>
-            </h3>
-            <p className="text-xs text-slate-500">Modify minimum XP required for students to unlock each rank tier.</p>
+      )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
-              {ranks.map(r => (
-                <div key={r.id} className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl text-center space-y-2">
-                  <span className="text-2xl">{r.icon}</span>
-                  <h4 className="font-bold text-slate-900 text-xs">{r.title}</h4>
-                  <div>
-                    <label className="text-[9px] font-bold uppercase text-slate-400 block mb-0.5">Min XP</label>
-                    <input
-                      type="number"
-                      value={r.minXp}
-                      onChange={(e) => handleUpdateRankMinXp(r.id, e.target.value)}
-                      onBlur={() => showToast("Rank XP threshold updated (applies for this session).", "info")}
-                      className="w-full bg-white border rounded-lg p-1 text-center font-bold text-cyan-700 text-xs"
-                    />
-                  </div>
+      {/* CREATE QUIZ & QUESTIONS MODAL */}
+      {showCreateQuizModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <h3 className="text-lg font-black text-slate-900 flex items-center space-x-2">
+                <Plus className="w-5 h-5 text-purple-600" />
+                <span>Create New Quiz & Add Questions</span>
+              </h3>
+              <button onClick={() => setShowCreateQuizModal(false)} className="text-slate-400 hover:text-slate-700 font-bold">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateQuizSubmit} className="space-y-5 text-xs">
+              {/* Quiz Metadata */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="font-bold block mb-1">Quiz Title (Dhivehi or English)</label>
+                  <input
+                    type="text"
+                    value={quizTitle}
+                    onChange={(e) => setQuizTitle(e.target.value)}
+                    placeholder="e.g. Physics Optics Quiz / ދިވެހި ބަހުގެ ގަވާއިދު"
+                    className="w-full border rounded-xl p-2.5 font-bold"
+                    required
+                  />
                 </div>
-              ))}
-            </div>
-          </div>
 
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-6 shadow-xs">
-            <div className="flex justify-between items-center border-b pb-4">
-              <div>
-                <h3 className="font-black text-slate-900 text-base flex items-center space-x-2">
-                  <Award className="w-5 h-5 text-cyan-600" />
-                  <span>Academic Achievement Badges (CRUD)</span>
-                </h3>
-                <p className="text-xs text-slate-500">Create or delete achievement badges displayed on student profiles.</p>
+                <div>
+                  <label className="font-bold block mb-1">Subject</label>
+                  <select
+                    value={quizSubject}
+                    onChange={(e) => setQuizSubject(e.target.value)}
+                    className="w-full border rounded-xl p-2.5 font-bold"
+                  >
+                    {ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold block mb-1">Target Grade</label>
+                  <select
+                    value={quizGrade}
+                    onChange={(e) => setQuizGrade(e.target.value)}
+                    className="w-full border rounded-xl p-2.5 font-bold"
+                  >
+                    {[7, 8, 9, 10].map(g => <option key={g} value={g}>Grade {g}</option>)}
+                  </select>
+                </div>
               </div>
-            </div>
 
-            <form onSubmit={handleAddBadge} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3 text-xs">
-              <h4 className="font-bold text-slate-800">Add New Achievement Badge</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                <input
-                  type="text"
-                  value={badgeName}
-                  onChange={(e) => setBadgeName(e.target.value)}
-                  placeholder="Badge Name (e.g. Science Hero)"
-                  className="bg-white border rounded-xl p-2.5 text-slate-900 font-bold"
-                  required
-                />
-                <input
-                  type="text"
-                  value={badgeIcon}
-                  onChange={(e) => setBadgeIcon(e.target.value)}
-                  placeholder="Emoji Icon (e.g. 🧪)"
-                  className="bg-white border rounded-xl p-2.5 text-slate-900 text-center text-lg"
-                  required
-                />
-                <input
-                  type="number"
-                  value={badgeReqXp}
-                  onChange={(e) => setBadgeReqXp(e.target.value)}
-                  placeholder="Req XP"
-                  className="bg-white border rounded-xl p-2.5 font-bold text-cyan-700"
-                  required
-                />
-                <button type="submit" className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 rounded-xl transition flex items-center justify-center space-x-1">
-                  <Plus className="w-4 h-4" />
-                  <span>Create Badge</span>
-                </button>
-              </div>
-              <input
-                type="text"
-                value={badgeDesc}
-                onChange={(e) => setBadgeDesc(e.target.value)}
-                placeholder="Badge Criteria Description"
-                className="w-full bg-white border rounded-xl p-2.5 text-slate-900"
-              />
-            </form>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {badges.map(b => (
-                <div key={b.id} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-3xl">{b.icon}</span>
-                    <div>
-                      <h4 className="font-bold text-slate-900 text-xs">{b.name}</h4>
-                      <p className="text-[11px] text-slate-500">{b.desc}</p>
-                      <span className="text-[10px] font-bold text-cyan-700 bg-cyan-50 px-2 py-0.5 rounded mt-1 inline-block">
-                        Unlocks at {b.reqXp || 100} XP
-                      </span>
-                    </div>
-                  </div>
+              {/* QUESTIONS BUILDER SECTION */}
+              <div className="space-y-4 border-t border-slate-200 pt-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-black text-slate-900 text-sm flex items-center space-x-1.5">
+                    <HelpCircle className="w-4 h-4 text-purple-600" />
+                    <span>Questions ({questions.length})</span>
+                  </h4>
 
                   <button
-                    onClick={() => handleDeleteBadge(b.id)}
-                    className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition"
+                    type="button"
+                    onClick={addQuestionField}
+                    className="bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold px-3 py-1.5 rounded-xl text-xs transition"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    + Add Another Question
                   </button>
                 </div>
-              ))}
-            </div>
+
+                {questions.map((q, qIndex) => {
+                  const qFormat = getDhivehiFormat(quizSubject, q.question);
+
+                  return (
+                    <div key={q.id || qIndex} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3 relative">
+                      <div className="flex justify-between items-center">
+                        <span className="font-black text-slate-700 text-xs">
+                          Question #{qIndex + 1}
+                        </span>
+                        {questions.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeQuestionField(qIndex)}
+                            className="text-rose-600 hover:text-rose-700 p-1"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="font-bold block mb-1">Question Text</label>
+                        <textarea
+                          value={q.question}
+                          onChange={(e) => handleQuestionChange(qIndex, 'question', e.target.value)}
+                          placeholder="Type question here..."
+                          rows={2}
+                          dir={qFormat.dir}
+                          className={`w-full border rounded-xl p-2.5 bg-white font-medium ${qFormat.className}`}
+                          required
+                        />
+                      </div>
+
+                      {/* Options Inputs */}
+                      <div className="space-y-2">
+                        <label className="font-bold block">Answer Options & Correct Answer Selection</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" dir={qFormat.dir}>
+                          {q.options.map((opt, optIndex) => (
+                            <div key={optIndex} className="flex items-center space-x-2 bg-white border border-slate-200 p-2 rounded-xl">
+                              <input
+                                type="radio"
+                                name={`correct_opt_${qIndex}`}
+                                checked={q.correct_option === opt && opt !== ''}
+                                onChange={() => handleQuestionChange(qIndex, 'correct_option', opt)}
+                                className="w-4 h-4 text-purple-600 focus:ring-purple-500"
+                              />
+                              <input
+                                type="text"
+                                value={opt}
+                                onChange={(e) => handleOptionChange(qIndex, optIndex, e.target.value)}
+                                placeholder={`Option ${optIndex + 1}`}
+                                className={`w-full border-none p-1 text-xs font-medium focus:outline-none ${qFormat.className}`}
+                                required
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="font-bold block mb-1">Explanation (Optional)</label>
+                        <input
+                          type="text"
+                          value={q.explanation}
+                          onChange={(e) => handleQuestionChange(qIndex, 'explanation', e.target.value)}
+                          placeholder="Why this option is correct..."
+                          dir={qFormat.dir}
+                          className={`w-full border rounded-xl p-2 bg-white ${qFormat.className}`}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex space-x-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateQuizModal(false)}
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-2.5 rounded-xl transition shadow-md"
+                >
+                  Save Quiz & Questions to Supabase 🚀
+                </button>
+              </div>
+            </form>
           </div>
-        </div>
-      ) : studioTab === 'tracker' ? (
-        <TeacherStudentTracker defaultSubject={teacherSubject} />
-      ) : (
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-xs">
-          <div className="flex items-center justify-between gap-3">
-            <h3 className="font-black text-slate-900 text-lg">Fast JSON Importer for {teacherSubject}</h3>
-            <select
-              value={importGrade}
-              onChange={(e) => setImportGrade(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-cyan-700"
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => <option key={g} value={g}>Grade {g}</option>)}
-            </select>
-          </div>
-          <textarea
-            value={jsonInput}
-            onChange={(e) => setJsonInput(e.target.value)}
-            rows={8}
-            className="w-full bg-slate-900 text-emerald-400 font-mono text-xs p-4 rounded-2xl border border-slate-800"
-          />
-          <button
-            onClick={handleImportJson}
-            className="bg-cyan-600 hover:bg-cyan-700 text-white font-black px-6 py-3 rounded-2xl text-xs shadow-md transition flex items-center space-x-2"
-          >
-            <Upload className="w-4 h-4" />
-            <span>Publish {teacherSubject} Paper (Grade {importGrade})</span>
-          </button>
         </div>
       )}
     </div>
