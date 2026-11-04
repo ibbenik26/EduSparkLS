@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Heart, Clock, Award, CheckCircle2, XCircle, ArrowRight, RotateCcw } from 'lucide-react';
+import { X, Heart, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import { getDhivehiFormat } from '../utils/helpers';
 
 export default function QuizRunnerModal({
@@ -8,12 +8,23 @@ export default function QuizRunnerModal({
 }) {
   if (!activeQuiz) return null;
 
-  const currentQuestion = activeQuiz.questions[currentQuestionIdx];
-  const totalQuestions = activeQuiz.questions.length;
+  // Safely parse questions array (handles raw JSON strings from Supabase)
+  let rawQuestions = activeQuiz.questions;
+  if (typeof rawQuestions === 'string') {
+    try {
+      rawQuestions = JSON.parse(rawQuestions);
+    } catch (e) {
+      rawQuestions = [];
+    }
+  }
+  const questions = Array.isArray(rawQuestions) ? rawQuestions : [];
+  const totalQuestions = questions.length;
+  const currentQuestion = questions[currentQuestionIdx] || {};
+  const options = Array.isArray(currentQuestion.options) ? currentQuestion.options : [];
   const isLastQuestion = currentQuestionIdx === totalQuestions - 1;
 
-  // Detect Dhivehi / Islam / Quran subject formatting
-  const questionFormat = getDhivehiFormat(activeQuiz.subject, currentQuestion?.question);
+  // Detect Dhivehi / Islam / Quran formatting & Faruma font requirements
+  const questionFormat = getDhivehiFormat(activeQuiz.subject || '', currentQuestion.question || '');
 
   return (
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
@@ -23,10 +34,10 @@ export default function QuizRunnerModal({
         <div className="flex justify-between items-center border-b border-slate-100 pb-4">
           <div>
             <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-2.5 py-1 rounded-lg">
-              {activeQuiz.subject} • Grade {activeQuiz.grade}
+              {activeQuiz.subject || 'General'} • Grade {activeQuiz.grade || 7}
             </span>
             <h2 className={`text-lg font-black mt-1 text-slate-900 ${questionFormat.className}`}>
-              {activeQuiz.title}
+              {activeQuiz.title || 'Quiz'}
             </h2>
           </div>
 
@@ -44,8 +55,16 @@ export default function QuizRunnerModal({
           </div>
         </div>
 
-        {/* Finished / Game Over Screen */}
-        {quizFinished || gameOver ? (
+        {/* Empty Questions Fallback */}
+        {totalQuestions === 0 ? (
+          <div className="text-center py-8 space-y-4">
+            <p className="text-sm font-bold text-slate-500">No questions found in this quiz.</p>
+            <button onClick={onClose} className="bg-slate-900 text-white font-bold px-5 py-2.5 rounded-xl text-xs">
+              Close Quiz
+            </button>
+          </div>
+        ) : quizFinished || gameOver ? (
+          /* Finished / Game Over Screen */
           <div className="text-center py-8 space-y-4">
             <div className="w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-3xl font-black shadow-inner">
               {gameOver ? '💔' : score === totalQuestions ? '⭐' : '🏆'}
@@ -71,19 +90,18 @@ export default function QuizRunnerModal({
         ) : (
           /* Active Question View */
           <div className="space-y-6">
-            {/* Progress Counter */}
             <div className="flex justify-between items-center text-xs font-bold text-slate-400">
               <span>Question {currentQuestionIdx + 1} of {totalQuestions}</span>
               {streak > 1 && <span className="text-amber-600 font-black">🔥 {streak}x Streak!</span>}
             </div>
 
-            {/* Question Card formatted with Faruma font & RTL */}
+            {/* Question Text with Dhivehi RTL & Faruma Font Support */}
             <div
               dir={questionFormat.dir}
               className={`bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-3 ${questionFormat.className}`}
             >
               <h3 className="text-lg font-black text-slate-900 leading-relaxed">
-                {currentQuestion.question}
+                {currentQuestion.question || 'No question text available.'}
               </h3>
 
               {currentQuestion.image_url && (
@@ -95,9 +113,9 @@ export default function QuizRunnerModal({
               )}
             </div>
 
-            {/* Options List with Dhivehi RTL Alignment */}
+            {/* Options List */}
             <div className="space-y-3" dir={questionFormat.dir}>
-              {currentQuestion.options.map((opt, idx) => {
+              {options.map((opt, idx) => {
                 const isSelected = selectedOption === opt;
                 const isCorrect = opt === currentQuestion.correct_option;
 
