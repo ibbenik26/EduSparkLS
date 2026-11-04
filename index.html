@@ -7,6 +7,29 @@
     <title>eduspark-LS</title>
   </head>
   <body>
+
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+
+/* Official Dhivehi Faruma & Thaana Web Font Import */
+@font-face {
+  font-family: 'Faruma';
+  src: url('https://cdn.jsdelivr.net/gh/mvfonts/faruma@master/Faruma.woff2') format('woff2'),
+       url('https://cdn.jsdelivr.net/gh/mvfonts/faruma@master/Faruma.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-faruma {
+  font-family: 'Faruma', 'MV Waheed', 'MV Boli', 'Thaana', sans-serif !important;
+}
+
+/* Enhances Thaana script readability */
+[dir="rtl"] .font-faruma,
+.font-faruma {
+  line-height: 1.9 !important;
+  letter-spacing: 0px !important;
+}
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
