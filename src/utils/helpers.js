@@ -1,7 +1,12 @@
 export const ALL_SUBJECTS = [
-  'Dhivehi', 'Islam', 'English', 'Maths', 'Physics',
+  'Dhivehi', 'Islam', 'Quran', 'English', 'Maths', 'Physics',
   'Chemistry', 'Biology', 'Economics', 'Business Studies',
   'Accounting', 'Computer Science', 'Social Studies', 'Science'
+];
+
+export const DHIVEHI_SUBJECTS = [
+  'Dhivehi', 'Islam', 'Quran', 'Dhivehi Language',
+  'ދިވެހި', 'އިސްލާމް', 'ޤުރުއާން', 'Arabic'
 ];
 
 export const ROLE_TABS = {
@@ -26,6 +31,27 @@ export const INITIAL_RANKS = [
   { id: 'r5', title: 'Legend', minXp: 2000, text: 'text-amber-600', bg: 'bg-amber-100', icon: '👑' }
 ];
 
+export const isThaanaText = (text) => {
+  if (!text) return false;
+  return /[\u0780-\u07BF]/.test(String(text));
+};
+
+export const isRTLSubject = (subject = '', text = '') => {
+  if (subject && DHIVEHI_SUBJECTS.some(s => s.toLowerCase() === String(subject).trim().toLowerCase())) {
+    return true;
+  }
+  return isThaanaText(subject) || isThaanaText(text);
+};
+
+export const getDhivehiFormat = (subject = '', text = '') => {
+  const isRtl = isRTLSubject(subject, text);
+  return {
+    isRtl,
+    dir: isRtl ? 'rtl' : 'ltr',
+    className: isRtl ? 'font-faruma text-right leading-loose tracking-normal' : ''
+  };
+};
+
 export const getDefaultTabForRole = (userRole) => {
   switch (userRole) {
     case 'teacher': return 'studio';
@@ -39,10 +65,6 @@ export const canUserCRUDPracticeVault = (role) => ['teacher', 'super_admin'].inc
 export const canUserCRUDOLevel = (role) => role === 'super_admin';
 export const canUserCRUDShop = (role) => ['teacher', 'shop_admin', 'super_admin'].includes(role);
 export const canUserCRUDLibrary = (role) => ['teacher', 'super_admin'].includes(role);
-
-export const isRTLSubject = (subject) => {
-  return subject === 'Dhivehi' || subject === 'Islam' || subject === 'ދިވެހި' || subject === 'އިސްލާމް';
-};
 
 export const getQuizTimeLimit = (quiz) => {
   if (!quiz) return 60;
