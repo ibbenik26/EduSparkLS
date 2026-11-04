@@ -1,215 +1,93 @@
-import React, { useState, useEffect } from 'react';
-import { BookOpen, Key, ArrowLeft, ArrowRight, X, Clock, Sparkles, Plus, Trash2, ShieldCheck, Award } from 'lucide-react';
-import { isRTLSubject, playSound, canUserCRUDLibrary } from '../utils/helpers';
+import React, { useState } from 'react';
+import { BookOpen, Search, Plus, Trash2, Eye, Download } from 'lucide-react';
+import { canUserCRUDLibrary, getDhivehiFormat } from '../utils/helpers';
 
-export default function LibraryTab({ role, books, setBooks, setCoins, setXp, setReadingHours, claimedCodes = [], setClaimedCodes, showToast, askConfirm }) {
-  const [selectedBook, setSelectedBook] = useState(null);
-  const [pageIndex, setPageIndex] = useState(0);
-  const [inputCode, setInputCode] = useState('');
-
-  // Auto-Timer State for Digital Reader
-  const [sessionSeconds, setSessionSeconds] = useState(0);
-  const [autoEarnedForBook, setAutoEarnedForBook] = useState(false);
-
-  // New Book CRUD Modal State
-  const [showAddBookModal, setShowAddBookModal] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newSubject, setNewSubject] = useState('Dhivehi');
-  const [newAuthor, setNewAuthor] = useState('');
-  const [newCoverUrl, setNewCoverUrl] = useState('');
-  const [newSummary, setNewSummary] = useState('');
-  const [newSecretCode, setNewSecretCode] = useState('');
-  const [newEduPoints, setNewEduPoints] = useState(150);
+export default function LibraryTab({
+  role, books, setBooks, setCoins, setXp, setReadingHours, claimedCodes, setClaimedCodes, showToast, askConfirm
+}) {
+  const [selectedSubject, setSelectedSubject] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [previewBook, setPreviewBook] = useState(null);
 
   const canEditLibrary = canUserCRUDLibrary(role);
 
-  // Each book can only pay out its online-reading reward once per student
-  const readKey = selectedBook ? `READ:${selectedBook.id}` : null;
-  const alreadyRead = !!readKey && claimedCodes.includes(readKey);
-
-  // Online E-Reader timer: only counts seconds (no side effects inside the state updater)
-  useEffect(() => {
-    if (!selectedBook || autoEarnedForBook || alreadyRead) return;
-    const timer = setInterval(() => setSessionSeconds(prev => prev + 1), 1000);
-    return () => clearInterval(timer);
-  }, [selectedBook, autoEarnedForBook, alreadyRead]);
-
-  // Award once the required reading time is reached
-  useEffect(() => {
-    if (!selectedBook || autoEarnedForBook || alreadyRead) return;
-    const requiredSecs = Math.max(15, Math.round((selectedBook.reading_hours || 1) * 15));
-    if (sessionSeconds < requiredSecs) return;
-
-    setAutoEarnedForBook(true);
-    setClaimedCodes([...claimedCodes, readKey]);
-    playSound('coin');
-    setCoins(c => c + 100);
-    setXp(x => x + 150);
-    setReadingHours(h => Number((h + (selectedBook.reading_hours || 1)).toFixed(1)));
-    showToast(`🎉 Reading goal reached for "${selectedBook.title}"! +100 Edu Coins & +150 XP`, 'success');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionSeconds]);
-
-  const handlePhysicalCodeClaim = (e) => {
-    e.preventDefault();
-    const code = inputCode.trim().toUpperCase();
-    if (!code) return;
-
-    if (claimedCodes.includes(code)) {
-      showToast("⚠️ You have already claimed Edu Points for this physical book code!", "warning");
-      return;
-    }
-
-    const matchedBook = books.find(b => (b.claim_code || '').toUpperCase() === code);
-    if (!matchedBook) {
-      showToast("❌ Invalid Voucher Code! Make sure it matches the code given by the Librarian.", "error");
-      return;
-    }
-
-    const reward = matchedBook.edu_points_reward || 150;
-    playSound('coin');
-    setCoins(c => c + Math.round(reward * 0.7));
-    setXp(x => x + reward);
-    setReadingHours(h => Number((h + (matchedBook.reading_hours || 1)).toFixed(1)));
-    setClaimedCodes([...claimedCodes, code]);
-    setInputCode('');
-    showToast(`🎉 Code verified for "${matchedBook.title}"! +${reward} XP & +${Math.round(reward * 0.7)} Coins`, "success");
-  };
-
-  const handleCreateBook = (e) => {
-    e.preventDefault();
-    if (!newTitle || !newSecretCode) return showToast("Please fill in the book title and secret code.", "warning");
-
-    const newBookObj = {
-      id: `book_${Date.now()}`,
-      title: newTitle,
-      subject: newSubject,
-      author: newAuthor || 'School Library',
-      cover_url: newCoverUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80',
-      summary: newSummary || 'Digital textbook chapter.',
-      reading_hours: 3.0,
-      claim_code: newSecretCode.toUpperCase(),
-      edu_points_reward: parseInt(newEduPoints),
-      pages: ["Chapter 1: Foundations of learning."]
-    };
-
-    setBooks([newBookObj, ...books]);
-    setShowAddBookModal(false);
-    setNewTitle(''); setNewSecretCode('');
-    showToast("🎉 New book added to the E-Library!", "success");
-  };
-
-  const handleDeleteBook = (id) => {
-    if (!canEditLibrary) return;
-    askConfirm("Remove Book", "Are you sure you want to remove this book from the library?", () => {
-      setBooks(books.filter(b => b.id !== id));
-    });
-  };
+  const filteredBooks = books.filter(b => {
+    const matchesSubject = selectedSubject === 'All' || b.subject === selectedSubject;
+    const matchesQuery = `${b.title} ${b.subject} ${b.desc}`.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSubject && matchesQuery;
+  });
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-emerald-800 via-teal-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
+      {/* Banner */}
+      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 rounded-3xl p-6 sm:p-8 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg">
         <div className="space-y-2">
-          <span className="bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider">
-            National E-Library & Physical Hub
+          <span className="bg-blue-400/20 border border-blue-300/30 text-blue-200 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider">
+            Curriculum E-Library & Reference Vault
           </span>
-          <h2 className="text-2xl sm:text-3xl font-black">Digital Textbook Catalog</h2>
-          <p className="text-emerald-100 text-xs max-w-xl">
-            Read online for live time auto-rewards, OR enter the librarian's secret voucher code when reading physical books.
+          <h2 className="text-2xl sm:text-3xl font-black">Edusparkls Digital Library</h2>
+          <p className="text-blue-100 text-xs max-w-lg">
+            Access Ministry-approved textbooks for Dhivehi, Islam, Quran, and Cambridge Science subjects.
           </p>
         </div>
-
-        {canEditLibrary && (
-          <button
-            onClick={() => setShowAddBookModal(true)}
-            className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-5 py-3 rounded-2xl text-xs transition shadow-md shrink-0 flex items-center space-x-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add New Book (CRUD)</span>
-          </button>
-        )}
       </div>
 
-      {/* Code Claim Input Box */}
-      <div className="bg-white border border-emerald-200 p-5 rounded-3xl shadow-xs space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="font-black text-slate-900 text-sm flex items-center space-x-2">
-            <Key className="w-4 h-4 text-emerald-600" />
-            <span>Redeem Librarian Physical Book Code</span>
-          </h3>
-          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-            Librarian Code Entry
-          </span>
-        </div>
-
-        <form onSubmit={handlePhysicalCodeClaim} className="flex gap-2">
+      {/* Search & Subject Filters */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-3xl border border-slate-200 shadow-xs">
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
           <input
             type="text"
-            value={inputCode}
-            onChange={(e) => setInputCode(e.target.value)}
-            placeholder="Enter the librarian's voucher code (e.g., LIB-DHIV-01)"
-            className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold uppercase text-slate-900 focus:outline-none focus:border-emerald-500"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search books, Dhivehi title..."
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium focus:outline-none focus:border-indigo-500"
           />
-          <button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-6 py-2.5 rounded-xl text-xs shadow-xs transition">
-            Claim Edu Points
-          </button>
-        </form>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
+          {['All', 'Dhivehi', 'Islam', 'Quran', 'Physics', 'Maths'].map(sub => (
+            <button
+              key={sub}
+              onClick={() => setSelectedSubject(sub)}
+              className={`text-xs font-bold px-3 py-1.5 rounded-xl transition ${
+                selectedSubject === sub ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {sub}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Book Catalog Grid */}
+      {/* Book Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {books.map((book) => {
-          const isDhivehi = isRTLSubject(book.subject);
+        {filteredBooks.map((book) => {
+          const format = getDhivehiFormat(book.subject, book.title);
 
           return (
-            <div key={book.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden hover:shadow-md transition flex flex-col justify-between">
-              <div className="p-5 space-y-3">
-                <div className="h-44 bg-slate-100 rounded-2xl overflow-hidden relative border">
-                  <img src={book.cover_url} alt={book.title} className="w-full h-full object-cover" />
-                  <span className="absolute top-2 right-2 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-1 rounded-lg">
-                    {book.subject}
-                  </span>
-                  {canEditLibrary && (
-                    <button
-                      onClick={() => handleDeleteBook(book.id)}
-                      className="absolute top-2 left-2 bg-rose-600 text-white p-1.5 rounded-lg text-xs shadow-md"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
+            <div key={book.id} className="bg-white border border-slate-200 rounded-3xl p-5 space-y-3 shadow-xs hover:shadow-md transition flex flex-col justify-between">
+              <div className="space-y-3" dir={format.dir}>
+                <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg border border-indigo-200 w-fit block">
+                  {book.subject} • Grade {book.grade || 'All'}
+                </span>
 
-                <div className={isDhivehi ? 'font-dhivehi' : ''}>
-                  <h3 className="font-black text-slate-900 text-base leading-snug">{book.title}</h3>
-                  <p className="text-xs text-slate-500 font-medium">By {book.author}</p>
-                </div>
+                <h3 className={`font-black text-slate-900 text-base ${format.className}`}>
+                  {book.title}
+                </h3>
 
-                <p className={`text-xs text-slate-600 line-clamp-2 ${isDhivehi ? 'font-dhivehi' : ''}`}>
-                  {book.summary}
+                <p className={`text-xs text-slate-500 leading-relaxed ${format.className}`}>
+                  {book.desc || 'Standard curriculum textbook.'}
                 </p>
               </div>
 
-              <div className="p-5 pt-0 border-t border-slate-100 mt-2 space-y-2">
-                <div className="flex justify-between items-center text-xs font-mono">
-                  <span className="flex items-center space-x-1 text-slate-500">
-                    <Clock className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Reading: {book.reading_hours}h</span>
-                  </span>
-
-                  {/* VISIBLE EDU POINTS REWARD (CODE IS HIDDEN) */}
-                  <span className="font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 flex items-center space-x-1">
-                    <Award className="w-3.5 h-3.5 text-amber-600" />
-                    <span>+{book.edu_points_reward || 150} Edu Points</span>
-                  </span>
-                </div>
-
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                 <button
-                  onClick={() => { setSelectedBook(book); setPageIndex(0); setSessionSeconds(0); setAutoEarnedForBook(false); }}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1.5 shadow-xs"
+                  onClick={() => setPreviewBook(book)}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-xs flex items-center space-x-1.5"
                 >
-                  <BookOpen className="w-4 h-4" />
-                  <span>Open Reader (Auto-Reward)</span>
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Read Book</span>
                 </button>
               </div>
             </div>
@@ -217,116 +95,42 @@ export default function LibraryTab({ role, books, setBooks, setCoins, setXp, set
         })}
       </div>
 
-      {/* Reader Modal */}
-      {selectedBook && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 space-y-5 shadow-2xl relative">
-            <div className="flex justify-between items-center border-b pb-4">
-              <div>
-                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest flex items-center space-x-1">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Online E-Reader Active</span>
-                </span>
-                <h3 className={`text-lg font-black text-slate-900 mt-0.5 ${isRTLSubject(selectedBook.subject) ? 'font-dhivehi' : ''}`}>
-                  {selectedBook.title}
-                </h3>
-              </div>
-              <button onClick={() => setSelectedBook(null)} className="p-2 text-slate-400 hover:text-slate-700">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {/* Book Reading Modal */}
+      {previewBook && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-4 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            {(() => {
+              const modalFormat = getDhivehiFormat(previewBook.subject, previewBook.title);
+              return (
+                <div dir={modalFormat.dir} className={modalFormat.className}>
+                  <div className="flex justify-between items-start pb-3 border-b border-slate-100">
+                    <div>
+                      <span className="text-[10px] font-black uppercase bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-md">
+                        {previewBook.subject}
+                      </span>
+                      <h3 className="text-xl font-black text-slate-900 mt-1">{previewBook.title}</h3>
+                    </div>
 
-            <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl flex items-center justify-between text-xs">
-              <div className="flex items-center space-x-2 font-mono font-bold text-emerald-800">
-                <Clock className="w-4 h-4 text-emerald-600 animate-spin" />
-                <span>Recorded Time: {sessionSeconds}s</span>
-              </div>
-              {(autoEarnedForBook || alreadyRead) && (
-                <span className="bg-emerald-600 text-white px-3 py-1 rounded-lg text-[10px] font-black">
-                  {alreadyRead && !autoEarnedForBook ? 'Already Rewarded ✅' : 'Goal Fulfilled (+100 Coins) ✅'}
-                </span>
-              )}
-            </div>
+                    <button onClick={() => setPreviewBook(null)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400">
+                      ✕
+                    </button>
+                  </div>
 
-            <div className={`min-h-[220px] bg-slate-50 border border-slate-200 p-6 rounded-2xl text-slate-800 leading-relaxed text-sm whitespace-pre-line ${
-              isRTLSubject(selectedBook.subject) ? 'font-dhivehi text-base' : ''
-            }`}>
-              {selectedBook.pages[pageIndex] || "End of chapter."}
-            </div>
+                  <div className="py-6 space-y-4 text-sm leading-loose text-slate-700">
+                    <p>{previewBook.desc}</p>
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 font-medium">
+                      📖 {previewBook.content || 'މި ފޮތުގެ މުހިންމު ބައިތައް ކިޔުމަށް ސިލެކްޓް ކުރައްވާ.'}
+                    </div>
+                  </div>
 
-            <div className="flex justify-between items-center pt-2">
-              <button
-                disabled={pageIndex === 0}
-                onClick={() => setPageIndex(p => p - 1)}
-                className="px-4 py-2 border rounded-xl text-xs font-bold disabled:opacity-40"
-              >
-                Previous
-              </button>
-              <span className="text-xs font-mono font-bold text-slate-500">Page {pageIndex + 1} / {selectedBook.pages.length}</span>
-              <button
-                disabled={pageIndex + 1 >= selectedBook.pages.length}
-                onClick={() => setPageIndex(p => p + 1)}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold disabled:opacity-40"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add New Book CRUD Modal (Super Admin & Teacher) */}
-      {showAddBookModal && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="font-black text-slate-900 text-base">Add Book to E-Library</h3>
-              <button onClick={() => setShowAddBookModal(false)} className="text-slate-400 font-bold">✕</button>
-            </div>
-
-            <form onSubmit={handleCreateBook} className="space-y-3 text-xs font-medium">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Book Title</label>
-                <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Title" className="w-full bg-slate-50 border rounded-xl p-2.5" required />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Subject</label>
-                  <select value={newSubject} onChange={(e) => setNewSubject(e.target.value)} className="w-full bg-slate-50 border rounded-xl p-2.5 font-bold text-indigo-700">
-                    <option value="Dhivehi">Dhivehi</option>
-                    <option value="Islam">Islam</option>
-                    <option value="Physics">Physics</option>
-                    <option value="Chemistry">Chemistry</option>
-                    <option value="Maths">Maths</option>
-                  </select>
+                  <div className="pt-2 flex justify-end">
+                    <button onClick={() => setPreviewBook(null)} className="bg-slate-900 text-white font-bold px-5 py-2.5 rounded-xl text-xs">
+                      Close Preview
+                    </button>
+                  </div>
                 </div>
-
-                <div>
-                  <label className="font-bold text-amber-800 block mb-1">Secret Code (Librarian)</label>
-                  <input type="text" value={newSecretCode} onChange={(e) => setNewSecretCode(e.target.value)} placeholder="e.g. LIB-DHIV-99" className="w-full bg-amber-50 border border-amber-300 font-mono font-bold rounded-xl p-2.5" required />
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Visible Edu Points Reward</label>
-                <input type="number" value={newEduPoints} onChange={(e) => setNewEduPoints(e.target.value)} className="w-full bg-slate-50 border rounded-xl p-2.5 font-bold" required />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Cover Image URL</label>
-                <input type="text" value={newCoverUrl} onChange={(e) => setNewCoverUrl(e.target.value)} placeholder="https://..." className="w-full bg-slate-50 border rounded-xl p-2.5" />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Summary</label>
-                <textarea value={newSummary} onChange={(e) => setNewSummary(e.target.value)} rows={2} className="w-full bg-slate-50 border rounded-xl p-2.5" />
-              </div>
-
-              <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md">
-                Publish Book to Library 🚀
-              </button>
-            </form>
+              );
+            })()}
           </div>
         </div>
       )}
