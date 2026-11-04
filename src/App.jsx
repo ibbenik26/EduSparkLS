@@ -168,22 +168,6 @@ function App() {
       const { data, error } = await supabase.from('shop_items').select('*').order('created_at', { ascending: false });
       if (!error && data && data.length > 0) {
         setShopItems(data);
-      } else if (!error && data && data.length === 0) {
-        for (const i of INITIAL_SHOP_ITEMS) {
-          await supabase.from('shop_items').insert([{
-            id: i.id,
-            name: i.name,
-            category: i.category,
-            cost: i.cost,
-            stock: i.stock || 10,
-            creator_name: 'Admin',
-            target_grade: i.target_grade || 'All',
-            image_url: i.image_url || 'https://images.unsplash.com/photo-1585336261026-6757688719d3?auto=format&fit=crop&q=80&w=600',
-            rating: 4.9,
-            desc: i.desc || ''
-          }]);
-        }
-        setShopItems(INITIAL_SHOP_ITEMS);
       }
     } catch (e) {
       console.warn("Shop items fetch info:", e);
@@ -216,6 +200,45 @@ function App() {
       }
     } catch (e) {
       console.warn("Orders fetch info:", e);
+    }
+  };
+
+  const handleAddQuiz = async (newQuiz) => {
+    const formattedQuestions = (newQuiz.questions || []).map((q, idx) => ({
+      id: q.id || `q_${Date.now()}_${idx}`,
+      question: (q.question || q.question_text || q.text || '').trim(),
+      options: Array.isArray(q.options) 
+        ? q.options.map(opt => String(opt).trim()).filter(opt => opt !== '') 
+        : [],
+      correct_option: (q.correct_option || '').trim(),
+      explanation: (q.explanation || '').trim(),
+      topic: q.topic || 'General Concepts',
+      image_url: q.image_url || ''
+    }));
+
+    const payload = {
+      id: newQuiz.id || `quiz_${Date.now()}`,
+      title: newQuiz.title,
+      subject: newQuiz.subject,
+      grade: parseInt(newQuiz.grade) || 7,
+      subject_code: newQuiz.subject_code || '',
+      exam_year: newQuiz.exam_year ? parseInt(newQuiz.exam_year) : null,
+      variant: newQuiz.variant || '',
+      is_past_paper: !!newQuiz.is_past_paper,
+      has_diagrams: formattedQuestions.some(q => !!q.image_url),
+      time_limit: getQuizTimeLimit(newQuiz),
+      questions: formattedQuestions
+    };
+
+    setQuizzes(prev => [payload, ...prev]);
+
+    const { error } = await supabase.from('quizzes').insert([payload]);
+
+    if (error) {
+      console.error("Supabase Quiz Save Error:", error);
+      showToast(`⚠️ Database Save Failed: ${error.message}`, "error");
+    } else {
+      showToast("🎉 Quiz & Questions permanently saved to Supabase!", "success");
     }
   };
 
@@ -335,27 +358,6 @@ function App() {
       await supabase.from('badges').delete().eq('id', badgeId);
     } catch (e) {
       console.warn("Supabase badge delete error:", e);
-    }
-  };
-
-  const handleAddQuiz = async (newQuiz) => {
-    setQuizzes(prev => [newQuiz, ...prev]);
-    try {
-      await supabase.from('quizzes').insert([{
-        id: newQuiz.id,
-        title: newQuiz.title,
-        subject: newQuiz.subject,
-        grade: parseInt(newQuiz.grade),
-        subject_code: newQuiz.subject_code || '',
-        exam_year: newQuiz.exam_year ? parseInt(newQuiz.exam_year) : null,
-        variant: newQuiz.variant || '',
-        is_past_paper: !!newQuiz.is_past_paper,
-        has_diagrams: !!newQuiz.has_diagrams,
-        questions: newQuiz.questions
-      }]);
-      showToast("🎉 Quiz Saved to Supabase Database!", "success");
-    } catch (e) {
-      console.warn("Supabase quiz insert error:", e);
     }
   };
 
@@ -491,7 +493,10 @@ function App() {
   };
 
   const handleAnswerSubmit = (option) => {
-    const currentQ = activeQuiz.questions[currentQuestionIdx];
+    const rawQuestions = typeof activeQuiz.questions === 'string' ? JSON.parse(activeQuiz.questions) : activeQuiz.questions;
+    const questions = Array.isArray(rawQuestions) ? rawQuestions : [];
+    const currentQ = questions[currentQuestionIdx] || {};
+
     const isCorrect = option === currentQ.correct_option;
     setSelectedOption(option);
     setShowExplanation(true);
@@ -526,7 +531,10 @@ function App() {
     setSelectedOption(null);
     setShowExplanation(false);
 
-    if (currentQuestionIdx + 1 < activeQuiz.questions.length) {
+    const rawQuestions = typeof activeQuiz.questions === 'string' ? JSON.parse(activeQuiz.questions) : activeQuiz.questions;
+    const questions = Array.isArray(rawQuestions) ? rawQuestions : [];
+
+    if (currentQuestionIdx + 1 < questions.length) {
       setCurrentQuestionIdx(idx => idx + 1);
     } else {
       setQuizFinished(true);
@@ -539,7 +547,7 @@ function App() {
         recordUserCompletion(completionKey, 0, 0);
         showToast("📖 Practice Mode Completed! Challenge Mode UNLOCKED 🔓 (0 Coins & 0 XP awarded in Practice)", "info");
       } else {
-        const totalQuestions = activeQuiz.questions.length;
+        const totalQuestions = questions.length;
         const isPerfect5Hearts = (hearts === 5 && score === totalQuestions);
         const totalCoins = isPerfect5Hearts ? 25 : (score * 2);
         const earnedXp = score * 10;

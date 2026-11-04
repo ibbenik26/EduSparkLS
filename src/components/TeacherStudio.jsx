@@ -7,7 +7,7 @@ export default function TeacherStudio({
   badges, onAddBadge, onDeleteBadge, ranks, setRanks,
   sponsors, setSponsors, onOpenDiagramUpload, showToast, askConfirm
 }) {
-  const [studioSubTab, setStudioSubTab] = useState('quiz_builder'); // 'quiz_builder' | 'badge_manager' | 'sponsors'
+  const [studioSubTab, setStudioSubTab] = useState('quiz_builder');
   const [showCreateQuizModal, setShowCreateQuizModal] = useState(false);
   const [expandedQuizId, setExpandedQuizId] = useState(null);
 
@@ -20,7 +20,7 @@ export default function TeacherStudio({
   const [variant, setVariant] = useState('');
   const [isPastPaper, setIsPastPaper] = useState(false);
 
-  // Questions Builder State inside New Quiz Form
+  // Questions Builder State
   const [questions, setQuestions] = useState([
     {
       id: `q_${Date.now()}`,
@@ -35,7 +35,6 @@ export default function TeacherStudio({
 
   const canEditStudio = canUserCRUDPracticeVault(role);
 
-  // Question manipulation handlers
   const handleQuestionChange = (index, field, value) => {
     const updated = [...questions];
     updated[index][field] = value;
@@ -44,10 +43,11 @@ export default function TeacherStudio({
 
   const handleOptionChange = (qIndex, optIndex, value) => {
     const updated = [...questions];
+    const previousOptionValue = updated[qIndex].options[optIndex];
     updated[qIndex].options[optIndex] = value;
     
-    // Auto-set first option as default correct answer if unset
-    if (!updated[qIndex].correct_option) {
+    // Automatically update correct_option if option text is edited
+    if (updated[qIndex].correct_option === previousOptionValue || !updated[qIndex].correct_option) {
       updated[qIndex].correct_option = value;
     }
     setQuestions(updated);
@@ -77,9 +77,8 @@ export default function TeacherStudio({
 
   const handleCreateQuizSubmit = (e) => {
     e.preventDefault();
-    if (!quizTitle) return showToast("Enter quiz title", "warning");
+    if (!quizTitle.trim()) return showToast("Enter quiz title", "warning");
 
-    // Validate that questions are filled out
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
       if (!q.question.trim()) {
@@ -89,14 +88,14 @@ export default function TeacherStudio({
       if (validOptions.length < 2) {
         return showToast(`Question #${i + 1} must have at least 2 options!`, "warning");
       }
-      if (!q.correct_option) {
+      if (!q.correct_option.trim()) {
         return showToast(`Select a correct answer for Question #${i + 1}!`, "warning");
       }
     }
 
     const newQuiz = {
       id: `quiz_${Date.now()}`,
-      title: quizTitle,
+      title: quizTitle.trim(),
       subject: quizSubject,
       grade: parseInt(quizGrade),
       subject_code: subjectCode,
@@ -110,7 +109,6 @@ export default function TeacherStudio({
     onAddQuiz(newQuiz);
     setShowCreateQuizModal(false);
     
-    // Reset Form
     setQuizTitle('');
     setSubjectCode('');
     setExamYear('');
@@ -131,7 +129,7 @@ export default function TeacherStudio({
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
+      {/* Banner */}
       <div className="bg-gradient-to-r from-purple-700 via-indigo-700 to-slate-900 rounded-3xl p-6 sm:p-8 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg">
         <div className="space-y-2">
           <span className="bg-purple-400/20 border border-purple-300/30 text-purple-200 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider">
@@ -144,15 +142,13 @@ export default function TeacherStudio({
         </div>
 
         {canEditStudio && (
-          <div className="flex flex-wrap gap-2 shrink-0">
-            <button
-              onClick={() => setShowCreateQuizModal(true)}
-              className="bg-purple-400 hover:bg-purple-300 text-slate-950 font-black px-4 py-2.5 rounded-2xl text-xs transition shadow-md flex items-center space-x-1.5"
-            >
-              <Plus className="w-4 h-4" />
-              <span>+ Create Quiz & Questions</span>
-            </button>
-          </div>
+          <button
+            onClick={() => setShowCreateQuizModal(true)}
+            className="bg-purple-400 hover:bg-purple-300 text-slate-950 font-black px-4 py-2.5 rounded-2xl text-xs transition shadow-md flex items-center space-x-1.5 shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ Create Quiz & Questions</span>
+          </button>
         )}
       </div>
 
@@ -179,7 +175,7 @@ export default function TeacherStudio({
         </button>
       </div>
 
-      {/* SUB-TAB 1: QUIZ & QUESTIONS MANAGEMENT */}
+      {/* Quiz & Questions Sub-Tab */}
       {studioSubTab === 'quiz_builder' && (
         <div className="space-y-4">
           {quizzes.length === 0 ? (
@@ -259,7 +255,6 @@ export default function TeacherStudio({
                                   {q.question}
                                 </p>
 
-                                {/* Options grid */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                                   {opts.map((opt, optIdx) => {
                                     const isCorrect = opt === q.correct_option;
@@ -313,7 +308,6 @@ export default function TeacherStudio({
             </div>
 
             <form onSubmit={handleCreateQuizSubmit} className="space-y-5 text-xs">
-              {/* Quiz Metadata */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="sm:col-span-2">
                   <label className="font-bold block mb-1">Quiz Title (Dhivehi or English)</label>
@@ -350,7 +344,7 @@ export default function TeacherStudio({
                 </div>
               </div>
 
-              {/* QUESTIONS BUILDER SECTION */}
+              {/* QUESTIONS BUILDER */}
               <div className="space-y-4 border-t border-slate-200 pt-4">
                 <div className="flex justify-between items-center">
                   <h4 className="font-black text-slate-900 text-sm flex items-center space-x-1.5">
@@ -400,7 +394,6 @@ export default function TeacherStudio({
                         />
                       </div>
 
-                      {/* Options Inputs */}
                       <div className="space-y-2">
                         <label className="font-bold block">Answer Options & Correct Answer Selection</label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" dir={qFormat.dir}>
@@ -411,7 +404,7 @@ export default function TeacherStudio({
                                 name={`correct_opt_${qIndex}`}
                                 checked={q.correct_option === opt && opt !== ''}
                                 onChange={() => handleQuestionChange(qIndex, 'correct_option', opt)}
-                                className="w-4 h-4 text-purple-600 focus:ring-purple-500"
+                                className="w-4 h-4 text-purple-600 focus:ring-purple-500 shrink-0"
                               />
                               <input
                                 type="text"
@@ -442,7 +435,6 @@ export default function TeacherStudio({
                 })}
               </div>
 
-              {/* Submit Buttons */}
               <div className="flex space-x-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"

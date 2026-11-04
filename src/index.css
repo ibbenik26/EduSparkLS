@@ -4,7 +4,7 @@
   --font-faruma: 'Faruma', 'Noto Sans Thaana', 'MV Faruma', 'Ameeru', 'MV Waheed', sans-serif;
 }
 
-/* Dhivehi Faruma Font Face with Local and Web Fallbacks */
+/* Faruma Dhivehi Web Font (Local + Multi-CDN Fallbacks) */
 @font-face {
   font-family: 'Faruma';
   src: local('Faruma'),
@@ -15,21 +15,21 @@
   font-display: swap;
 }
 
-/* Explicit Utility Class for Thaana Script Formatting */
+/* Explicit Utility Class for Thaana Script */
 .font-faruma {
   font-family: 'Faruma', 'Noto Sans Thaana', 'MV Faruma', 'Ameeru', 'MV Waheed', 'Thaana', sans-serif !important;
   line-height: 2 !important;
   letter-spacing: 0px !important;
 }
 
-/* Force Right-to-Left Text Alignment for Dhivehi Elements */
+/* Right-to-Left Alignment for Dhivehi Elements */
 [dir="rtl"] .font-faruma,
 .font-faruma[dir="rtl"],
 [dir="rtl"] {
   text-align: right;
 }
 
-/* Scrollbar styles */
+/* Scrollbar Styles */
 .portal-nav-scroll {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;

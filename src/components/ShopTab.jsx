@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Plus, Trash2, Upload, Camera, X, Wallet, ShoppingBag, Clock, CheckCircle2, Copy, Check, Search, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Upload, Camera, X, Wallet, ShoppingBag, Clock, CheckCircle2, Copy, Check, Search, RefreshCw } from 'lucide-react';
 import { canUserCRUDShop } from '../utils/helpers';
 import { supabase } from '../lib/supabase';
 
@@ -7,7 +7,7 @@ export default function ShopTab({
   role, authName, studentGrade, shopItems, onAddShopItem, onDeleteShopItem, onPurchaseItem,
   coins, setCoins, orders, setOrders, onCancelOrder, onFulfillOrder, showToast, askConfirm
 }) {
-  const [shopSubTab, setShopSubTab] = useState('inventory'); // 'inventory' | 'my_orders' | 'teacher_fulfillment'
+  const [shopSubTab, setShopSubTab] = useState('inventory');
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [itemName, setItemName] = useState('');
   const [category, setCategory] = useState('Stationery');
@@ -24,14 +24,6 @@ export default function ShopTab({
   const fileInputRef = useRef(null);
   const canEditShop = canUserCRUDShop(role);
 
-  const presetImages = [
-    { label: 'Stationery Kit', url: 'https://images.unsplash.com/photo-1585336261026-6757688719d3?auto=format&fit=crop&q=80&w=600' },
-    { label: 'Maths Tools', url: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=600' },
-    { label: 'Science Books', url: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=600' },
-    { label: 'School Bag', url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=600' }
-  ];
-
-  // Calculate Student Wallet Analytics
   const myOrders = role === 'student' ? orders.filter(o => o.student_name === authName) : orders;
   const activePendingOrders = myOrders.filter(o => o.status === 'Pending Teacher Collection');
   const totalCoinsSpent = myOrders.reduce((sum, o) => o.status !== 'Cancelled & Refunded' ? sum + (o.cost || 0) : sum, 0);
@@ -159,7 +151,7 @@ export default function ShopTab({
 
   return (
     <div className="space-y-6">
-      {/* Student Wallet Summary Header */}
+      {/* Wallet Header */}
       <div className="bg-gradient-to-r from-amber-600 via-rose-600 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-lg space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-2">
@@ -184,7 +176,6 @@ export default function ShopTab({
           )}
         </div>
 
-        {/* Live Wallet & Purchase Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
           <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex items-center space-x-3">
             <div className="p-3 bg-amber-400 text-slate-950 rounded-xl font-black text-xl">🪙</div>
@@ -212,7 +203,7 @@ export default function ShopTab({
         </div>
       </div>
 
-      {/* Navigation Sub-Tabs */}
+      {/* Navigation Tabs */}
       <div className="flex border-b border-slate-200 space-x-6 text-sm font-bold text-slate-500">
         <button
           onClick={() => setShopSubTab('inventory')}
@@ -231,7 +222,7 @@ export default function ShopTab({
           }`}
         >
           <Clock className="w-4 h-4" />
-          <span>My Claimed History & Codes ({myOrders.length})</span>
+          <span>My Claimed History ({myOrders.length})</span>
           {activePendingOrders.length > 0 && (
             <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
               {activePendingOrders.length}
@@ -252,7 +243,7 @@ export default function ShopTab({
         )}
       </div>
 
-      {/* SUB-TAB 1: STORE INVENTORY */}
+      {/* Store Inventory Tab */}
       {shopSubTab === 'inventory' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {shopItems.map((item) => (
@@ -327,14 +318,14 @@ export default function ShopTab({
         </div>
       )}
 
-      {/* SUB-TAB 2: MY CLAIMED ORDERS & WALLET HISTORY */}
+      {/* Cart & Claimed Orders Tab */}
       {shopSubTab === 'my_orders' && (
         <div className="space-y-4">
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 font-medium flex items-start space-x-3">
             <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold">How to collect your gifts:</p>
-              <p className="mt-0.5">Show your unique <strong>Collection Code</strong> to your class teacher. Once verified, your status will change to <strong>Collected & Verified ✅</strong>.</p>
+              <p className="font-bold">Collection Instructions:</p>
+              <p className="mt-0.5">Show your <strong>Collection Code</strong> to your teacher to pick up your claimed items!</p>
             </div>
           </div>
 
@@ -375,7 +366,6 @@ export default function ShopTab({
                       </span>
                     </div>
 
-                    {/* Collection Code Block */}
                     <div className="bg-slate-900 text-white rounded-2xl p-3.5 flex items-center justify-between">
                       <div>
                         <span className="text-[9px] font-bold uppercase text-slate-400 block">Collection Verification Code</span>
@@ -391,11 +381,10 @@ export default function ShopTab({
                       </button>
                     </div>
 
-                    {/* Student Cancel & Refund Action */}
                     {isPending && (
                       <div className="pt-1 flex justify-end">
                         <button
-                          onClick={() => askConfirm("Cancel Claim", `Cancel claim for "${order.name}" and refund ${order.cost} Coins back to your wallet?`, () => onCancelOrder(order))}
+                          onClick={() => askConfirm("Cancel Claim", `Cancel claim for "${order.name}" and refund ${order.cost} Coins?`, () => onCancelOrder(order))}
                           className="text-rose-600 hover:text-rose-700 text-xs font-bold flex items-center space-x-1"
                         >
                           <RefreshCw className="w-3.5 h-3.5" />
@@ -411,7 +400,7 @@ export default function ShopTab({
         </div>
       )}
 
-      {/* SUB-TAB 3: ORDER FULFILLMENT STUDIO (TEACHERS / ADMINS) */}
+      {/* Teacher Fulfillment Studio */}
       {shopSubTab === 'teacher_fulfillment' && canEditShop && (
         <div className="space-y-4">
           <div className="bg-white border border-slate-200 p-4 rounded-3xl shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">

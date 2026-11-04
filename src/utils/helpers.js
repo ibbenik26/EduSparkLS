@@ -31,7 +31,7 @@ export const INITIAL_RANKS = [
   { id: 'r5', title: 'Legend', minXp: 2000, text: 'text-amber-600', bg: 'bg-amber-100', icon: '👑' }
 ];
 
-// Detect Unicode Thaana character range (\u0780 - \u07BF)
+// Detect Unicode Thaana Character Range (\u0780 - \u07BF)
 export const isThaanaText = (text) => {
   if (!text) return false;
   return /[\u0780-\u07BF]/.test(String(text));
@@ -120,7 +120,8 @@ export const generateSubjectAnalytics = (quizzes = [], completedQuizModes = []) 
       subjectMap[subject].completedQuizzes += 1;
     }
 
-    (quiz.questions || []).forEach((q) => {
+    const rawQuestions = typeof quiz.questions === 'string' ? JSON.parse(quiz.questions || '[]') : (quiz.questions || []);
+    (Array.isArray(rawQuestions) ? rawQuestions : []).forEach((q) => {
       subjectMap[subject].totalQuestions += 1;
       const topicName = q.topic || 'General Concepts';
 
@@ -184,6 +185,6 @@ export const playSound = (type) => {
       osc.stop(ctx.currentTime + 0.2);
     }
   } catch (e) {
-    console.warn("Audio Context error:", e);
+    console.warn("Audio Context info:", e);
   }
 };

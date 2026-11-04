@@ -8,23 +8,36 @@ export default function QuizRunnerModal({
 }) {
   if (!activeQuiz) return null;
 
-  // Safely parse questions array (handles raw JSON strings from Supabase)
+  // Safely parse questions array (handles single & double-stringified JSON)
   let rawQuestions = activeQuiz.questions;
   if (typeof rawQuestions === 'string') {
     try {
       rawQuestions = JSON.parse(rawQuestions);
+      if (typeof rawQuestions === 'string') {
+        rawQuestions = JSON.parse(rawQuestions);
+      }
     } catch (e) {
       rawQuestions = [];
     }
   }
+
   const questions = Array.isArray(rawQuestions) ? rawQuestions : [];
   const totalQuestions = questions.length;
   const currentQuestion = questions[currentQuestionIdx] || {};
+
+  // Resolve question text across multiple key name conventions
+  const questionText = currentQuestion.question || 
+                       currentQuestion.question_text || 
+                       currentQuestion.text || 
+                       currentQuestion.prompt || 
+                       'No question text available.';
+
+  // Resolve options array safely
   const options = Array.isArray(currentQuestion.options) ? currentQuestion.options : [];
   const isLastQuestion = currentQuestionIdx === totalQuestions - 1;
 
-  // Detect Dhivehi / Islam / Quran formatting & Faruma font requirements
-  const questionFormat = getDhivehiFormat(activeQuiz.subject || '', currentQuestion.question || '');
+  // Detect Dhivehi / Islam / Quran formatting
+  const questionFormat = getDhivehiFormat(activeQuiz.subject || '', questionText);
 
   return (
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
@@ -95,13 +108,13 @@ export default function QuizRunnerModal({
               {streak > 1 && <span className="text-amber-600 font-black">🔥 {streak}x Streak!</span>}
             </div>
 
-            {/* Question Text with Dhivehi RTL & Faruma Font Support */}
+            {/* Question Text */}
             <div
               dir={questionFormat.dir}
               className={`bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-3 ${questionFormat.className}`}
             >
               <h3 className="text-lg font-black text-slate-900 leading-relaxed">
-                {currentQuestion.question || 'No question text available.'}
+                {questionText}
               </h3>
 
               {currentQuestion.image_url && (
