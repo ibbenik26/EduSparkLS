@@ -2,11 +2,94 @@ import React from 'react';
 import { X, Heart, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import { getDhivehiFormat } from '../utils/helpers';
 
-export const normalizeQuestions = (quiz) => {
-  if (!quiz || !quiz.questions) return [];
-  let raw = quiz.questions;
+// Helper function to extract actual option text strings from any JSON structure
+export const extractOptionsFromQuestion = (qObj) => {
+  if (!qObj || typeof qObj !== 'object') return [];
 
-  // Unpack stringified JSON (up to 3 levels deep)
+  let raw = qObj.options || qObj.choices || qObj.answers || qObj.opts || qObj.option_list;
+
+  if (typeof raw === 'string') {
+    try {
+      raw = JSON.parse(raw);
+    } catch (e) {
+      if (raw.includes(',')) {
+        raw = raw.split(',').map(s => s.trim());
+      }
+    }
+  }
+
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    raw = Object.values(raw);
+  }
+
+  // Fallback lookup for explicit key names (option1, option2, option_a, a, b, etc.)
+  if (!Array.isArray(raw) || raw.length === 0) {
+    const keys = [
+      'option1', 'option2', 'option3', 'option4',
+      'option_a', 'option_b', 'option_c', 'option_d',
+      'opt1', 'opt2', 'opt3', 'opt4',
+      'a', 'b', 'c', 'd', 'A', 'B', 'C', 'D'
+    ];
+    const collected = [];
+    for (const k of keys) {
+      if (qObj[k] !== undefined && qObj[k] !== null && String(qObj[k]).trim() !== '') {
+        collected.push(String(qObj[k]).trim());
+      }
+    }
+    if (collected.length >= 2) raw = collected;
+  }
+
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map(opt => {
+      if (opt === null || opt === undefined) return '';
+      if (typeof opt === 'object') {
+        return opt.text || opt.option || opt.label || opt.value || Object.values(opt)[0] || '';
+      }
+      return String(opt);
+    })
+    .map(s => String(s).trim())
+    .filter(Boolean);
+};
+
+// Helper function to resolve the correct answer to its actual text string
+export const resolveCorrectOption = (qObj, opts) => {
+  if (!opts || opts.length === 0) return '';
+  const rawCorr = qObj.correct_option ?? qObj.correctOption ?? qObj.answer ?? qObj.correct_answer ?? qObj.correct ?? qObj.right_option;
+
+  if (rawCorr === undefined || rawCorr === null || String(rawCorr).trim() === '') {
+    return opts[0];
+  }
+
+  const sCorr = String(rawCorr).trim();
+
+  // 1. Direct text match (case-insensitive)
+  const exactMatch = opts.find(o => o.toLowerCase() === sCorr.toLowerCase());
+  if (exactMatch) return exactMatch;
+
+  // 2. Numeric index match (0-based or 1-based)
+  if (/^\d+$/.test(sCorr)) {
+    const idx = parseInt(sCorr, 10);
+    if (idx >= 0 && idx < opts.length) return opts[idx];
+    if (idx >= 1 && idx <= opts.length) return opts[idx - 1];
+  }
+
+  // 3. Letter index match (A, B, C, D or a, b, c, d)
+  const letters = ['a', 'b', 'c', 'd', 'e', 'f'];
+  const lIdx = letters.indexOf(sCorr.toLowerCase());
+  if (lIdx !== -1 && lIdx < opts.length) {
+    return opts[lIdx];
+  }
+
+  return sCorr;
+};
+
+// Universal Normalizer for Question Payloads
+export const normalizeQuestions = (quiz) => {
+  if (!quiz) return [];
+  let raw = quiz.questions !== undefined ? quiz.questions : quiz;
+
   for (let i = 0; i < 3; i++) {
     if (typeof raw === 'string') {
       try { raw = JSON.parse(raw); } catch (e) { break; }
@@ -34,30 +117,15 @@ export const normalizeQuestions = (quiz) => {
     }
 
     const questionText = qObj.question || qObj.question_text || qObj.text || qObj.prompt || `Question ${idx + 1}`;
-
-    let opts = qObj.options || qObj.choices || qObj.answers || qObj.opts || [];
-    if (typeof opts === 'string') {
-      try { opts = JSON.parse(opts); } catch (e) {
-        if (opts.includes(',')) opts = opts.split(',').map(s => s.trim());
-      }
-    }
-    if (opts && typeof opts === 'object' && !Array.isArray(opts)) {
-      opts = Object.values(opts);
-    }
-    if (!Array.isArray(opts)) opts = [];
-    opts = opts.map(o => String(o).trim()).filter(Boolean);
-
-    const correctOption = String(
-      qObj.correct_option || qObj.correctOption || qObj.answer || qObj.correct_answer || opts[0] || ''
-    ).trim();
-
+    const opts = extractOptionsFromQuestion(qObj);
+    const correctOption = resolveCorrectOption(qObj, opts);
     const diagramUrl = qObj.image_url || qObj.imageUrl || qObj.diagram_url || qObj.diagram || qObj.image || qObj.img || '';
 
     return {
       id: qObj.id || `q_${idx}_${Date.now()}`,
       question: questionText,
-      options: opts.length > 0 ? opts : ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
-      correct_option: correctOption || opts[0] || 'Option 1',
+      options: opts,
+      correct_option: correctOption,
       image_url: diagramUrl,
       explanation: qObj.explanation || qObj.desc || '',
       topic: qObj.topic || 'General Concepts'
@@ -87,7 +155,7 @@ export default function QuizRunnerModal({
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
       <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
         
-        {/* Header Bar with 5-Heart Indicator */}
+        {/* Header Bar */}
         <div className="flex justify-between items-center border-b border-slate-100 pb-4">
           <div>
             <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-2.5 py-1 rounded-lg">
@@ -170,7 +238,7 @@ export default function QuizRunnerModal({
                 {questionText}
               </h3>
 
-              {/* Science Diagram Card */}
+              {/* Science & Optics Diagram Card */}
               {diagramUrl && (
                 <div className="mt-4 bg-white p-3 rounded-2xl border border-slate-200 text-center shadow-xs">
                   <img
@@ -183,35 +251,41 @@ export default function QuizRunnerModal({
               )}
             </div>
 
-            {/* Options List */}
-            <div className="space-y-3" dir={questionFormat.dir}>
-              {options.map((opt, idx) => {
-                const optTrimmed = String(opt).trim();
-                const isSelected = selectedOption === optTrimmed || selectedOption === opt;
-                const isCorrect = optTrimmed === correctOption || optTrimmed.toLowerCase() === correctOption.toLowerCase();
+            {/* Actual JSON Option Choice Buttons */}
+            {options.length === 0 ? (
+              <div className="p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl text-xs font-bold">
+                ⚠️ No options found for this question.
+              </div>
+            ) : (
+              <div className="space-y-3" dir={questionFormat.dir}>
+                {options.map((opt, idx) => {
+                  const optTrimmed = String(opt).trim();
+                  const isSelected = selectedOption === optTrimmed || selectedOption === opt;
+                  const isCorrect = optTrimmed === correctOption || optTrimmed.toLowerCase() === correctOption.toLowerCase();
 
-                let btnStyle = "bg-white border-slate-200 hover:border-amber-400 text-slate-800";
-                if (showExplanation) {
-                  if (isCorrect) btnStyle = "bg-emerald-50 border-emerald-500 text-emerald-950 font-bold";
-                  else if (isSelected) btnStyle = "bg-rose-50 border-rose-500 text-rose-950 font-bold";
-                } else if (isSelected) {
-                  btnStyle = "bg-amber-500 text-slate-950 font-bold border-amber-600";
-                }
+                  let btnStyle = "bg-white border-slate-200 hover:border-amber-400 text-slate-800";
+                  if (showExplanation) {
+                    if (isCorrect) btnStyle = "bg-emerald-50 border-emerald-500 text-emerald-950 font-bold";
+                    else if (isSelected) btnStyle = "bg-rose-50 border-rose-500 text-rose-950 font-bold";
+                  } else if (isSelected) {
+                    btnStyle = "bg-amber-500 text-slate-950 font-bold border-amber-600";
+                  }
 
-                return (
-                  <button
-                    key={idx}
-                    disabled={showExplanation}
-                    onClick={() => handleAnswerSubmit(optTrimmed)}
-                    className={`w-full p-4 rounded-2xl border-2 transition flex items-center justify-between font-bold text-sm ${btnStyle} ${questionFormat.className}`}
-                  >
-                    <span className="leading-relaxed">{optTrimmed}</span>
-                    {showExplanation && isCorrect && <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 ml-2" />}
-                    {showExplanation && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-rose-600 shrink-0 ml-2" />}
-                  </button>
-                );
-              })}
-            </div>
+                  return (
+                    <button
+                      key={idx}
+                      disabled={showExplanation}
+                      onClick={() => handleAnswerSubmit(optTrimmed)}
+                      className={`w-full p-4 rounded-2xl border-2 transition flex items-center justify-between font-bold text-sm ${btnStyle} ${questionFormat.className}`}
+                    >
+                      <span className="leading-relaxed">{optTrimmed}</span>
+                      {showExplanation && isCorrect && <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 ml-2" />}
+                      {showExplanation && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-rose-600 shrink-0 ml-2" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Explanation Box */}
             {showExplanation && (
