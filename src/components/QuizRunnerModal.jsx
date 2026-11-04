@@ -2,108 +2,80 @@ import React from 'react';
 import { X, Heart, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import { getDhivehiFormat } from '../utils/helpers';
 
+// Helper to normalize question objects and extract options & diagrams safely
+export const normalizeQuestions = (quiz) => {
+  if (!quiz || !quiz.questions) return [];
+  let raw = quiz.questions;
+
+  for (let i = 0; i < 3; i++) {
+    if (typeof raw === 'string') {
+      try { raw = JSON.parse(raw); } catch (e) { break; }
+    }
+  }
+
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    if (Array.isArray(raw.questions)) raw = raw.questions;
+    else if (Array.isArray(raw.data)) raw = raw.data;
+    else raw = Object.values(raw);
+  }
+
+  if (!Array.isArray(raw)) return [];
+
+  return raw.map((item, idx) => {
+    let qObj = item;
+    for (let i = 0; i < 3; i++) {
+      if (typeof qObj === 'string') {
+        try { qObj = JSON.parse(qObj); } catch (e) { break; }
+      }
+    }
+
+    if (!qObj || typeof qObj !== 'object') {
+      qObj = { question: String(item) };
+    }
+
+    const questionText = qObj.question || qObj.question_text || qObj.text || qObj.prompt || 'Question';
+
+    let opts = qObj.options || qObj.choices || qObj.answers || qObj.opts || [];
+    if (typeof opts === 'string') {
+      try { opts = JSON.parse(opts); } catch (e) {
+        if (opts.includes(',')) opts = opts.split(',').map(s => s.trim());
+      }
+    }
+    if (!Array.isArray(opts)) opts = [];
+    opts = opts.map(o => String(o).trim()).filter(Boolean);
+
+    const correctOption = String(qObj.correct_option || qObj.correctOption || qObj.answer || opts[0] || '').trim();
+    const diagramUrl = qObj.image_url || qObj.imageUrl || qObj.diagram_url || qObj.diagram || qObj.image || qObj.img || '';
+    const explanation = qObj.explanation || qObj.desc || '';
+
+    return {
+      id: qObj.id || `q_${idx}`,
+      question: questionText,
+      options: opts,
+      correct_option: correctOption,
+      image_url: diagramUrl,
+      explanation,
+      topic: qObj.topic || 'General Concepts'
+    };
+  });
+};
+
 export default function QuizRunnerModal({
   activeQuiz, quizMode, currentQuestionIdx, hearts, timeLeft, streak, selectedOption,
   showExplanation, score, quizFinished, gameOver, handleAnswerSubmit, nextQuestion, startQuiz, onClose
 }) {
   if (!activeQuiz) return null;
 
-  // Safely parse questions array (handles string, double-stringified JSON, or raw arrays)
-  let rawQuestions = activeQuiz.questions;
-  if (typeof rawQuestions === 'string') {
-    try {
-      rawQuestions = JSON.parse(rawQuestions);
-      if (typeof rawQuestions === 'string') {
-        rawQuestions = JSON.parse(rawQuestions);
-      }
-    } catch (e) {
-      rawQuestions = [];
-    }
-  }
-
-  const questions = Array.isArray(rawQuestions) ? rawQuestions : [];
+  const questions = normalizeQuestions(activeQuiz);
   const totalQuestions = questions.length;
   const currentQuestion = questions[currentQuestionIdx] || {};
 
-  // Extract Question Text across key aliases
-  const questionText = currentQuestion.question || 
-                       currentQuestion.question_text || 
-                       currentQuestion.text || 
-                       currentQuestion.prompt || 
-                       'No question text available.';
-
-  // Universal Options Extractor
-  const extractOptions = (q) => {
-    if (!q) return [];
-    let raw = q.options || q.choices || q.answers || q.opts || q.option_list;
-
-    if (typeof raw === 'string') {
-      try {
-        raw = JSON.parse(raw);
-      } catch (e) {
-        if (raw.includes(',')) {
-          raw = raw.split(',').map(s => s.trim());
-        }
-      }
-    }
-
-    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-      raw = Object.values(raw);
-    }
-
-    if (!Array.isArray(raw) || raw.length === 0) {
-      const keys = ['option1', 'option2', 'option3', 'option4', 
-                    'option_a', 'option_b', 'option_c', 'option_d',
-                    'opt1', 'opt2', 'opt3', 'opt4',
-                    'a', 'b', 'c', 'd', 'A', 'B', 'C', 'D'];
-      const collected = [];
-      for (const k of keys) {
-        if (q[k] !== undefined && q[k] !== null && String(q[k]).trim() !== '') {
-          collected.push(String(q[k]).trim());
-        }
-      }
-      if (collected.length >= 2) raw = collected;
-    }
-
-    if (!Array.isArray(raw)) return [];
-
-    return raw
-      .map(opt => {
-        if (opt === null || opt === undefined) return '';
-        if (typeof opt === 'object') {
-          return opt.text || opt.option || opt.label || opt.value || Object.values(opt)[0] || '';
-        }
-        return String(opt);
-      })
-      .map(s => String(s).trim())
-      .filter(s => s.length > 0);
-  };
-
-  const options = extractOptions(currentQuestion);
-
-  // Correct Option Matcher
-  const correctOption = String(
-    currentQuestion.correct_option || 
-    currentQuestion.correctOption || 
-    currentQuestion.answer || 
-    currentQuestion.correct_answer || 
-    currentQuestion.correct || 
-    currentQuestion.right_option || 
-    ''
-  ).trim();
-
-  // Extract Diagram Image URL across all key aliases
-  const diagramUrl = currentQuestion.image_url || 
-                     currentQuestion.imageUrl || 
-                     currentQuestion.diagram_url || 
-                     currentQuestion.diagram || 
-                     currentQuestion.image || 
-                     currentQuestion.img_url || 
-                     currentQuestion.img || '';
-
+  const questionText = currentQuestion.question || 'No question text available.';
+  const options = currentQuestion.options || [];
+  const correctOption = currentQuestion.correct_option || '';
+  const diagramUrl = currentQuestion.image_url || '';
   const isLastQuestion = currentQuestionIdx === totalQuestions - 1;
 
-  // Detect Dhivehi / Islam / Quran formatting & Faruma font
   const questionFormat = getDhivehiFormat(activeQuiz.subject || '', questionText);
 
   return (
@@ -175,7 +147,7 @@ export default function QuizRunnerModal({
               {streak > 1 && <span className="text-amber-600 font-black">🔥 {streak}x Streak!</span>}
             </div>
 
-            {/* Question Text Box */}
+            {/* Question Text & Diagram Container */}
             <div
               dir={questionFormat.dir}
               className={`bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-3 ${questionFormat.className}`}
@@ -184,16 +156,12 @@ export default function QuizRunnerModal({
                 {questionText}
               </h3>
 
-              {/* Diagram Image Container */}
               {diagramUrl && (
                 <div className="mt-4 bg-white p-3 rounded-2xl border border-slate-200 text-center shadow-xs">
                   <img
                     src={diagramUrl}
-                    alt="Optics / Question Diagram"
+                    alt="Question Diagram"
                     className="max-h-72 w-full object-contain rounded-xl mx-auto"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
                   />
                 </div>
               )}
@@ -209,10 +177,7 @@ export default function QuizRunnerModal({
                 {options.map((opt, idx) => {
                   const optTrimmed = String(opt).trim();
                   const isSelected = selectedOption === optTrimmed || selectedOption === opt;
-                  
-                  const isCorrect = (optTrimmed === correctOption) ||
-                                    (optTrimmed.toLowerCase() === correctOption.toLowerCase()) ||
-                                    (correctOption.length === 1 && ['a','b','c','d'].includes(correctOption.toLowerCase()) && idx === ['a','b','c','d'].indexOf(correctOption.toLowerCase()));
+                  const isCorrect = optTrimmed === correctOption || optTrimmed.toLowerCase() === correctOption.toLowerCase();
 
                   let btnStyle = "bg-white border-slate-200 hover:border-amber-400 text-slate-800";
                   if (showExplanation) {
