@@ -1,28 +1,35 @@
 @import "tailwindcss";
 
-/* Faruma Dhivehi Web Font (Local with Web Fallback) */
+@theme {
+  --font-faruma: 'Faruma', 'Noto Sans Thaana', 'MV Faruma', 'Ameeru', 'MV Waheed', sans-serif;
+}
+
+/* Dhivehi Faruma Font Face with Local and Web Fallbacks */
 @font-face {
   font-family: 'Faruma';
-  src: url('/Faruma.ttf') format('truetype'),
+  src: local('Faruma'),
+       url('/Faruma.ttf') format('truetype'),
        url('https://cdn.jsdelivr.net/gh/mvfonts/faruma@master/Faruma.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
+/* Explicit Utility Class for Thaana Script Formatting */
 .font-faruma {
-  font-family: 'Faruma', 'MV Faruma', 'Ameeru', 'MV Waheed', 'Thaana', sans-serif !important;
-  line-height: 1.9 !important;
+  font-family: 'Faruma', 'Noto Sans Thaana', 'MV Faruma', 'Ameeru', 'MV Waheed', 'Thaana', sans-serif !important;
+  line-height: 2 !important;
   letter-spacing: 0px !important;
 }
 
-/* Thaana RTL Readability Adjustments */
+/* Force Right-to-Left Text Alignment for Dhivehi Elements */
 [dir="rtl"] .font-faruma,
+.font-faruma[dir="rtl"],
 [dir="rtl"] {
   text-align: right;
 }
 
-/* Custom Navigation Scrollbar */
+/* Scrollbar styles */
 .portal-nav-scroll {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;

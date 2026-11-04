@@ -5,8 +5,8 @@ export const ALL_SUBJECTS = [
 ];
 
 export const DHIVEHI_SUBJECTS = [
-  'Dhivehi', 'Islam', 'Quran', 'Dhivehi Language',
-  'ދިވެހި', 'އިސްލާމް', 'ޤުރުއާން', 'Arabic'
+  'dhivehi', 'islam', 'quran', 'dhivehi language',
+  'ދިވެހި', 'އިސްލާމް', 'ޤުރުއާން', 'arabic'
 ];
 
 export const ROLE_TABS = {
@@ -31,13 +31,15 @@ export const INITIAL_RANKS = [
   { id: 'r5', title: 'Legend', minXp: 2000, text: 'text-amber-600', bg: 'bg-amber-100', icon: '👑' }
 ];
 
+// Detect Unicode Thaana character range (\u0780 - \u07BF)
 export const isThaanaText = (text) => {
   if (!text) return false;
   return /[\u0780-\u07BF]/.test(String(text));
 };
 
 export const isRTLSubject = (subject = '', text = '') => {
-  if (subject && DHIVEHI_SUBJECTS.some(s => s.toLowerCase() === String(subject).trim().toLowerCase())) {
+  const cleanSubject = String(subject || '').trim().toLowerCase();
+  if (cleanSubject && DHIVEHI_SUBJECTS.some(s => s === cleanSubject)) {
     return true;
   }
   return isThaanaText(subject) || isThaanaText(text);
