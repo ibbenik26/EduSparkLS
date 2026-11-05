@@ -90,14 +90,15 @@ function App() {
 
   const [showDiagramUploadModal, setShowDiagramUploadModal] = useState(false);
 
-  const syncUserProgressToSupabase = async (updatedCoins, updatedXp, updatedModes) => {
+  const syncUserProgressToSupabase = async (updatedCoins, updatedXp, updatedModes, updatedReadingHours = readingHours) => {
     if (!user?.id) return;
     try {
       await supabase.from('profiles').upsert({
         id: user.id,
         coins: updatedCoins,
         xp: updatedXp,
-        completed_quiz_modes: updatedModes
+        completed_quiz_modes: updatedModes,
+        reading_hours: updatedReadingHours
       });
     } catch (e) {
       console.warn("Supabase progress sync info:", e);
@@ -562,6 +563,7 @@ function App() {
     setActiveTab(tabName);
     window.history.pushState({ tab: tabName }, '', `#${tabName}`);
   };
+  
 
   if (!user) {
     return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BookOpen, Search, Eye, Key, Sparkles, Clock, Coins, CheckCircle2, Pause, Play, ShieldCheck } from 'lucide-react';
+import { BookOpen, Search, Eye, Key, Sparkles, Clock, Coins, CheckCircle2, Pause, Play, ShieldCheck, Save } from 'lucide-react';
 import { canUserCRUDLibrary, getDhivehiFormat } from '../utils/helpers';
 
 export default function LibraryTab({
@@ -13,76 +13,37 @@ export default function LibraryTab({
   // Librarian Code Redemption State
   const [librarianCodeInput, setLibrarianCodeInput] = useState('');
 
-  // Digital Reading Auto-Timer State
+  // Digital Reading Auto-Timer & Resume State
   const [activeReadingSeconds, setActiveReadingSeconds] = useState(0);
+  const [sessionStartSeconds, setSessionStartSeconds] = useState(0);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
   const timerRef = useRef(null);
 
   const canEditLibrary = canUserCRUDLibrary(role);
 
   // -------------------------------------------------------------
-  // 1. LIBRARIAN CODE REDEMPTION (Physical Library Books)
+  // 1. OPEN BOOK READER & RESUME TIMER FROM SAVED ENDPOINT
   // -------------------------------------------------------------
-  const handleRedeemLibrarianCode = (e) => {
-    e.preventDefault();
-    const cleanCode = librarianCodeInput.trim().toUpperCase();
-    if (!cleanCode) return showToast("Please enter a librarian code", "warning");
+  const handleOpenBookReader = (book) => {
+    setPreviewBook(book);
 
-    if (claimedCodes.includes(cleanCode)) {
-      return showToast("⚠️ Code already claimed!", "warning");
-    }
+    // Load saved reading seconds for this specific book from localStorage
+    const savedBookProgressKey = `edusparkls_book_sec_${book.id}`;
+    const savedSeconds = parseInt(localStorage.getItem(savedBookProgressKey) || '0', 10);
 
-    // Official School Librarian Presets & Dynamic Pattern Matcher
-    const presetCodes = {
-      'LIB-1HR': { hours: 1, label: '1 Hour Physical Reading Pass' },
-      'LIB-2HR': { hours: 2, label: '2 Hours Physical Reading Pass' },
-      'LIB-3HR': { hours: 3, label: '3 Hours Physical Reading Pass' },
-      'READ1': { hours: 1, label: '1 Hour Reading Verification' },
-      'READ2': { hours: 2, label: '2 Hours Reading Verification' },
-      'DHIVEHI100': { hours: 2, label: 'Dhivehi Reading Hours Pass' }
-    };
-
-    let earnedHours = 0;
-    let codeLabel = '';
-
-    if (presetCodes[cleanCode]) {
-      earnedHours = presetCodes[cleanCode].hours;
-      codeLabel = presetCodes[cleanCode].label;
-    } else {
-      // Dynamic pattern fallback (e.g. "LIB-5" or "READ-4")
-      const match = cleanCode.match(/(?:LIB|READ|BOOK)[-]?(\d+)/i);
-      if (match && match[1]) {
-        earnedHours = parseInt(match[1], 10);
-        codeLabel = `${earnedHours} Hour(s) Verified Reading Code`;
-      }
-    }
-
-    if (earnedHours > 0) {
-      const earnedCoins = earnedHours * 50; // 50 Coins per 1 Hour of Reading
-      const earnedXp = earnedHours * 75;
-
-      setReadingHours(prev => parseFloat((prev + earnedHours).toFixed(2)));
-      setCoins(c => c + earnedCoins);
-      setXp(x => x + earnedXp);
-      setClaimedCodes(prev => [...prev, cleanCode]);
-      setLibrarianCodeInput('');
-
-      showToast(`🎉 Code Verified! +${earnedHours} Reading Hours & +${earnedCoins} Coins claimed!`, "success");
-    } else {
-      showToast("❌ Invalid librarian code. Check code handed by your school librarian!", "error");
-    }
+    setActiveReadingSeconds(savedSeconds);
+    setSessionStartSeconds(savedSeconds);
+    setIsTimerPaused(false);
   };
 
-  // -------------------------------------------------------------
-  // 2. AUTO-TIMER FOR DIGITAL ON-DEVICE READING
-  // -------------------------------------------------------------
+  // Auto-timer tick & screen visibility listener
   useEffect(() => {
     if (!previewBook) {
       setActiveReadingSeconds(0);
+      setSessionStartSeconds(0);
       return;
     }
 
-    // Auto-pause timer when screen sleeps or browser tab loses focus
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         setIsTimerPaused(true);
@@ -105,28 +66,99 @@ export default function LibraryTab({
     };
   }, [previewBook, isTimerPaused]);
 
-  // Close reader and convert accumulated digital reading time to hours & coins
+  // Save progress & endpoint timer
   const handleCloseBookReader = () => {
-    if (activeReadingSeconds >= 10) {
-      const hoursAdded = parseFloat((activeReadingSeconds / 3600).toFixed(3));
-      const coinsEarned = Math.floor((activeReadingSeconds / 3600) * 50); // 50 coins per 3600s
-      const xpEarned = Math.floor((activeReadingSeconds / 3600) * 75);
+    if (!previewBook) return;
 
-      setReadingHours(prev => parseFloat((prev + hoursAdded).toFixed(2)));
+    // Save total accumulated seconds for this book so next time it resumes from here
+    const savedBookProgressKey = `edusparkls_book_sec_${previewBook.id}`;
+    localStorage.setItem(savedBookProgressKey, activeReadingSeconds.toString());
+
+    // Calculate newly added reading seconds during this active session
+    const incrementalSeconds = Math.max(0, activeReadingSeconds - sessionStartSeconds);
+
+    if (incrementalSeconds >= 5) {
+      const hoursAdded = parseFloat((incrementalSeconds / 3600).toFixed(3));
+      const coinsEarned = Math.floor((incrementalSeconds / 3600) * 50); // 50 coins per 1 hr
+      const xpEarned = Math.floor((incrementalSeconds / 3600) * 75);
+
+      setReadingHours(prev => {
+        const nextHours = parseFloat((prev + hoursAdded).toFixed(2));
+        localStorage.setItem('edusparkls_reading_hours', nextHours.toString());
+        return nextHours;
+      });
+
       if (coinsEarned > 0) setCoins(c => c + coinsEarned);
       if (xpEarned > 0) setXp(x => x + xpEarned);
 
-      const mins = Math.floor(activeReadingSeconds / 60);
-      showToast(`📚 Session Saved: Read for ${mins} mins! +${hoursAdded} Hours & +${coinsEarned} Coins added.`, "info");
+      const mins = Math.floor(incrementalSeconds / 60);
+      const secs = incrementalSeconds % 60;
+      showToast(`💾 Progress Saved! Read for ${mins}m ${secs}s. Endpoint saved at ${formatTimerDisplay(activeReadingSeconds)}.`, "success");
     }
 
     setPreviewBook(null);
     setActiveReadingSeconds(0);
+    setSessionStartSeconds(0);
   };
 
-  const formatTimerDisplay = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
+  // -------------------------------------------------------------
+  // 2. LIBRARIAN CODE REDEMPTION (Physical Books)
+  // -------------------------------------------------------------
+  const handleRedeemLibrarianCode = (e) => {
+    e.preventDefault();
+    const cleanCode = librarianCodeInput.trim().toUpperCase();
+    if (!cleanCode) return showToast("Please enter a librarian code", "warning");
+
+    if (claimedCodes.includes(cleanCode)) {
+      return showToast("⚠️ Code already claimed!", "warning");
+    }
+
+    const presetCodes = {
+      'LIB-1HR': { hours: 1, label: '1 Hour Physical Reading Pass' },
+      'LIB-2HR': { hours: 2, label: '2 Hours Physical Reading Pass' },
+      'LIB-3HR': { hours: 3, label: '3 Hours Physical Reading Pass' },
+      'READ1': { hours: 1, label: '1 Hour Reading Verification' },
+      'READ2': { hours: 2, label: '2 Hours Reading Verification' },
+      'DHIVEHI100': { hours: 2, label: 'Dhivehi Reading Hours Pass' }
+    };
+
+    let earnedHours = 0;
+    if (presetCodes[cleanCode]) {
+      earnedHours = presetCodes[cleanCode].hours;
+    } else {
+      const match = cleanCode.match(/(?:LIB|READ|BOOK)[-]?(\d+)/i);
+      if (match && match[1]) earnedHours = parseInt(match[1], 10);
+    }
+
+    if (earnedHours > 0) {
+      const earnedCoins = earnedHours * 50;
+      const earnedXp = earnedHours * 75;
+
+      setReadingHours(prev => {
+        const nextHours = parseFloat((prev + earnedHours).toFixed(2));
+        localStorage.setItem('edusparkls_reading_hours', nextHours.toString());
+        return nextHours;
+      });
+
+      setCoins(c => c + earnedCoins);
+      setXp(x => x + earnedXp);
+      setClaimedCodes(prev => [...prev, cleanCode]);
+      setLibrarianCodeInput('');
+
+      showToast(`🎉 Code Verified! +${earnedHours} Reading Hours & +${earnedCoins} Coins added to your endpoint!`, "success");
+    } else {
+      showToast("❌ Invalid librarian code. Check code handed by your school librarian!", "error");
+    }
+  };
+
+  const formatTimerDisplay = (totalSecs) => {
+    const h = Math.floor(totalSecs / 3600);
+    const m = Math.floor((totalSecs % 3600) / 60);
+    const s = totalSecs % 60;
+
+    if (h > 0) {
+      return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
@@ -147,20 +179,20 @@ export default function LibraryTab({
           </span>
           <h2 className="text-2xl sm:text-3xl font-black">Edusparkls Library Center</h2>
           <p className="text-blue-100 text-xs max-w-lg">
-            Read books in the physical library to get Librarian Codes or read on device to earn <strong>50 Coins for every 1 Reading Hour</strong>!
+            Read books on your device to build your reading timer endpoint or enter Librarian Codes to earn <strong>50 Coins for every 1 Reading Hour</strong>!
           </p>
         </div>
 
         <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl flex items-center space-x-3 shrink-0">
           <div className="p-2.5 bg-amber-400 text-slate-950 rounded-xl font-black text-lg">⌛</div>
           <div>
-            <span className="text-[10px] uppercase font-bold text-blue-200 block">Total Reading Hours</span>
+            <span className="text-[10px] uppercase font-bold text-blue-200 block">Total Reading Hours Endpoint</span>
             <span className="text-xl font-black text-amber-300">{readingHours} Hours</span>
           </div>
         </div>
       </div>
 
-      {/* LIBRARIAN CODE REDEMPTION CARD */}
+      {/* Librarian Code Card */}
       <div className="bg-gradient-to-r from-amber-500 to-rose-600 rounded-3xl p-5 text-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="space-y-1">
           <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-md flex items-center space-x-1 w-fit">
@@ -169,7 +201,7 @@ export default function LibraryTab({
           </span>
           <h3 className="font-black text-base">Claim Coins for Physical Book Reading</h3>
           <p className="text-xs text-amber-100">
-            Finished reading a physical book in library? Enter the code given by your librarian to claim <strong>50 Coins / Hour</strong>.
+            Finished reading a physical book in library? Enter librarian code to add hours & claim <strong>50 Coins / Hour</strong>.
           </p>
         </div>
 
@@ -225,6 +257,7 @@ export default function LibraryTab({
           const format = getDhivehiFormat(book.subject, book.title);
           const estHours = book.estimated_hours || 1;
           const rewardCoins = estHours * 50;
+          const savedBookSecs = parseInt(localStorage.getItem(`edusparkls_book_sec_${book.id}`) || '0', 10);
 
           return (
             <div key={book.id} className="bg-white border border-slate-200 rounded-3xl p-5 space-y-3 shadow-xs hover:shadow-md transition flex flex-col justify-between">
@@ -247,15 +280,21 @@ export default function LibraryTab({
                 <p className={`text-xs text-slate-500 leading-relaxed ${format.className}`}>
                   {book.desc || 'Standard curriculum reference book.'}
                 </p>
+
+                {savedBookSecs > 0 && (
+                  <div className="text-[10px] font-mono font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg w-fit">
+                    📍 Resume Endpoint: {formatTimerDisplay(savedBookSecs)}
+                  </div>
+                )}
               </div>
 
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                 <button
-                  onClick={() => setPreviewBook(book)}
+                  onClick={() => handleOpenBookReader(book)}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-xs flex items-center space-x-1.5"
                 >
                   <Eye className="w-3.5 h-3.5" />
-                  <span>Read On Device</span>
+                  <span>{savedBookSecs > 0 ? 'Resume Reading' : 'Read On Device'}</span>
                 </button>
 
                 <span className="text-[11px] font-bold text-slate-400 flex items-center space-x-1">
@@ -268,18 +307,16 @@ export default function LibraryTab({
         })}
       </div>
 
-      {/* DIGITAL READ-ON-DEVICE MODAL WITH AUTO-TIMER */}
+      {/* DIGITAL READ-ON-DEVICE MODAL WITH RESUMABLE TIMER */}
       {previewBook && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 text-slate-900 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-4 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             {(() => {
               const modalFormat = getDhivehiFormat(previewBook.subject, previewBook.title);
-              const estHours = previewBook.estimated_hours || 1;
-              const pendingCoins = Math.floor((activeReadingSeconds / 3600) * 50);
 
               return (
                 <div dir={modalFormat.dir} className={modalFormat.className}>
-                  {/* Modal Header */}
+                  {/* Header */}
                   <div className="flex justify-between items-start pb-3 border-b border-slate-100">
                     <div>
                       <span className="text-[10px] font-black uppercase bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-md">
@@ -293,23 +330,23 @@ export default function LibraryTab({
                     </button>
                   </div>
 
-                  {/* ACTIVE READING TIMER BAR */}
+                  {/* CONTINUOUS RESUMABLE TIMER DISPLAY */}
                   <div className="my-4 bg-slate-900 text-white p-4 rounded-2xl flex items-center justify-between shadow-inner">
                     <div className="flex items-center space-x-3">
                       <div className="p-2.5 bg-amber-500 text-slate-950 rounded-xl font-mono font-black text-sm">
                         ⏱️ {formatTimerDisplay(activeReadingSeconds)}
                       </div>
                       <div>
-                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Active Device Reading Session</span>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Continuous Endpoint Timer</span>
                         <span className="text-xs font-bold text-amber-400">
-                          {isTimerPaused ? 'Paused (Screen Inactive / Tab Hidden)' : 'Tracking Active Reading...'}
+                          {isTimerPaused ? 'Paused (Screen Sleeping or Tab Hidden)' : 'Actively Resumed & Counting...'}
                         </span>
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Session Reward</span>
-                      <span className="text-xs font-black text-emerald-400">+50 Coins / 1 Hour</span>
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Rate</span>
+                      <span className="text-xs font-black text-emerald-400">+50 Coins / 1 Hr</span>
                     </div>
                   </div>
 
@@ -322,17 +359,18 @@ export default function LibraryTab({
                     </div>
                   </div>
 
-                  {/* Reader Footer Controls */}
+                  {/* Reader Action Controls */}
                   <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
                     <span className="text-xs text-slate-400 font-bold">
-                      Screen Awake Status: <strong className={isTimerPaused ? "text-rose-600" : "text-emerald-600"}>{isTimerPaused ? 'Paused' : 'Active'}</strong>
+                      Status: <strong className={isTimerPaused ? "text-rose-600" : "text-emerald-600"}>{isTimerPaused ? 'Paused' : 'Active'}</strong>
                     </span>
 
                     <button
                       onClick={handleCloseBookReader}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-6 py-2.5 rounded-xl text-xs transition shadow-sm"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-6 py-2.5 rounded-xl text-xs transition shadow-sm flex items-center space-x-1.5"
                     >
-                      Save Reading Session & Close
+                      <Save className="w-4 h-4" />
+                      <span>Save Endpoint & Exit</span>
                     </button>
                   </div>
                 </div>
