@@ -142,6 +142,7 @@ function App() {
     fetchQuizzesFromSupabase();
     fetchShopItemsFromSupabase();
     fetchBadgesFromSupabase();
+    fetchBooksFromSupabase();
     fetchOrdersFromSupabase();
     fetchAllProfiles();
     fetchSponsorsFromSupabase();
@@ -172,6 +173,17 @@ function App() {
       }
     } catch (e) {
       console.warn("Shop items fetch info:", e);
+    }
+  };
+
+  const fetchBooksFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase.from('books').select('*').order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        setBooks(data);
+      }
+    } catch (e) {
+      console.warn("Books fetch info:", e);
     }
   };
 
