@@ -448,7 +448,7 @@ export default function TeacherStudio({
                 <div>
                   <label className="font-bold block mb-1">Target Grade</label>
                   <select value={quizGrade} onChange={(e) => setQuizGrade(e.target.value)} className="w-full border rounded-xl p-2.5 font-bold">
-                    {[7, 8, 9, 10].map(g => <option key={g} value={g}>Grade {g}</option>)}
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(g => <option key={g} value={g}>Grade {g}</option>)}
                   </select>
                 </div>
               </div>
