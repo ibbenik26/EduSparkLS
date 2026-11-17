@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { supabase } from './lib/supabase';
 
 import { ALL_SUBJECTS, ROLE_TABS, INITIAL_BADGES, INITIAL_RANKS, getDefaultTabForRole, getQuizTimeLimit, playSound } from './utils/helpers';
@@ -592,6 +593,7 @@ function App() {
         ) : (
           <AuthForm authView={authView} setAuthView={setAuthView} showToast={showToast} />
         )}
+        <Analytics />
       </>
     );
   }
@@ -735,6 +737,7 @@ function App() {
           }}
         />
       )}
+      <Analytics />
     </div>
   );
 }
